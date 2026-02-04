@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Student DNC IMS</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    
+    <link rel="stylesheet" href="~/css/layout.css" asp-append-version="true" />
+</head>
+
+<body>
+
+    <nav class="sidebar">
+        <a asp-area="Student" asp-controller="StudentHome" asp-action="Index" class="sidebar-brand">
+            <i class="fa fa-university me-2"></i> DNC STUDENT
+        </a>
+
+        @{
+            string currentCtrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+        }
+
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "StudentHome" ? "active" : "")" 
+                       asp-area="Student" asp-controller="StudentHome" asp-action="Index">
+                        <i class="fa fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "Register" ? "active" : "")" 
+                       asp-area="Student" asp-controller="SRegister" asp-action="Index">
+                        <i class="fa fa-calendar-alt"></i> Register Internship
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "Logbook" ? "active" : "")" 
+                       asp-area="Student" asp-controller="Logbook" asp-action="Index">
+                        <i class="fa fa-user-graduate"></i> Logbook
+                    </a>
+                </li>
+              
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "Submission" ? "active" : "")" 
+                       asp-area="Student" asp-controller="Submission" asp-action="Index">
+                        <i class="fa fa-file-alt"></i> Submission
+                    </a>
+                </li>
+
+                  <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "RResult" ? "active" : "")" 
+                       asp-area="Student" asp-controller="RResult" asp-action="Index">
+                        <i class="fa fa-file-alt"></i> Result
+                    </a>
+                </li>
+
+                
+            </ul>
+        </div>
+
+        <div class="p-3 border-top border-white-50">
+            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center">
+                    <i class="fa fa-sign-out-alt me-2"></i> Logout
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <header class="top-bar">
+            <h5 class="m-0 fw-bold text-secondary">@ViewData["Title"]</h5>
+            
+            <div class="d-flex align-items-center">
+                <div class="text-end me-3 d-none d-md-block">
+                    <small class="text-muted d-block">Hello,</small>
+                    <span class="fw-bold text-dark">Tine</span>
+                </div>
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary border" 
+                     style="width: 40px; height: 40px;">
+                    <i class="fa fa-user"></i>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            @RenderBody()
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

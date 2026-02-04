@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin DNC IMS</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    
+    <link rel="stylesheet" href="~/css/layout.css" asp-append-version="true" />
+</head>
+
+<body>
+
+    <nav class="sidebar">
+        <a asp-area="Admin" asp-controller="Admin" asp-action="Index" class="sidebar-brand">
+            <i class="fa fa-university me-2"></i> DNC ADMIN
+        </a>
+
+        @{
+            string currentCtrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+        }
+
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "Admin" ? "active" : "")" 
+                       asp-area="Admin" asp-controller="AdminHome" asp-action="Index">
+                        <i class="fa fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "Term" ? "active" : "")" 
+                       asp-area="Admin" asp-controller="Term" asp-action="Index">
+                        <i class="fa fa-calendar-alt"></i> Quản lý Đợt
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "Student" ? "active" : "")" 
+                       asp-area="Admin" asp-controller="Student" asp-action="Index">
+                        <i class="fa fa-user-graduate"></i> Sinh viên
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "Lecturer" ? "active" : "")" 
+                       asp-area="Admin" asp-controller="Lecturer" asp-action="Index">
+                        <i class="fa fa-chalkboard-teacher"></i> Giảng viên
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link @(currentCtrl == "Allocation" ? "active" : "")" 
+                       asp-area="Admin" asp-controller="Allocation" asp-action="Index">
+                        <i class="fa fa-random"></i> Phân công GV
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="p-3 border-top border-white-50">
+            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center">
+                    <i class="fa fa-sign-out-alt me-2"></i> Đăng xuất
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <header class="top-bar">
+            <h5 class="m-0 fw-bold text-secondary">@ViewData["Title"]</h5>
+            
+            <div class="d-flex align-items-center">
+                <div class="text-end me-3 d-none d-md-block">
+                    <small class="text-muted d-block">Xin chào,</small>
+                    <span class="fw-bold text-dark">Administrator</span>
+                </div>
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary border" 
+                     style="width: 40px; height: 40px;">
+                    <i class="fa fa-user"></i>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            @RenderBody()
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
