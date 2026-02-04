@@ -1,0 +1,104 @@
+
+        :root {
+            --dnc-primary: #00509d;       
+            --dnc-accent: #fca311;        
+            --sidebar-width: 260px;       
+            --bg-color: #f4f6f9;       
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            overflow-x: hidden; /* Ẩn thanh cuộn ngang */
+        }
+
+        /* --- SIDEBAR (Bên trái) --- */
+        .sidebar {
+            position: fixed;
+            top: 0; bottom: 0; left: 0;
+            width: var(--sidebar-width);
+            background-color: var(--dnc-primary);
+            z-index: 1000;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Logo khu vực trên cùng sidebar */
+        .sidebar-brand {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0,0,0,0.1); /* Màu tối hơn nền một chút */
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-brand:hover { color: #fff; }
+
+        /* Menu Items */
+        .sidebar-menu {
+            padding-top: 1rem;
+            flex-grow: 1; /* Đẩy nội dung xuống để lấp đầy khoảng trống */
+            overflow-y: auto;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+            border-left: 4px solid transparent; /* Chuẩn bị cho hover */
+        }
+
+        .nav-link:hover {
+            color: white;
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* Trạng thái Active (Đang chọn) */
+        .nav-link.active {
+            color: white;
+            background-color: rgba(255,255,255,0.15);
+            border-left-color: var(--dnc-accent); /* Vạch màu vàng cam bên trái */
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            width: 25px; /* Cố định chiều rộng icon để chữ thẳng hàng */
+            text-align: center;
+            margin-right: 10px;
+        }
+
+        /* --- MAIN CONTENT (Bên phải) --- */
+        .main-content {
+            margin-left: var(--sidebar-width); /* Chừa chỗ cho sidebar */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Topbar (Thanh trắng trên cùng phần nội dung) */
+        .top-bar {
+            height: 64px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        /* Nơi chứa nội dung chính (RenderBody) */
+        .content-wrapper {
+            padding: 24px;
+        }
+    

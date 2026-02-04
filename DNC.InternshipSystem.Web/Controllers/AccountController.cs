@@ -25,31 +25,61 @@ namespace DNC.InternshipSystem.Web.Controllers
         }
 
         // POST: /Account/Login
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
+       // POST: /Account/Login
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
+{
+    ViewData["ReturnUrl"] = returnUrl;
+
+    if (ModelState.IsValid)
+    {
+        // 1. Kiểm tra User/Pass
+        var result = await _signInManager.PasswordSignInAsync(
+            model.Username,
+            model.Password,
+            model.RememberMe,
+            lockoutOnFailure: false);
+
+        if (result.Succeeded)
         {
-            ViewData["ReturnUrl"] = returnUrl;
-
-            if (ModelState.IsValid)
+            // 2. Logic Phân quyền & Điều hướng
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
-                var result = await _signInManager.PasswordSignInAsync(
-                    model.Username,
-                    model.Password,
-                    model.RememberMe,
-                    lockoutOnFailure: false);
-
-                if (result.Succeeded)
-                {
-                    return RedirectToLocal(returnUrl);
-                }
-
-                ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng.");
+                return Redirect(returnUrl);
             }
 
-            return View(model);
+            // 3. Nếu không có returnUrl -> Kiểm tra Role để chuyển hướng
+            var user = await _userManager.FindByNameAsync(model.Username);
+            if (user == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+            var roles = await _userManager.GetRolesAsync(user);
+
+            if (roles.Contains("Admin"))
+            {
+                return RedirectToAction("Index", "AdminHome", new { area = "Admin" });
+            }
+            else if (roles.Contains("Student"))
+            {
+                return RedirectToAction("Index", "StudentHome", new { area = "Student" });
+            }
+            else if (roles.Contains("Lecturer"))
+            {
+                
+                return RedirectToAction("Index", "LecturerHome", new { area = "Lecturer" });
+            }
+
+            // Mặc định: Về trang chủ chung (nếu không thuộc role nào đặc biệt)
+            return RedirectToAction("Index", "Home", new { area = "" });
         }
 
+        ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng.");
+    }
+
+    return View(model);
+}
         // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
