@@ -60,7 +60,6 @@ using (var scope = app.Services.CreateScope())
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<DNC.InternshipSystem.Core.Entities.AppUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
-
     // Create roles
     string[] roles = { "Admin", "Lecturer", "Student" };
     foreach (var role in roles)
@@ -83,7 +82,6 @@ using (var scope = app.Services.CreateScope())
         await userManager.CreateAsync(adminUser, "Admin@123");
         await userManager.AddToRoleAsync(adminUser, "Admin");
     }
-
     //Create Lecturer user
     var lecturerUser = await userManager.FindByNameAsync("lecturer");
     if (lecturerUser == null)
@@ -98,10 +96,9 @@ using (var scope = app.Services.CreateScope())
         await userManager.CreateAsync(lecturerUser, "Lecturer@123");
         await userManager.AddToRoleAsync(lecturerUser, "Lecturer");
     }
-
     //Create Student user
     var studentUser = await userManager.FindByNameAsync("student");
-    if (studentUser == null)
+    if(studentUser == null)
     {
         studentUser = new DNC.InternshipSystem.Core.Entities.AppUser
         {
@@ -114,4 +111,5 @@ using (var scope = app.Services.CreateScope())
         await userManager.AddToRoleAsync(studentUser, "Student");
     }
 }
+
 app.Run();
