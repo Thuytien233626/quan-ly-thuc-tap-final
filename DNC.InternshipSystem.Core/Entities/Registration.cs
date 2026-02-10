@@ -12,11 +12,17 @@ namespace DNC.InternshipSystem.Core.Entities
         public string? ExternalCompanyAddress { get; set; }
         public Guid? LecturerId { get; set; }
         public string Position { get; set; } = string.Empty;
-        public int Status { get; set; } = 0; // 0: Pending, 1: Approved, 2: Rejected, 3: Completed
+        public int Status { get; set; } = 0; // 0: Cho duyet, 1: Da duyet, 2: Tu choi, 3: Hoan thanh
         public string? RejectionReason { get; set; }
         public string? EvidenceUrl { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public DateTime? UpdatedDate { get; set; }
+        
+        // Cham diem
+        public double? CompanyScore { get; set; }
+        public double? ReportScore { get; set; }
+        public double? VivaScore { get; set; }
+        public double? FinalScore { get; set; }
 
         public Student? Student { get; set; }
         public InternshipTerm? Term { get; set; }

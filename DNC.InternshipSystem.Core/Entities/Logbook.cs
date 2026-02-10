@@ -12,7 +12,7 @@ namespace DNC.InternshipSystem.Core.Entities
         public string Content { get; set; } = string.Empty;
         public string? EvidenceImageUrl { get; set; }
         
-        // AI Fields
+        // Truong du lieu tu dong phan tich
         public string? AISummary { get; set; }
         public bool AIWarning { get; set; } = false;
         public string? AIWarningDetails { get; set; }
