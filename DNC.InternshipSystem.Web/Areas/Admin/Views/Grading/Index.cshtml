@@ -1,0 +1,198 @@
+@model List<DNC.InternshipSystem.Core.Entities.Registration>
+@{
+    ViewData["Title"] = "Chấm điểm thực tập";
+    var currentMajorId = ViewBag.CurrentMajorId as int?;
+    var currentSearch = ViewBag.CurrentSearch as string;
+    var majors = ViewBag.Majors as List<DNC.InternshipSystem.Core.Entities.Major>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold text-primary mb-1">
+            <i class="fa fa-award me-2"></i>@ViewData["Title"]
+        </h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin">Dashboard</a></li>
+                <li class="breadcrumb-item active">Chấm điểm</li>
+            </ol>
+        </nav>
+    </div>
+    
+    <!-- Form bo loc -->
+    <form method="get" class="d-flex gap-2">
+         @if (majors != null)
+         {
+            <select name="majorId" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 200px;">
+                <option value="">-- Tất cả ngành --</option>
+                @foreach (var m in majors)
+                {
+                    <option value="@m.Id" selected="@(currentMajorId == m.Id)">@m.Name</option>
+                }
+            </select>
+         }
+        <div class="input-group input-group-sm">
+            <input type="text" name="search" class="form-control" placeholder="Tìm sinh viên..." value="@currentSearch">
+            <button class="btn btn-outline-secondary" type="submit"><i class="fa fa-search"></i></button>
+        </div>
+        <a asp-action="Export" asp-route-majorId="@currentMajorId" asp-route-search="@currentSearch" class="btn btn-success btn-sm d-flex align-items-center">
+            <i class="fa fa-file-excel me-1"></i> Xuất Excel
+        </a>
+    </form>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Sinh viên</th>
+                        <th>Đơn vị thực tập</th>
+                        <th class="text-center" style="width: 100px;">Điểm DN <br><small class="text-muted">(40%)</small></th>
+                        <th class="text-center" style="width: 100px;">Báo cáo <br><small class="text-muted">(30%)</small></th>
+                        <th class="text-center" style="width: 100px;">Vấn đáp <br><small class="text-muted">(30%)</small></th>
+                        <th class="text-center" style="width: 100px;">Tổng kết</th>
+                        <th class="text-center" style="width: 80px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                         <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fa fa-clipboard-list fa-3x mb-3 text-secondary opacity-50"></i>
+                                <p>Chưa có sinh viên nào cần chấm điểm.</p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr id="row-@item.Id">
+                                <td>@(index++)</td>
+                                <td>
+                                    <div class="fw-bold">@item.Student?.User?.FullName</div>
+                                    <small class="text-muted">@item.Student?.StudentCode</small>
+                                </td>
+                                <td>
+                                    <div class="small fw-bold text-primary">@item.Company?.Name @item.ExternalCompanyName</div>
+                                    <small class="text-muted">@item.Position</small>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-center score-input" 
+                                           data-id="@item.Id" name="companyScore" min="0" max="10" step="0.1" 
+                                           value="@item.CompanyScore" placeholder="-">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-center score-input" 
+                                           data-id="@item.Id" name="reportScore" min="0" max="10" step="0.1" 
+                                           value="@item.ReportScore" placeholder="-">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-center score-input" 
+                                           data-id="@item.Id" name="vivaScore" min="0" max="10" step="0.1" 
+                                           value="@item.VivaScore" placeholder="-">
+                                </td>
+                                <td class="text-center fw-bold fs-5 final-score @(item.FinalScore >= 5 ? "text-success" : (item.FinalScore < 5 && item.FinalScore != null ? "text-danger" : "text-muted"))">
+                                    @(item.FinalScore.HasValue ? item.FinalScore.Value.ToString("0.0") : "-")
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-primary btn-sm btn-save" data-id="@item.Id" title="Lưu điểm">
+                                        <i class="fa fa-save"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Tu dong tinh toan khi thay doi diem
+        document.querySelectorAll('.score-input').forEach(input => {
+            input.addEventListener('input', function() {
+                const row = this.closest('tr');
+                const c = parseFloat(row.querySelector('input[name="companyScore"]').value) || 0;
+                const r = parseFloat(row.querySelector('input[name="reportScore"]').value) || 0;
+                const v = parseFloat(row.querySelector('input[name="vivaScore"]').value) || 0;
+                
+                const finalCell = row.querySelector('.final-score');
+                
+                // Chi tinh toan neu dau vao la so hop le (hoac 0)
+                if (!isNaN(c) && !isNaN(r) && !isNaN(v)) {
+                   const final = (c * 0.4) + (r * 0.3) + (v * 0.3);
+                   finalCell.textContent = final.toFixed(1);
+                   
+                   finalCell.className = "text-center fw-bold fs-5 final-score";
+                   if(final >= 5) finalCell.classList.add("text-success");
+                   else finalCell.classList.add("text-danger");
+                }
+            });
+        });
+
+        // Xu ly nut Luu
+        document.querySelectorAll('.btn-save').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const id = this.dataset.id;
+                const row = document.getElementById(`row-${id}`);
+                const companyScore = row.querySelector('input[name="companyScore"]').value;
+                const reportScore = row.querySelector('input[name="reportScore"]').value;
+                const vivaScore = row.querySelector('input[name="vivaScore"]').value;
+
+                // Kiem tra hop le co ban
+                if (companyScore < 0 || companyScore > 10 || reportScore < 0 || reportScore > 10 || vivaScore < 0 || vivaScore > 10) {
+                    Swal.fire('Lỗi', 'Điểm số phải từ 0 đến 10', 'warning');
+                    return;
+                }
+
+                // Hien thi trang thai dang tai
+                const originalContent = this.innerHTML;
+                this.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                this.disabled = true;
+
+                try {
+                    const fd = new FormData();
+                    fd.append('id', id);
+                    if(companyScore) fd.append('companyScore', companyScore);
+                    if(reportScore) fd.append('reportScore', reportScore);
+                    if(vivaScore) fd.append('vivaScore', vivaScore);
+
+                    const res = await fetch('/Admin/Grading/UpdateScores', {
+                        method: 'POST',
+                        body: fd
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Đã lưu!',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    } else {
+                        Swal.fire('Lỗi', data.message, 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Lỗi', 'Không thể kết nối đến server', 'error');
+                } finally {
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                }
+            });
+        });
+    });
+</script>
+}

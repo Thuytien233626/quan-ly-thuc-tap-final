@@ -1,0 +1,505 @@
+@model List<DNC.InternshipSystem.Core.Entities.Company>
+@{
+    ViewData["Title"] = "Quản lý Doanh nghiệp";
+    var provinces = ViewBag.Provinces as List<string> ?? new List<string>();
+    var currentProvince = ViewBag.CurrentProvince as string ?? "";
+    var currentSearch = ViewBag.CurrentSearch as string ?? "";
+    var currentTab = ViewBag.CurrentTab as string ?? "partner";
+    int partnerCount = ViewBag.PartnerCount ?? 0;
+    int externalCount = ViewBag.ExternalCount ?? 0;
+    int pendingCount = ViewBag.PendingCount ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold text-primary mb-1">
+            <i class="fa fa-building me-2"></i>@ViewData["Title"]
+        </h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin">Dashboard</a></li>
+                <li class="breadcrumb-item active">Doanh nghiệp</li>
+            </ol>
+        </nav>
+    </div>
+    <button class="btn btn-primary" id="btnAddCompany">
+        <i class="fa fa-plus me-1"></i> Thêm doanh nghiệp
+    </button>
+</div>
+
+<!-- Tab chuyen doi -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link @(currentTab == "partner" ? "active" : "")" href="/Admin/Companies?tab=partner">
+            <i class="fa fa-handshake me-1"></i> Doanh nghiệp liên kết
+            <span class="badge bg-primary ms-1">@partnerCount</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(currentTab == "external" ? "active" : "")" href="/Admin/Companies?tab=external">
+            <i class="fa fa-user-plus me-1"></i> SV tự tìm
+            <span class="badge bg-secondary ms-1">@externalCount</span>
+            @if (pendingCount > 0)
+            {
+                <span class="badge bg-warning text-dark ms-1">@pendingCount chờ duyệt</span>
+            }
+        </a>
+    </li>
+</ul>
+
+<!-- Bo loc -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" id="filterForm" class="row g-3 align-items-end">
+            <input type="hidden" name="tab" value="@currentTab">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">Tìm kiếm</label>
+                <input type="text" name="search" id="searchInput" class="form-control" placeholder="Tên hoặc địa chỉ..." value="@currentSearch">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Tỉnh/Thành phố</label>
+                <select name="province" id="provinceSelect" class="form-select">
+                    <option value="">-- Tất cả --</option>
+                    @foreach (var p in provinces)
+                    {
+                        <option value="@p" selected="@(p == currentProvince)">@p</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <a href="/Admin/Companies?tab=@currentTab" class="btn btn-outline-secondary w-100">
+                    <i class="fa fa-sync me-1"></i> Reset bộ lọc
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let debounceTimer;
+document.getElementById('searchInput').addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        document.getElementById('filterForm').submit();
+    }, 500);
+});
+document.getElementById('provinceSelect').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+});
+</script>
+
+<!-- Thong ke -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-primary text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Count</h3>
+                <small>@(currentTab == "partner" ? "DN Liên kết" : "DN SV tự tìm")</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-success text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Count(c => c.Status == 1)</h3>
+                <small>Đã duyệt</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-warning text-dark">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Count(c => c.Status == 0)</h3>
+                <small>Chờ duyệt</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-info text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Sum(c => c.Registrations.Count)</h3>
+                <small>Tổng SV thực tập</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Danh sach doanh nghiep -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-bold">
+            <i class="fa fa-list me-2"></i>
+            @(currentTab == "partner" ? "Danh sách doanh nghiệp liên kết (Nhà trường gợi ý)" : "Danh sách doanh nghiệp do SV tự đăng ký")
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Count == 0)
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="fa fa-building fa-3x mb-3"></i>
+                <p>Chưa có doanh nghiệp nào trong danh sách này.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px">#</th>
+                            <th>Tên doanh nghiệp</th>
+                            <th>Địa chỉ</th>
+                            <th>Tỉnh/TP</th>
+                            <th>Liên hệ</th>
+                            <th class="text-center">Số SV</th>
+                            <th>Trạng thái</th>
+                            <th style="width: 120px" class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int idx = 1; }
+                        @foreach (var c in Model)
+                        {
+                            var studentCount = c.Registrations.Count;
+                            <tr>
+                                <td class="text-muted">@idx</td>
+                                <td>
+                                    <strong>@c.Name</strong>
+                                </td>
+                                <td class="small text-muted">@c.Address</td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary">@c.Province</span>
+                                </td>
+                                <td class="small">
+                                    @if (!string.IsNullOrEmpty(c.ContactPerson))
+                                    {
+                                        <div><i class="fa fa-user text-muted me-1"></i>@c.ContactPerson</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(c.PhoneNumber))
+                                    {
+                                        <div><i class="fa fa-phone text-muted me-1"></i>@c.PhoneNumber</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(c.ContactEmail))
+                                    {
+                                        <div><i class="fa fa-envelope text-muted me-1"></i>@c.ContactEmail</div>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (studentCount > 0)
+                                    {
+                                        <button class="btn btn-sm btn-outline-info btn-view-students" data-id="@c.Id" data-name="@c.Name">
+                                            <i class="fa fa-users me-1"></i>@studentCount
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (c.Status == 1)
+                                    {
+                                        <span class="badge bg-success"><i class="fa fa-check me-1"></i>Đã duyệt</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="fa fa-clock me-1"></i>Chờ duyệt</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        @if (c.Status == 0)
+                                        {
+                                            <button class="btn btn-outline-success btn-approve" data-id="@c.Id" title="Duyệt">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                        }
+                                        <button class="btn btn-outline-primary btn-edit" data-id="@c.Id" title="Sửa">
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-delete" data-id="@c.Id" data-name="@c.Name" title="Xóa">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            idx++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const provincesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(provinces));
+    const currentTab = '@currentTab';
+
+    // Xem danh sach sinh vien
+    document.querySelectorAll('.btn-view-students').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            
+            Swal.fire({ title: 'Đang tải...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const res = await fetch(`/Admin/Companies/GetStudentsAjax?id=${id}`);
+            const students = await res.json();
+            
+            if (students.length === 0) {
+                Swal.fire({ icon: 'info', title: 'Không có sinh viên', text: 'Doanh nghiệp này chưa có sinh viên thực tập.' });
+                return;
+            }
+
+            let tableHtml = `<table class="table table-sm table-striped text-start">
+                <thead><tr><th>MSSV</th><th>Họ tên</th><th>Vị trí</th><th>Trạng thái</th></tr></thead><tbody>`;
+            students.forEach(s => {
+                const statusBadge = s.status === 1 ? '<span class="badge bg-success">Đang TT</span>' : 
+                                   s.status === 3 ? '<span class="badge bg-primary">Hoàn thành</span>' : 
+                                   '<span class="badge bg-secondary">Chờ</span>';
+                tableHtml += `<tr><td>${s.studentCode}</td><td>${s.studentName}</td><td>${s.position || '-'}</td><td>${statusBadge}</td></tr>`;
+            });
+            tableHtml += '</tbody></table>';
+
+            Swal.fire({
+                title: `<i class="fa fa-users text-info me-2"></i>Sinh viên tại ${name}`,
+                html: tableHtml,
+                width: '700px',
+                showConfirmButton: false,
+                showCloseButton: true
+            });
+        });
+    });
+
+    // Them doanh nghiep
+    document.getElementById('btnAddCompany').addEventListener('click', async function() {
+        const isExternalTab = currentTab === 'external';
+        const { value: formData } = await Swal.fire({
+            title: '<i class="fa fa-building text-primary me-2"></i>Thêm doanh nghiệp',
+            html: `
+                <div class="text-start">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên doanh nghiệp <span class="text-danger">*</span></label>
+                        <input type="text" id="swal-name" class="form-control" placeholder="VD: Công ty ABC">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
+                        <input type="text" id="swal-address" class="form-control" placeholder="VD: 123 Nguyễn Văn Linh">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                        <input type="text" id="swal-province" class="form-control" placeholder="VD: Cần Thơ" list="province-list">
+                        <datalist id="province-list">
+                            ${provincesData.map(p => `<option value="${p}">`).join('')}
+                        </datalist>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Số điện thoại</label>
+                            <input type="text" id="swal-phone" class="form-control" placeholder="VD: 0909123456">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" id="swal-email" class="form-control" placeholder="VD: info@abc.com">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Người liên hệ</label>
+                        <input type="text" id="swal-contact" class="form-control" placeholder="VD: Nguyễn Văn A (Giám đốc)">
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-save me-1"></i>Lưu',
+            cancelButtonText: 'Hủy',
+            focusConfirm: false,
+            preConfirm: () => {
+                const name = document.getElementById('swal-name').value.trim();
+                const address = document.getElementById('swal-address').value.trim();
+                const province = document.getElementById('swal-province').value.trim();
+                if (!name || !address || !province) {
+                    Swal.showValidationMessage('Vui lòng nhập đầy đủ thông tin bắt buộc!');
+                    return false;
+                }
+                return {
+                    name, address, province,
+                    phone: document.getElementById('swal-phone').value.trim(),
+                    email: document.getElementById('swal-email').value.trim(),
+                    contactPerson: document.getElementById('swal-contact').value.trim(),
+                    isExternal: isExternalTab
+                };
+            }
+        });
+
+        if (formData) {
+            Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const fd = new FormData();
+            Object.entries(formData).forEach(([k, v]) => fd.append(k, v));
+            
+            const res = await fetch('/Admin/Companies/CreateAjax', { method: 'POST', body: fd });
+            const data = await res.json();
+            
+            if (data.success) {
+                await Swal.fire({ icon: 'success', title: 'Thành công!', timer: 1500, showConfirmButton: false });
+                location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+            }
+        }
+    });
+
+    // Sua doanh nghiep
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            Swal.fire({ title: 'Đang tải...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const res = await fetch(`/Admin/Companies/GetCompanyAjax?id=${id}`);
+            const c = await res.json();
+            
+            if (!c.success) {
+                Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Không tìm thấy doanh nghiệp!' });
+                return;
+            }
+
+            const { value: formData } = await Swal.fire({
+                title: '<i class="fa fa-edit text-warning me-2"></i>Sửa doanh nghiệp',
+                html: `
+                    <div class="text-start">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tên doanh nghiệp <span class="text-danger">*</span></label>
+                            <input type="text" id="swal-name" class="form-control" value="${c.name}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
+                            <input type="text" id="swal-address" class="form-control" value="${c.address}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                            <input type="text" id="swal-province" class="form-control" value="${c.province}" list="province-list">
+                            <datalist id="province-list">
+                                ${provincesData.map(p => `<option value="${p}">`).join('')}
+                            </datalist>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label fw-semibold">Số điện thoại</label>
+                                <input type="text" id="swal-phone" class="form-control" value="${c.phone || ''}">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label fw-semibold">Email</label>
+                                <input type="email" id="swal-email" class="form-control" value="${c.email || ''}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Người liên hệ</label>
+                            <input type="text" id="swal-contact" class="form-control" value="${c.contactPerson || ''}">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-save me-1"></i>Cập nhật',
+                cancelButtonText: 'Hủy',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const name = document.getElementById('swal-name').value.trim();
+                    const address = document.getElementById('swal-address').value.trim();
+                    const province = document.getElementById('swal-province').value.trim();
+                    if (!name || !address || !province) {
+                        Swal.showValidationMessage('Vui lòng nhập đầy đủ thông tin bắt buộc!');
+                        return false;
+                    }
+                    return {
+                        id, name, address, province,
+                        phone: document.getElementById('swal-phone').value.trim(),
+                        email: document.getElementById('swal-email').value.trim(),
+                        contactPerson: document.getElementById('swal-contact').value.trim()
+                    };
+                }
+            });
+
+            if (formData) {
+                Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const fd = new FormData();
+                Object.entries(formData).forEach(([k, v]) => fd.append(k, v));
+                
+                const res = await fetch('/Admin/Companies/UpdateAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Đã cập nhật!', timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+
+    // Duyet doanh nghiep
+    document.querySelectorAll('.btn-approve').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const result = await Swal.fire({
+                title: 'Duyệt doanh nghiệp?',
+                text: 'Doanh nghiệp sẽ được đánh dấu là đã xác minh.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                confirmButtonText: '<i class="fa fa-check me-1"></i>Duyệt',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (result.isConfirmed) {
+                const fd = new FormData();
+                fd.append('id', id);
+                const res = await fetch('/Admin/Companies/ApproveAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Đã duyệt!', timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+
+    // Xoa doanh nghiep
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+
+            const result = await Swal.fire({
+                title: 'Xóa doanh nghiệp?',
+                html: `Bạn có chắc muốn xóa <strong>${name}</strong>?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: '<i class="fa fa-trash me-1"></i>Xóa',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const fd = new FormData();
+                fd.append('id', id);
+                
+                const res = await fetch('/Admin/Companies/DeleteAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Đã xóa!', timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+});
+</script>
+}

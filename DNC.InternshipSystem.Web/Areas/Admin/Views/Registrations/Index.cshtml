@@ -1,0 +1,444 @@
+@model List<DNC.InternshipSystem.Core.Entities.Registration>
+@{
+    ViewData["Title"] = "Quản lý Đơn đăng ký";
+    int currentStatus = ViewBag.CurrentStatus ?? 0;
+    string currentSearch = ViewBag.CurrentSearch ?? "";
+    int pendingCount = ViewBag.PendingCount ?? 0;
+    int approvedCount = ViewBag.ApprovedCount ?? 0;
+    int rejectedCount = ViewBag.RejectedCount ?? 0;
+    int completedCount = ViewBag.CompletedCount ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold text-primary mb-1">
+            <i class="fa fa-file-alt me-2"></i>@ViewData["Title"]
+        </h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin">Dashboard</a></li>
+                <li class="breadcrumb-item active">Đơn đăng ký</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Thong ke -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm @(currentStatus == 0 ? "border-start border-4 border-warning" : "")">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0 text-warning">@pendingCount</h3>
+                        <small class="text-muted">Chờ duyệt</small>
+                    </div>
+                    <i class="fa fa-clock fa-2x text-warning opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm @(currentStatus == 1 ? "border-start border-4 border-success" : "")">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0 text-success">@approvedCount</h3>
+                        <small class="text-muted">Đã duyệt</small>
+                    </div>
+                    <i class="fa fa-check-circle fa-2x text-success opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm @(currentStatus == 2 ? "border-start border-4 border-danger" : "")">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0 text-danger">@rejectedCount</h3>
+                        <small class="text-muted">Từ chối</small>
+                    </div>
+                    <i class="fa fa-times-circle fa-2x text-danger opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm @(currentStatus == 3 ? "border-start border-4 border-primary" : "")">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0 text-primary">@completedCount</h3>
+                        <small class="text-muted">Hoàn thành</small>
+                    </div>
+                    <i class="fa fa-trophy fa-2x text-primary opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab chuyen doi -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link @(currentStatus == 0 ? "active" : "")" href="/Admin/Registrations?status=0">
+            <i class="fa fa-clock me-1"></i> Chờ duyệt
+            @if (pendingCount > 0) { <span class="badge bg-warning text-dark ms-1">@pendingCount</span> }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(currentStatus == 1 ? "active" : "")" href="/Admin/Registrations?status=1">
+            <i class="fa fa-check me-1"></i> Đã duyệt
+            <span class="badge bg-success ms-1">@approvedCount</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(currentStatus == 2 ? "active" : "")" href="/Admin/Registrations?status=2">
+            <i class="fa fa-times me-1"></i> Từ chối
+            <span class="badge bg-danger ms-1">@rejectedCount</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(currentStatus == 3 ? "active" : "")" href="/Admin/Registrations?status=3">
+            <i class="fa fa-trophy me-1"></i> Hoàn thành
+            <span class="badge bg-primary ms-1">@completedCount</span>
+        </a>
+    </li>
+</ul>
+
+<!-- Bo loc -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" id="filterForm" class="row g-3 align-items-end">
+            <input type="hidden" name="status" value="@currentStatus">
+            <div class="col-md-8">
+                <label class="form-label fw-semibold">Tìm kiếm</label>
+                <input type="text" name="search" id="searchInput" class="form-control" placeholder="MSSV, Tên sinh viên, hoặc Tên công ty..." value="@currentSearch">
+            </div>
+            <div class="col-md-4">
+                <a href="/Admin/Registrations?status=@currentStatus" class="btn btn-outline-secondary w-100">
+                    <i class="fa fa-sync me-1"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let debounceTimer;
+document.getElementById('searchInput')?.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        document.getElementById('filterForm').submit();
+    }, 500);
+});
+</script>
+
+<!-- Danh sach dang ky -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold">
+            <i class="fa fa-list me-2"></i>Danh sách đơn đăng ký
+        </h6>
+        <span class="badge bg-secondary">@Model.Count đơn</span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Count == 0)
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="fa fa-inbox fa-3x mb-3"></i>
+                <p>Không có đơn nào trong mục này.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px">#</th>
+                            <th>Sinh viên</th>
+                            <th>Lớp</th>
+                            <th>Doanh nghiệp</th>
+                            <th>Vị trí thực tập</th>
+                            <th>GVHD</th>
+                            <th>Ngày nộp</th>
+                            <th class="text-center" style="width: 150px">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int idx = 1; }
+                        @foreach (var r in Model)
+                        {
+                            var studentName = r.Student?.User?.FullName ?? "N/A";
+                            var studentCode = r.Student?.StudentCode ?? "";
+                            var className = r.Student?.Class?.Name ?? "";
+                            var companyName = r.Company?.Name ?? r.ExternalCompanyName ?? "N/A";
+                            var isExternal = r.Company == null;
+                            var lecturerName = r.Lecturer?.User?.FullName ?? "";
+                            
+                            <tr>
+                                <td class="text-muted">@idx</td>
+                                <td>
+                                    <div class="fw-semibold">@studentName</div>
+                                    <small class="text-muted">@studentCode</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary">@className</span>
+                                </td>
+                                <td>
+                                    <div>@companyName</div>
+                                    @if (isExternal)
+                                    {
+                                        <small class="badge bg-secondary">Tự tìm</small>
+                                    }
+                                </td>
+                                <td>@r.Position</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(lecturerName))
+                                    {
+                                        <span class="badge bg-success-subtle text-success">@lecturerName</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning">Chưa phân</span>
+                                    }
+                                </td>
+                                <td class="small text-muted">@r.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-info btn-details" data-id="@r.Id" title="Chi tiết">
+                                            <i class="fa fa-eye"></i>
+                                        </button>
+                                        @if (currentStatus == 0)
+                                        {
+                                            <button class="btn btn-outline-success btn-approve" data-id="@r.Id" title="Duyệt">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-reject" data-id="@r.Id" title="Từ chối">
+                                                <i class="fa fa-times"></i>
+                                            </button>
+                                        }
+                                        @if (currentStatus == 1 && string.IsNullOrEmpty(lecturerName))
+                                        {
+                                            <button class="btn btn-outline-primary btn-assign" data-id="@r.Id" title="Phân công GV">
+                                                <i class="fa fa-user-plus"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            idx++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Xem chi tiet
+    document.querySelectorAll('.btn-details').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            Swal.fire({ title: 'Đang tải...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const res = await fetch(`/Admin/Registrations/GetDetailsAjax?id=${id}`);
+            const d = await res.json();
+            
+            if (!d.success) {
+                Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Không tìm thấy đơn!' });
+                return;
+            }
+
+            const statusBadge = d.status === 0 ? '<span class="badge bg-warning text-dark">Chờ duyệt</span>' :
+                               d.status === 1 ? '<span class="badge bg-success">Đã duyệt</span>' :
+                               d.status === 2 ? '<span class="badge bg-danger">Từ chối</span>' :
+                               '<span class="badge bg-primary">Hoàn thành</span>';
+
+            const externalBadge = d.isExternal ? '<span class="badge bg-secondary ms-2">Tự tìm</span>' : '';
+
+            Swal.fire({
+                title: '<i class="fa fa-file-alt text-primary me-2"></i>Chi tiết đơn đăng ký',
+                html: `
+                    <div class="text-start">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="fa fa-user text-primary me-2"></i>Thông tin sinh viên</h6>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">MSSV:</div>
+                            <div class="col-8 fw-semibold">${d.studentCode}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">Họ tên:</div>
+                            <div class="col-8 fw-semibold">${d.studentName}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">Email:</div>
+                            <div class="col-8">${d.studentEmail}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">SĐT:</div>
+                            <div class="col-8">${d.studentPhone || 'Chưa cập nhật'}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">Lớp:</div>
+                            <div class="col-8">${d.className} - ${d.majorName} (${d.batchName})</div>
+                        </div>
+
+                        <h6 class="border-bottom pb-2 mb-3"><i class="fa fa-building text-success me-2"></i>Nơi thực tập ${externalBadge}</h6>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">Công ty:</div>
+                            <div class="col-8 fw-semibold">${d.companyName}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">Địa chỉ:</div>
+                            <div class="col-8">${d.companyAddress}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">Vị trí:</div>
+                            <div class="col-8 fw-semibold">${d.position}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">Đợt TT:</div>
+                            <div class="col-8">${d.termName}</div>
+                        </div>
+
+                        <h6 class="border-bottom pb-2 mb-3"><i class="fa fa-clipboard-check text-info me-2"></i>Trạng thái</h6>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">Trạng thái:</div>
+                            <div class="col-8">${statusBadge}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">GVHD:</div>
+                            <div class="col-8">${d.lecturerName}</div>
+                        </div>
+                        ${d.rejectionReason ? `<div class="row mb-2"><div class="col-4 text-muted">Lý do từ chối:</div><div class="col-8 text-danger">${d.rejectionReason}</div></div>` : ''}
+                        <div class="row mb-2">
+                            <div class="col-4 text-muted">Ngày nộp:</div>
+                            <div class="col-8">${d.createdDate}</div>
+                        </div>
+                        ${d.updatedDate ? `<div class="row"><div class="col-4 text-muted">Cập nhật:</div><div class="col-8">${d.updatedDate}</div></div>` : ''}
+                    </div>
+                `,
+                width: '600px',
+                showConfirmButton: false,
+                showCloseButton: true
+            });
+        });
+    });
+
+    // Duyet
+    document.querySelectorAll('.btn-approve').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const result = await Swal.fire({
+                title: 'Duyệt đơn đăng ký?',
+                text: 'Sinh viên sẽ được xác nhận đi thực tập tại công ty này.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                confirmButtonText: '<i class="fa fa-check me-1"></i>Duyệt',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const fd = new FormData();
+                fd.append('id', id);
+                const res = await fetch('/Admin/Registrations/ApproveAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Đã duyệt!', timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+
+    // Tu choi
+    document.querySelectorAll('.btn-reject').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const { value: reason } = await Swal.fire({
+                title: 'Từ chối đơn đăng ký?',
+                input: 'textarea',
+                inputLabel: 'Lý do từ chối',
+                inputPlaceholder: 'VD: Công ty không phù hợp với chuyên ngành...',
+                inputAttributes: { required: true },
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: '<i class="fa fa-times me-1"></i>Từ chối',
+                cancelButtonText: 'Hủy',
+                inputValidator: (value) => {
+                    if (!value) return 'Vui lòng nhập lý do từ chối!';
+                }
+            });
+
+            if (reason) {
+                Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const fd = new FormData();
+                fd.append('id', id);
+                fd.append('reason', reason);
+                const res = await fetch('/Admin/Registrations/RejectAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Đã từ chối!', timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+
+    // Phan cong giang vien
+    document.querySelectorAll('.btn-assign').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            Swal.fire({ title: 'Đang tải danh sách GV...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const res = await fetch('/Admin/Registrations/GetLecturersAjax');
+            const lecturers = await res.json();
+            
+            const options = lecturers.reduce((acc, l) => {
+                acc[l.id] = `[${l.code}] ${l.name}`;
+                return acc;
+            }, {});
+
+            const { value: lecturerId } = await Swal.fire({
+                title: 'Phân công GVHD',
+                input: 'select',
+                inputOptions: options,
+                inputPlaceholder: 'Chọn giảng viên...',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-save me-1"></i>Lưu',
+                cancelButtonText: 'Hủy',
+                inputValidator: (value) => {
+                    if (!value) return 'Vui lòng chọn giảng viên!';
+                }
+            });
+
+            if (lecturerId) {
+                Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const fd = new FormData();
+                fd.append('id', id);
+                fd.append('lecturerId', lecturerId);
+                const res = await fetch('/Admin/Registrations/AssignLecturerAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Đã phân công!', timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+});
+</script>
+}

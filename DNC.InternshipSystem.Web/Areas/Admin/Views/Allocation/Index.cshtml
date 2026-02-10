@@ -1,0 +1,294 @@
+@model DNC.InternshipSystem.Web.Areas.Admin.Controllers.AllocationViewModel
+@{
+    ViewData["Title"] = "Phân công Giảng viên";
+    var currentMajorId = ViewBag.CurrentMajorId as int?;
+    var currentSearch = ViewBag.CurrentSearch as string;
+    var majors = ViewBag.Majors as List<DNC.InternshipSystem.Core.Entities.Major>;
+}
+
+<style>
+    .lecturer-card {
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+    .lecturer-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .lecturer-card.selected {
+        border-color: var(--bs-primary);
+        background-color: rgba(var(--bs-primary-rgb), 0.05);
+    }
+    .lecturer-card.selected .check-icon {
+        display: block;
+    }
+    .check-icon {
+        display: none;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: var(--bs-primary);
+        font-size: 1.2rem;
+    }
+    .student-row.selected {
+        background-color: rgba(var(--bs-primary-rgb), 0.05);
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold text-primary mb-1">
+            <i class="fa fa-chalkboard-teacher me-2"></i>@ViewData["Title"]
+        </h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin">Dashboard</a></li>
+                <li class="breadcrumb-item active">Phân công</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <button id="btnAssign" class="btn btn-primary" disabled>
+            <i class="fa fa-save me-2"></i>Lưu phân công <span id="selectedCountBadge" class="badge bg-white text-primary ms-1" style="display:none">0</span>
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Ben trai: Danh sach sinh vien -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom py-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fa fa-user-graduate me-2"></i>Sinh viên chưa có GVHD
+                        <span class="badge bg-danger-subtle text-danger ms-2">@Model.Students.Count</span>
+                    </h6>
+                    <div>
+                        <input type="checkbox" class="form-check-input me-1" id="checkAll">
+                        <label class="form-check-label small user-select-none" for="checkAll">Chọn tất cả</label>
+                    </div>
+                </div>
+                
+                <!-- Bo loc -->
+                <form method="get" class="row g-2">
+                    <div class="col-md-4">
+                        <select name="majorId" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">-- Tất cả ngành --</option>
+                            @if (majors != null)
+                            {
+                                foreach (var m in majors)
+                                {
+                                    <option value="@m.Id" selected="@(currentMajorId == m.Id)">@m.Name (@m.Batch?.BatchCode)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="search" class="form-control" placeholder="Tìm sinh viên..." value="@currentSearch">
+                            <button class="btn btn-outline-secondary" type="submit"><i class="fa fa-search"></i></button>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                         @if (currentMajorId.HasValue || !string.IsNullOrEmpty(currentSearch))
+                        {
+                            <a href="/Admin/Allocation" class="btn btn-outline-secondary btn-sm w-100">Reset</a>
+                        }
+                    </div>
+                </form>
+            </div>
+            
+            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th style="width: 40px">#</th>
+                            <th>Sinh viên</th>
+                            <th>Lớp</th>
+                            <th>Công ty thực tập</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Students.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="fa fa-check-circle fa-3x mb-3 text-success opacity-50"></i>
+                                    <p>Tất cả sinh viên đã có GVHD hoặc không tìm thấy kết quả.</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var s in Model.Students)
+                            {
+                                <tr class="student-row">
+                                    <td class="text-center">
+                                        <input type="checkbox" class="form-check-input student-check" value="@s.Id">
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@s.Student?.User?.FullName</div>
+                                        <small class="text-muted">@s.Student?.StudentCode</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">@s.Student?.Class?.Name</span>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-bold text-primary">@s.Company?.Name @s.ExternalCompanyName</div>
+                                        <small class="text-muted">@s.Position</small>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ben phai: Danh sach giang vien -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fa fa-chalkboard-teacher me-2"></i>Chọn Giảng viên
+                </h6>
+                <small class="text-muted">Nhấn vào thẻ để chọn GV</small>
+            </div>
+            <div class="card-body bg-light" style="max-height: 600px; overflow-y: auto;">
+                <div class="row g-3">
+                    @foreach (var l in Model.Lecturers)
+                    {
+                        <div class="col-12">
+                            <div class="card lecturer-card shadow-sm" data-id="@l.Id" data-name="@l.Name">
+                                <i class="fa fa-check-circle check-icon"></i>
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h6 class="fw-bold mb-1">@l.Name</h6>
+                                            <small class="text-muted d-block">@l.Code</small>
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill" title="Số lượng hướng dẫn hiện tại">
+                                            @l.CurrentLoad SV
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="fa fa-layer-group me-1"></i> @l.DepartmentName
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let selectedLecturerId = null;
+        const btnAssign = document.getElementById('btnAssign');
+        const selectedCountBadge = document.getElementById('selectedCountBadge');
+
+        // 1. Xu ly chon sinh vien
+        const checkAll = document.getElementById('checkAll');
+        const studentChecks = document.querySelectorAll('.student-check');
+
+        function updateState() {
+            const checkedCount = document.querySelectorAll('.student-check:checked').length;
+            
+            // Cap nhat o chon tat ca
+            if (checkAll) {
+                checkAll.checked = checkedCount > 0 && checkedCount === studentChecks.length;
+                checkAll.indeterminate = checkedCount > 0 && checkedCount < studentChecks.length;
+            }
+
+            // Cap nhat huy hieu
+            selectedCountBadge.textContent = checkedCount;
+            selectedCountBadge.style.display = checkedCount > 0 ? 'inline-block' : 'none';
+
+            // Cap nhat kieu hang
+            document.querySelectorAll('.student-row').forEach(row => {
+                const cb = row.querySelector('.student-check');
+                if (cb.checked) row.classList.add('selected');
+                else row.classList.remove('selected');
+            });
+
+            // Bat/Tat nut phan cong
+            btnAssign.disabled = !(checkedCount > 0 && selectedLecturerId);
+        }
+
+        if (checkAll) {
+            checkAll.addEventListener('change', function() {
+                studentChecks.forEach(cb => cb.checked = this.checked);
+                updateState();
+            });
+        }
+
+        studentChecks.forEach(cb => {
+            cb.addEventListener('change', updateState);
+        });
+
+        // 2. Xu ly chon giang vien
+        document.querySelectorAll('.lecturer-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Bo chon cac the khac
+                document.querySelectorAll('.lecturer-card').forEach(c => c.classList.remove('selected'));
+                
+                // Chon the nay
+                this.classList.add('selected');
+                selectedLecturerId = this.dataset.id;
+                
+                updateState();
+            });
+        });
+
+        // 3. Xu ly thao tac phan cong
+        btnAssign.addEventListener('click', async function() {
+            const selectedStudentIds = Array.from(document.querySelectorAll('.student-check:checked')).map(cb => cb.value);
+            const lecturerName = document.querySelector('.lecturer-card.selected')?.dataset.name;
+
+            if (selectedStudentIds.length === 0 || !selectedLecturerId) return;
+
+            const result = await Swal.fire({
+                title: 'Xác nhận phân công',
+                html: `Phân công <b>${selectedStudentIds.length}</b> sinh viên cho GV <b>${lecturerName}</b>?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-save"></i> Đồng ý',
+                cancelButtonText: 'Hủy'
+            });
+
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                // Su dung fetch de gui du lieu form
+                const fd = new FormData();
+                selectedStudentIds.forEach(id => fd.append('studentIds', id)); // Rang buoc MVC yeu cau cung ten
+                fd.append('lecturerId', selectedLecturerId);
+
+                try {
+                    const res = await fetch('/Admin/Allocation/AssignStudents', {
+                        method: 'POST',
+                        body: fd
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        await Swal.fire({ icon: 'success', title: 'Thành công!', text: data.message, timer: 1500, showConfirmButton: false });
+                        location.reload();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Lỗi', text: data.message });
+                    }
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Lỗi hệ thống', text: 'Không thể kết nối đến server.' });
+                }
+            }
+        });
+    });
+</script>
+}
