@@ -4,6 +4,7 @@ using DNC.InternshipSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DNC.InternshipSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260209153258_AddCompanyIsExternal")]
+    partial class AddCompanyIsExternal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -459,9 +462,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<int?>("CompanyId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("CompanyScore")
-                        .HasColumnType("float");
-
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -474,9 +474,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<string>("ExternalCompanyName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double?>("FinalScore")
-                        .HasColumnType("float");
-
                     b.Property<Guid?>("LecturerId")
                         .HasColumnType("uniqueidentifier");
 
@@ -486,9 +483,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.Property<string>("RejectionReason")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("ReportScore")
-                        .HasColumnType("float");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -501,9 +495,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<double?>("VivaScore")
-                        .HasColumnType("float");
 
                     b.HasKey("Id");
 

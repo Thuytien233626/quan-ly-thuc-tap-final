@@ -4,6 +4,7 @@ using DNC.InternshipSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DNC.InternshipSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260208160147_AddStudentOrderNumber")]
+    partial class AddStudentOrderNumber
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -109,9 +112,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<Guid?>("LecturerId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<int>("MajorId")
                         .HasColumnType("int");
 
@@ -120,8 +120,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LecturerId");
 
                     b.HasIndex("MajorId");
 
@@ -146,17 +144,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<string>("ContactPerson")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsExternal")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Province")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -294,12 +282,8 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<int>("DepartmentId")
                         .HasColumnType("int");
 
-                    b.Property<string>("LecturerCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Specialization")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("MaxStudents")
+                        .HasColumnType("int");
 
                     b.HasKey("UserId");
 
@@ -459,9 +443,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<int?>("CompanyId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("CompanyScore")
-                        .HasColumnType("float");
-
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -474,9 +455,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<string>("ExternalCompanyName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double?>("FinalScore")
-                        .HasColumnType("float");
-
                     b.Property<Guid?>("LecturerId")
                         .HasColumnType("uniqueidentifier");
 
@@ -486,9 +464,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.Property<string>("RejectionReason")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("ReportScore")
-                        .HasColumnType("float");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -501,9 +476,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<double?>("VivaScore")
-                        .HasColumnType("float");
 
                     b.HasKey("Id");
 
@@ -770,17 +742,11 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Class", b =>
                 {
-                    b.HasOne("DNC.InternshipSystem.Core.Entities.Lecturer", "Lecturer")
-                        .WithMany("Classes")
-                        .HasForeignKey("LecturerId");
-
                     b.HasOne("DNC.InternshipSystem.Core.Entities.Major", "Major")
                         .WithMany("Classes")
                         .HasForeignKey("MajorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Lecturer");
 
                     b.Navigation("Major");
                 });
@@ -851,7 +817,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Registration", b =>
                 {
                     b.HasOne("DNC.InternshipSystem.Core.Entities.Company", "Company")
-                        .WithMany("Registrations")
+                        .WithMany()
                         .HasForeignKey("CompanyId");
 
                     b.HasOne("DNC.InternshipSystem.Core.Entities.Lecturer", "Lecturer")
@@ -951,16 +917,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Class", b =>
                 {
                     b.Navigation("Students");
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Company", b =>
-                {
-                    b.Navigation("Registrations");
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Lecturer", b =>
-                {
-                    b.Navigation("Classes");
                 });
 
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Major", b =>

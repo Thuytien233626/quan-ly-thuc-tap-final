@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace DNC.InternshipSystem.Infrastructure.Migrations
 {
     /// <inheritdoc />
@@ -237,15 +239,14 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     DepartmentId = table.Column<int>(type: "int", nullable: false),
                     MaxStudents = table.Column<int>(type: "int", nullable: false),
-                    AcademicRank = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    AcademicRank = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Lecturers", x => x.UserId);
                     table.ForeignKey(
-                        name: "FK_Lecturers_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
+                        name: "FK_Lecturers_AspNetUsers_UserId",
+                        column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -267,15 +268,14 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     Major = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Phone = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    VerifiedToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    VerifiedToken = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Students", x => x.UserId);
                     table.ForeignKey(
-                        name: "FK_Students_AspNetUsers_UserId1",
-                        column: x => x.UserId1,
+                        name: "FK_Students_AspNetUsers_UserId",
+                        column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -339,18 +339,16 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     RegistrationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CompanyScore = table.Column<double>(type: "float", nullable: true),
                     InstructorScore = table.Column<double>(type: "float", nullable: true),
-                    ReportScore = table.Column<double>(type: "float", nullable: true),
-                    FinalScore = table.Column<double>(type: "float", nullable: true, computedColumnSql: "(IsNull(CompanyScore,0)*0.4 + IsNull(InstructorScore,0)*0.3 + IsNull(ReportScore,0)*0.3)"),
+                    FinalScore = table.Column<double>(type: "float", nullable: true, computedColumnSql: "(IsNull(CompanyScore,0)*0.4 + IsNull(InstructorScore,0)*0.6)"),
                     Note = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    GradedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RegistrationId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    GradedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Grades", x => x.RegistrationId);
                     table.ForeignKey(
-                        name: "FK_Grades_Registrations_RegistrationId1",
-                        column: x => x.RegistrationId1,
+                        name: "FK_Grades_Registrations_RegistrationId",
+                        column: x => x.RegistrationId,
                         principalTable: "Registrations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -383,6 +381,21 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.InsertData(
+                table: "AspNetRoles",
+                columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
+                values: new object[,]
+                {
+                    { new Guid("11111111-1111-1111-1111-111111111111"), "fixed-stamp", "Admin", "ADMIN" },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), "fixed-stamp", "Lecturer", "LECTURER" },
+                    { new Guid("33333333-3333-3333-3333-333333333333"), "fixed-stamp", "Student", "STUDENT" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Departments",
+                columns: new[] { "Id", "Code", "EstablishedYear", "Name" },
+                values: new object[] { 1, "CNTT", 2013, "Khoa Công Nghệ Thông Tin" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -429,19 +442,9 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                 column: "DepartmentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Grades_RegistrationId1",
-                table: "Grades",
-                column: "RegistrationId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Lecturers_DepartmentId",
                 table: "Lecturers",
                 column: "DepartmentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Lecturers_UserId1",
-                table: "Lecturers",
-                column: "UserId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Logbooks_RegistrationId",
@@ -472,11 +475,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                 name: "IX_Students_ClassId",
                 table: "Students",
                 column: "ClassId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Students_UserId1",
-                table: "Students",
-                column: "UserId1");
         }
 
         /// <inheritdoc />

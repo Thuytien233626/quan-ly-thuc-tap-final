@@ -4,6 +4,7 @@ using DNC.InternshipSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DNC.InternshipSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260208052021_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -106,13 +109,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("LecturerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("MajorId")
+                    b.Property<int>("DepartmentId")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -121,9 +118,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LecturerId");
-
-                    b.HasIndex("MajorId");
+                    b.HasIndex("DepartmentId");
 
                     b.ToTable("Classes");
                 });
@@ -146,17 +141,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<string>("ContactPerson")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsExternal")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Province")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -238,47 +223,26 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AcademicYear")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("BatchId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DurationInWeeks")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("InternshipStart")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<DateTime>("RegistrationEnd")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("RegistrationStart")
+                    b.Property<DateTime>("RegistrationDeadline")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("ReportDeadline")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Semester")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("TermName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BatchId");
 
                     b.ToTable("InternshipTerms");
                 });
@@ -294,12 +258,8 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<int>("DepartmentId")
                         .HasColumnType("int");
 
-                    b.Property<string>("LecturerCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Specialization")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("MaxStudents")
+                        .HasColumnType("int");
 
                     b.HasKey("UserId");
 
@@ -355,101 +315,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.ToTable("Logbooks");
                 });
 
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Major", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BatchId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatchId");
-
-                    b.ToTable("Majors");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BatchId = 1,
-                            Code = "KTPM",
-                            IsActive = true,
-                            Name = "Kỹ thuật Phần mềm"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            BatchId = 1,
-                            Code = "CNTT",
-                            IsActive = true,
-                            Name = "Công nghệ Thông tin"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            BatchId = 1,
-                            Code = "KHMT",
-                            IsActive = true,
-                            Name = "Khoa học Máy tính"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            BatchId = 2,
-                            Code = "KTPM",
-                            IsActive = true,
-                            Name = "Kỹ thuật Phần mềm"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            BatchId = 2,
-                            Code = "CNTT",
-                            IsActive = true,
-                            Name = "Công nghệ Thông tin"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            BatchId = 3,
-                            Code = "KTPM",
-                            IsActive = true,
-                            Name = "Kỹ thuật Phần mềm"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            BatchId = 3,
-                            Code = "CNTT",
-                            IsActive = true,
-                            Name = "Công nghệ Thông tin"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            BatchId = 3,
-                            Code = "KHMT",
-                            IsActive = true,
-                            Name = "Khoa học Máy tính"
-                        });
-                });
-
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Registration", b =>
                 {
                     b.Property<Guid>("Id")
@@ -458,9 +323,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.Property<int?>("CompanyId")
                         .HasColumnType("int");
-
-                    b.Property<double?>("CompanyScore")
-                        .HasColumnType("float");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -474,9 +336,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Property<string>("ExternalCompanyName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double?>("FinalScore")
-                        .HasColumnType("float");
-
                     b.Property<Guid?>("LecturerId")
                         .HasColumnType("uniqueidentifier");
 
@@ -486,9 +345,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.Property<string>("RejectionReason")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("ReportScore")
-                        .HasColumnType("float");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -501,9 +357,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<double?>("VivaScore")
-                        .HasColumnType("float");
 
                     b.HasKey("Id");
 
@@ -527,16 +380,11 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ClassId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Gender")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OrderNumber")
-                        .HasColumnType("int");
+                    b.Property<string>("Major")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
                         .HasColumnType("nvarchar(max)");
@@ -553,65 +401,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.HasIndex("ClassId");
 
                     b.ToTable("Students");
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.StudentBatch", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("BatchCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ClassCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("EnrollmentYear")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GraduationYear")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("StudentBatches");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BatchCode = "K9",
-                            ClassCode = "DH21",
-                            EnrollmentYear = 2021,
-                            GraduationYear = 2025,
-                            IsActive = true
-                        },
-                        new
-                        {
-                            Id = 2,
-                            BatchCode = "K10",
-                            ClassCode = "DH22",
-                            EnrollmentYear = 2022,
-                            GraduationYear = 2026,
-                            IsActive = true
-                        },
-                        new
-                        {
-                            Id = 3,
-                            BatchCode = "K11",
-                            ClassCode = "DH23",
-                            EnrollmentYear = 2023,
-                            GraduationYear = 2027,
-                            IsActive = true
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -770,19 +559,13 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Class", b =>
                 {
-                    b.HasOne("DNC.InternshipSystem.Core.Entities.Lecturer", "Lecturer")
-                        .WithMany("Classes")
-                        .HasForeignKey("LecturerId");
-
-                    b.HasOne("DNC.InternshipSystem.Core.Entities.Major", "Major")
-                        .WithMany("Classes")
-                        .HasForeignKey("MajorId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("DNC.InternshipSystem.Core.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Lecturer");
-
-                    b.Navigation("Major");
+                    b.Navigation("Department");
                 });
 
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Grade", b =>
@@ -794,17 +577,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Registration");
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.InternshipTerm", b =>
-                {
-                    b.HasOne("DNC.InternshipSystem.Core.Entities.StudentBatch", "Batch")
-                        .WithMany("InternshipTerms")
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Batch");
                 });
 
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Lecturer", b =>
@@ -837,21 +609,10 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                     b.Navigation("Registration");
                 });
 
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Major", b =>
-                {
-                    b.HasOne("DNC.InternshipSystem.Core.Entities.StudentBatch", "Batch")
-                        .WithMany("Majors")
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Batch");
-                });
-
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Registration", b =>
                 {
                     b.HasOne("DNC.InternshipSystem.Core.Entities.Company", "Company")
-                        .WithMany("Registrations")
+                        .WithMany()
                         .HasForeignKey("CompanyId");
 
                     b.HasOne("DNC.InternshipSystem.Core.Entities.Lecturer", "Lecturer")
@@ -882,9 +643,10 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
             modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Student", b =>
                 {
                     b.HasOne("DNC.InternshipSystem.Core.Entities.Class", "Class")
-                        .WithMany("Students")
+                        .WithMany()
                         .HasForeignKey("ClassId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("DNC.InternshipSystem.Core.Entities.AppUser", "User")
                         .WithOne()
@@ -946,33 +708,6 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Class", b =>
-                {
-                    b.Navigation("Students");
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Company", b =>
-                {
-                    b.Navigation("Registrations");
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Lecturer", b =>
-                {
-                    b.Navigation("Classes");
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.Major", b =>
-                {
-                    b.Navigation("Classes");
-                });
-
-            modelBuilder.Entity("DNC.InternshipSystem.Core.Entities.StudentBatch", b =>
-                {
-                    b.Navigation("InternshipTerms");
-
-                    b.Navigation("Majors");
                 });
 #pragma warning restore 612, 618
         }
