@@ -16,7 +16,7 @@ namespace DNC.InternshipSystem.Web.Controllers
             _userManager = userManager;
         }
 
-        // GET: /Account/Login
+        // LAY: /Account/Login
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
@@ -24,7 +24,7 @@ namespace DNC.InternshipSystem.Web.Controllers
             return View();
         }
 
-        // POST: /Account/Login
+        // GUI: /Account/Login
        // POST: /Account/Login
 [HttpPost]
 [ValidateAntiForgeryToken]
@@ -34,7 +34,7 @@ public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl =
 
     if (ModelState.IsValid)
     {
-        // 1. Kiểm tra User/Pass
+        // 1. Kiem tra User/Pass
         var result = await _signInManager.PasswordSignInAsync(
             model.Username,
             model.Password,
@@ -43,13 +43,13 @@ public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl =
 
         if (result.Succeeded)
         {
-            // 2. Logic Phân quyền & Điều hướng
+            // 2. Logic phan quyen va dieu huong
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
 
-            // 3. Nếu không có returnUrl -> Kiểm tra Role để chuyển hướng
+            // 3. Neu khong co returnUrl -> Kiem tra Role de chuyen huong
             var user = await _userManager.FindByNameAsync(model.Username);
             if (user == null)
             {
@@ -71,7 +71,7 @@ public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl =
                 return RedirectToAction("Index", "LecturerHome", new { area = "Lecturer" });
             }
 
-            // Mặc định: Về trang chủ chung (nếu không thuộc role nào đặc biệt)
+            // Mac dinh: ve trang chu chung (neu khong thuoc role nao dac biet)
             return RedirectToAction("Index", "Home", new { area = "" });
         }
 
@@ -80,7 +80,7 @@ public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl =
 
     return View(model);
 }
-        // POST: /Account/Logout
+        // GUI: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
