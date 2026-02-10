@@ -1,0 +1,123 @@
+@model IEnumerable<DNC.InternshipSystem.Core.Entities.InternshipTerm>
+@using DNC.InternshipSystem.Core.Enums
+@{
+    ViewData["Title"] = "Quản lý Đợt thực tập";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@{
+    string GetStatusBadge(TermStatus status) => status switch
+    {
+        TermStatus.Draft => "bg-secondary",
+        TermStatus.Open => "bg-success",
+        TermStatus.InProgress => "bg-primary",
+        TermStatus.Grading => "bg-warning text-dark",
+        TermStatus.Completed => "bg-info",
+        _ => "bg-secondary"
+    };
+
+    string GetStatusText(TermStatus status) => status switch
+    {
+        TermStatus.Draft => "Bản nháp",
+        TermStatus.Open => "Đang mở",
+        TermStatus.InProgress => "Đang TT",
+        TermStatus.Grading => "Chấm điểm",
+        TermStatus.Completed => "Hoàn thành",
+        _ => status.ToString()
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Quản lý Đợt thực tập</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+                <li class="breadcrumb-item active">Đợt thực tập</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fa fa-plus me-1"></i> Tạo đợt mới
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-bold"><i class="fa fa-calendar-alt me-2 text-primary"></i>Danh sách Đợt thực tập</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Tên đợt</th>
+                        <th>Khóa</th>
+                        <th>Năm học</th>
+                        <th>HK</th>
+                        <th>Thời lượng</th>
+                        <th>Bắt đầu TT</th>
+                        <th>Hạn nộp BC</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-end" style="width: 180px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                <i class="fa fa-inbox fa-2x mb-2 d-block"></i>
+                                Chưa có đợt thực tập nào
+                            </td>
+                        </tr>
+                    }
+                    @{ int index = 1; }
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="text-muted">@(index++)</td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none fw-semibold">
+                                    @item.TermName
+                                </a>
+                            </td>
+                            <td><span class="badge bg-primary">@(item.Batch?.BatchCode ?? "-")</span></td>
+                            <td>@item.AcademicYear</td>
+                            <td>HK@(item.Semester)</td>
+                            <td>@item.DurationInWeeks tuần</td>
+                            <td>@item.InternshipStart.ToString("dd/MM/yyyy")</td>
+                            <td>@item.ReportDeadline.ToString("dd/MM/yyyy")</td>
+                            <td class="text-center">
+                                <span class="badge @GetStatusBadge(item.Status)">@GetStatusText(item.Status)</span>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" title="Chi tiết">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Sửa">
+                                    <i class="fa fa-edit"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bạn có chắc muốn xóa đợt này?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,243 @@
+@model DNC.InternshipSystem.Web.Areas.Admin.Models.ImportPreviewViewModel
+@{
+    ViewData["Title"] = "Preview Import Sinh viên";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">Preview Import Sinh viên</h4>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Sinh viên</a></li>
+            <li class="breadcrumb-item"><a asp-action="Import">Import</a></li>
+            <li class="breadcrumb-item active">Preview</li>
+        </ol>
+    </nav>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fa fa-exclamation-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Thong tin file -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-bold"><i class="fa fa-file-excel me-2 text-success"></i>Thông tin file: @Model.FileName</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Cac cot da nhan dien -->
+            <div class="col-lg-6">
+                <h6 class="fw-semibold mb-3"><i class="fa fa-columns me-2"></i>Các cột đã nhận diện</h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="d-flex align-items-center p-2 rounded @(Model.HasMSSV ? "bg-success-subtle" : "bg-danger-subtle")">
+                            <i class="fa @(Model.HasMSSV ? "fa-check-circle text-success" : "fa-times-circle text-danger") me-2"></i>
+                            <span>Mã sinh viên <span class="text-danger">*</span></span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center p-2 rounded @(Model.HasHoDem ? "bg-success-subtle" : "bg-danger-subtle")">
+                            <i class="fa @(Model.HasHoDem ? "fa-check-circle text-success" : "fa-times-circle text-danger") me-2"></i>
+                            <span>Họ đệm <span class="text-danger">*</span></span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center p-2 rounded @(Model.HasTen ? "bg-success-subtle" : "bg-danger-subtle")">
+                            <i class="fa @(Model.HasTen ? "fa-check-circle text-success" : "fa-times-circle text-danger") me-2"></i>
+                            <span>Tên <span class="text-danger">*</span></span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center p-2 rounded @(Model.HasGioiTinh ? "bg-success-subtle" : "bg-secondary-subtle")">
+                            <i class="fa @(Model.HasGioiTinh ? "fa-check-circle text-success" : "fa-minus-circle text-secondary") me-2"></i>
+                            <span>Giới tính</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center p-2 rounded @(Model.HasNgaySinh ? "bg-success-subtle" : "bg-secondary-subtle")">
+                            <i class="fa @(Model.HasNgaySinh ? "fa-check-circle text-success" : "fa-minus-circle text-secondary") me-2"></i>
+                            <span>Ngày sinh</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center p-2 rounded @(Model.HasLopHoc ? "bg-success-subtle" : "bg-secondary-subtle")">
+                            <i class="fa @(Model.HasLopHoc ? "fa-check-circle text-success" : "fa-minus-circle text-secondary") me-2"></i>
+                            <span>Lớp học</span>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block"><span class="text-danger">*</span> Cột bắt buộc</small>
+            </div>
+            
+            <!-- Thong ke -->
+            <div class="col-lg-6">
+                <h6 class="fw-semibold mb-3"><i class="fa fa-chart-bar me-2"></i>Thống kê</h6>
+                <div class="row g-3">
+                    <div class="col-4">
+                        <div class="text-center p-3 rounded bg-primary-subtle">
+                            <div class="fs-3 fw-bold text-primary">@Model.ValidRows</div>
+                            <small class="text-muted">SV hợp lệ</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-3 rounded bg-warning-subtle">
+                            <div class="fs-3 fw-bold text-warning">@Model.ExistingStudents</div>
+                            <small class="text-muted">Đã tồn tại</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-3 rounded bg-secondary-subtle">
+                            <div class="fs-3 fw-bold text-secondary">@Model.SkippedRows</div>
+                            <small class="text-muted">Dòng bỏ qua</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fa fa-info-circle me-1"></i>
+                        Header tại dòng @Model.HeaderRow | Tổng @Model.TotalRows dòng
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.AllRequiredColumnsFound)
+{
+    <div class="alert alert-danger">
+        <i class="fa fa-exclamation-triangle me-2"></i>
+        <strong>Không thể import!</strong> File Excel thiếu các cột bắt buộc. Vui lòng kiểm tra lại file.
+    </div>
+    <a asp-action="Import" class="btn btn-secondary">
+        <i class="fa fa-arrow-left me-1"></i> Quay lại
+    </a>
+}
+else if (Model.Students.Any())
+{
+    <!-- Bang xem truoc -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold"><i class="fa fa-eye me-2 text-info"></i>Xem trước dữ liệu (@(Model.ValidRows - Model.ExistingStudents) sinh viên mới)</h6>
+            <div>
+                <span class="badge bg-success me-2">@(Model.ValidRows - Model.ExistingStudents) sẽ thêm</span>
+                <span class="badge bg-warning">@Model.ExistingStudents bỏ qua</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th style="width: 60px;">Dòng</th>
+                            <th style="width: 100px;">MSSV</th>
+                            <th>Họ tên</th>
+                            @if (Model.HasGioiTinh)
+                            {
+                                <th style="width: 80px;">Giới tính</th>
+                            }
+                            @if (Model.HasNgaySinh)
+                            {
+                                <th style="width: 110px;">Ngày sinh</th>
+                            }
+                            @if (Model.HasLopHoc)
+                            {
+                                <th style="width: 120px;">Lớp</th>
+                            }
+                            <th style="width: 130px;">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var student in Model.Students)
+                        {
+                            var rowClass = student.AlreadyExists ? "table-warning" : "";
+                            <tr class="@rowClass">
+                                <td class="text-muted">@student.RowNumber</td>
+                                <td><code>@student.StudentCode</code></td>
+                                <td>@student.FullName</td>
+                                @if (Model.HasGioiTinh)
+                                {
+                                    <td>@student.Gender</td>
+                                }
+                                @if (Model.HasNgaySinh)
+                                {
+                                    <td>@student.DateOfBirth</td>
+                                }
+                                @if (Model.HasLopHoc)
+                                {
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(student.ClassCode))
+                                        {
+                                            if (student.ClassExists)
+                                            {
+                                                <span class="badge bg-success">@student.ClassCode</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger" title="Lớp chưa tồn tại">@student.ClassCode ⚠</span>
+                                            }
+                                        }
+                                    }
+                                </td>
+                                }
+                                <td>
+                                    @if (student.AlreadyExists)
+                                    {
+                                        <span class="badge bg-warning text-dark">Đã tồn tại</span>
+                                    }
+                                    else if (!student.ClassExists)
+                                    {
+                                        <span class="badge bg-info">Sẵn sàng (no class)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Sẵn sàng</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <a asp-action="Import" class="btn btn-outline-secondary">
+                    <i class="fa fa-arrow-left me-1"></i> Hủy
+                </a>
+                
+                @if (Model.ValidRows > Model.ExistingStudents)
+                {
+                    <form asp-action="ConfirmImport" method="post">
+                        <input type="hidden" name="tempFilePath" value="@Model.TempFilePath" />
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fa fa-check me-2"></i>Xác nhận Import @(Model.ValidRows - Model.ExistingStudents) sinh viên
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <button class="btn btn-secondary" disabled>
+                        <i class="fa fa-ban me-1"></i> Không có sinh viên mới để import
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle me-2"></i>
+        Không tìm thấy sinh viên hợp lệ trong file Excel!
+    </div>
+    <a asp-action="Import" class="btn btn-secondary">
+        <i class="fa fa-arrow-left me-1"></i> Quay lại
+    </a>
+}

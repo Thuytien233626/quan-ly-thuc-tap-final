@@ -1,0 +1,78 @@
+@model List<DNC.InternshipSystem.Web.Areas.Admin.Controllers.ImportResult>
+@{
+    int successCount = ViewBag.Success ?? 0;
+    int skipCount = ViewBag.Skip ?? 0;
+    int errorCount = ViewBag.Error ?? 0;
+}
+
+<!-- Tong hop -->
+<div class="row g-3 mb-3 text-center">
+    <div class="col-4">
+        <div class="p-3 rounded bg-success-subtle">
+            <div class="fs-3 fw-bold text-success">@successCount</div>
+            <small>Thành công</small>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="p-3 rounded bg-warning-subtle">
+            <div class="fs-3 fw-bold text-warning">@skipCount</div>
+            <small>Bỏ qua</small>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="p-3 rounded bg-danger-subtle">
+            <div class="fs-3 fw-bold text-danger">@errorCount</div>
+            <small>Lỗi</small>
+        </div>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive" style="max-height: 250px;">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light sticky-top">
+                <tr>
+                    <th>MSSV</th>
+                    <th>Họ tên</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    string rowClass = "";
+                    if (r.Status == "Thành công") { rowClass = "table-success"; }
+                    else if (r.Status == "Bỏ qua") { rowClass = "table-warning"; }
+                    else if (r.Status == "Lỗi") { rowClass = "table-danger"; }
+                    
+                    <tr class="@rowClass">
+                        <td><code class="small">@r.StudentCode</code></td>
+                        <td class="small">@r.FullName</td>
+                        <td>
+                            @if (r.Status == "Thành công")
+                            {
+                                <span class="badge bg-success">Thành công</span>
+                            }
+                            else if (r.Status == "Bỏ qua")
+                            {
+                                <span class="badge bg-warning text-dark">Bỏ qua</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Lỗi</span>
+                            }
+                        </td>
+                        <td class="small text-muted">@r.Message</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<div class="alert alert-info mt-3 mb-0 small">
+    <i class="fa fa-info-circle me-2"></i>
+    <strong>Mật khẩu mặc định:</strong> <code>Sv@@[MSSV]</code> (VD: Sv@@123456)
+</div>

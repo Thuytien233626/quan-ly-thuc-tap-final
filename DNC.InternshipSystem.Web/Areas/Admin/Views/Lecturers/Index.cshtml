@@ -1,0 +1,366 @@
+@model IEnumerable<DNC.InternshipSystem.Core.Entities.Lecturer>
+
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Quản lý Giảng viên";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Quản lý Giảng viên</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+                <li class="breadcrumb-item active">Giảng viên</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <a asp-action="DownloadTemplate" class="btn btn-outline-success me-2">
+            <i class="fa fa-download me-1"></i> Tải mẫu Excel
+        </a>
+        <button type="button" class="btn btn-outline-primary me-2" id="btnImportExcel">
+            <i class="fa fa-file-excel me-1"></i> Import Excel
+        </button>
+        <button type="button" class="btn btn-primary" id="btnAddLecturer">
+            <i class="fa fa-plus me-1"></i> Thêm giảng viên
+        </button>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">STT</th>
+                        <th>Mã GV</th>
+                        <th>Họ tên</th>
+                        <th>Email</th>
+                        <th>Học vị</th>
+                        <th>Chuyên môn</th>
+                        <th class="text-center">Số lớp HD</th>
+                        <th class="text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fa fa-inbox fa-3x mb-3 d-block"></i>
+                                Chưa có dữ liệu giảng viên
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int index = 1;
+                        @foreach (var lec in Model)
+                        {
+                            var classCount = lec.Classes?.Count ?? 0;
+                            <tr>
+                                <td class="ps-4 text-muted">@(index++)</td>
+                                <td><code class="bg-light px-2 py-1 rounded">@lec.LecturerCode</code></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-2" style="width: 36px; height: 36px;">
+                                            <i class="fa fa-chalkboard-teacher"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">@lec.User?.FullName</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="small text-muted">@lec.User?.Email</td>
+                                <td><span class="badge bg-info-subtle text-info">@lec.AcademicRank</span></td>
+                                <td>@(lec.Specialization ?? "-")</td>
+                                <td class="text-center">
+                                    @if (classCount > 0)
+                                    {
+                                        <span class="badge bg-success">@classCount lớp</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-edit-lecturer"
+                                            data-id="@lec.UserId" data-code="@lec.LecturerCode"
+                                            data-name="@lec.User?.FullName" data-email="@lec.User?.Email"
+                                            data-rank="@lec.AcademicRank" data-spec="@lec.Specialization">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-lecturer"
+                                            data-id="@lec.UserId" data-name="@lec.User?.FullName"
+                                            data-class-count="@classCount">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const Toast = Swal.mixin({
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
+    });
+    
+    // ========== THEM GIANG VIEN ==========
+    document.getElementById('btnAddLecturer').addEventListener('click', async function() {
+        const { value: form } = await Swal.fire({
+            title: '<i class="fa fa-plus-circle text-primary me-2"></i>Thêm Giảng viên',
+            html: `
+                <div class="text-start">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Học vị</label>
+                            <select id="swal-rank" class="form-select">
+                                <option value="ThS">ThS - Thạc sĩ</option>
+                                <option value="TS">TS - Tiến sĩ</option>
+                                <option value="PGS">PGS - Phó Giáo sư</option>
+                                <option value="GS">GS - Giáo sư</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Họ tên <span class="text-danger">*</span></label>
+                            <input type="text" id="swal-name" class="form-control" placeholder="Nguyễn Văn A">
+                        </div>
+                        <div class="col-7">
+                            <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                            <input type="email" id="swal-email" class="form-control" placeholder="email@dnc.edu.vn">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-semibold">Số điện thoại</label>
+                            <input type="text" id="swal-phone" class="form-control" placeholder="0901234567">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Chuyên môn</label>
+                            <input type="text" id="swal-spec" class="form-control" placeholder="Công nghệ Thông tin">
+                        </div>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-plus me-1"></i>Thêm',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#0d6efd',
+            width: '500px',
+            preConfirm: () => {
+                const name = document.getElementById('swal-name').value.trim();
+                const email = document.getElementById('swal-email').value.trim();
+                if (!name || !email) {
+                    Swal.showValidationMessage('Vui lòng nhập đầy đủ thông tin!');
+                    return false;
+                }
+                return {
+                    name, email,
+                    phone: document.getElementById('swal-phone').value.trim(),
+                    rank: document.getElementById('swal-rank').value,
+                    spec: document.getElementById('swal-spec').value.trim()
+                };
+            }
+        });
+        
+        if (form) {
+            Swal.fire({ title: 'Đang thêm...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const fd = new FormData();
+            Object.keys(form).forEach(k => fd.append(k, form[k]));
+            
+            const res = await fetch('/Admin/Lecturers/CreateAjax', { method: 'POST', body: fd });
+            const data = await res.json();
+            
+            if (data.success) {
+                Toast.fire({ icon: 'success', title: 'Đã thêm giảng viên!' });
+                location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+            }
+        }
+    });
+    
+    // ========== SUA GIANG VIEN ==========
+    document.querySelectorAll('.btn-edit-lecturer').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const { value: form } = await Swal.fire({
+                title: '<i class="fa fa-edit text-warning me-2"></i>Sửa thông tin Giảng viên',
+                html: `
+                    <div class="text-start">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Mã GV</label>
+                                <input type="text" id="swal-code" class="form-control bg-light" value="${this.dataset.code}" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Học vị</label>
+                                <select id="swal-rank" class="form-select">
+                                    <option value="ThS" ${this.dataset.rank==='ThS'?'selected':''}>ThS</option>
+                                    <option value="TS" ${this.dataset.rank==='TS'?'selected':''}>TS</option>
+                                    <option value="PGS" ${this.dataset.rank==='PGS'?'selected':''}>PGS</option>
+                                    <option value="GS" ${this.dataset.rank==='GS'?'selected':''}>GS</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Chuyên môn</label>
+                                <input type="text" id="swal-spec" class="form-control" value="${this.dataset.spec || ''}">
+                            </div>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-save me-1"></i>Lưu',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#ffc107',
+                width: '500px',
+                preConfirm: () => ({
+                    rank: document.getElementById('swal-rank').value,
+                    spec: document.getElementById('swal-spec').value.trim()
+                })
+            });
+            
+            if (form) {
+                Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const fd = new FormData();
+                fd.append('userId', id);
+                fd.append('rank', form.rank);
+                fd.append('specialization', form.spec);
+                
+                const res = await fetch('/Admin/Lecturers/EditAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    Toast.fire({ icon: 'success', title: 'Đã cập nhật!' });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+    
+    // ========== XOA GIANG VIEN ==========
+    document.querySelectorAll('.btn-delete-lecturer').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            const classCount = parseInt(this.dataset.classCount) || 0;
+            
+            if (classCount > 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Không thể xóa!',
+                    html: `Giảng viên <strong>${name}</strong> đang phụ trách <strong>${classCount} lớp</strong>.<br>Vui lòng phân công lại trước khi xóa.`
+                });
+                return;
+            }
+            
+            const result = await Swal.fire({
+                title: 'Xác nhận xóa?',
+                html: `Bạn có chắc muốn xóa giảng viên <strong>${name}</strong>?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: '<i class="fa fa-trash me-1"></i>Xóa',
+                cancelButtonText: 'Hủy'
+            });
+            
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const fd = new FormData();
+                fd.append('userId', id);
+                
+                const res = await fetch('/Admin/Lecturers/DeleteAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    Toast.fire({ icon: 'success', title: 'Đã xóa!' });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+    
+    // ========== NHAP EXCEL ==========
+    document.getElementById('btnImportExcel').addEventListener('click', async function() {
+        const { value: file } = await Swal.fire({
+            title: '<i class="fa fa-file-excel text-success me-2"></i>Import Giảng viên',
+            html: `
+                <div class="text-center py-3">
+                    <i class="fa fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+                    <p class="text-muted">Chọn file Excel (.xlsx, .xls)</p>
+                    <input type="file" id="swal-file" class="form-control" accept=".xlsx,.xls">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-upload me-1"></i>Tải lên & Xem trước',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#0d6efd',
+            preConfirm: () => {
+                const f = document.getElementById('swal-file').files[0];
+                if (!f) { Swal.showValidationMessage('Vui lòng chọn file!'); return false; }
+                return f;
+            }
+        });
+        
+        if (!file) return;
+        
+        Swal.fire({ title: 'Đang phân tích...', html: '<div class="spinner-border text-primary"></div>', showConfirmButton: false, allowOutsideClick: false });
+        
+        const fd = new FormData();
+        fd.append('excelFile', file);
+        
+        const previewRes = await fetch('/Admin/Lecturers/ImportPreviewAjax', { method: 'POST', body: fd });
+        const previewHtml = await previewRes.text();
+        
+        const previewResult = await Swal.fire({
+            title: '<i class="fa fa-eye text-info me-2"></i>Xem trước',
+            html: `<div style="max-height: 400px; overflow-y: auto; text-align: left;">${previewHtml}</div>`,
+            width: '800px',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check me-1"></i>Xác nhận Import',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#198754',
+            showConfirmButton: !previewHtml.includes('alert-danger')
+        });
+        
+        if (!previewResult.isConfirmed) return;
+        
+        const tempPath = document.getElementById('tempFilePath')?.value;
+        if (!tempPath) { Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Không tìm thấy file tạm.' }); return; }
+        
+        Swal.fire({ title: 'Đang import...', html: '<div class="spinner-border text-success"></div>', showConfirmButton: false, allowOutsideClick: false });
+        
+        const confirmFd = new FormData();
+        confirmFd.append('tempFilePath', tempPath);
+        
+        const resultRes = await fetch('/Admin/Lecturers/ConfirmImportAjax', { method: 'POST', body: confirmFd });
+        const resultHtml = await resultRes.text();
+        
+        await Swal.fire({
+            title: '<i class="fa fa-check-circle text-success me-2"></i>Kết quả',
+            html: `<div style="max-height: 400px; overflow-y: auto; text-align: left;">${resultHtml}</div>`,
+            width: '700px',
+            confirmButtonText: 'Đóng'
+        });
+        
+        location.reload();
+    });
+});
+</script>
+}

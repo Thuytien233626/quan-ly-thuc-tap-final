@@ -1,0 +1,137 @@
+@model DNC.InternshipSystem.Core.Entities.InternshipTerm
+@{
+    ViewData["Title"] = "Tạo Đợt thực tập mới";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">Tạo Đợt thực tập mới</h4>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Đợt thực tập</a></li>
+            <li class="breadcrumb-item active">Tạo mới</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-calendar-plus me-2 text-primary"></i>Thông tin Đợt thực tập</h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <!-- Row 1: Tên đợt -->
+                    <div class="mb-3">
+                        <label asp-for="TermName" class="form-label fw-semibold">Tên đợt <span class="text-danger">*</span></label>
+                        <input asp-for="TermName" class="form-control" placeholder="VD: Thực tập Tốt nghiệp K11" />
+                        <span asp-validation-for="TermName" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Row 2: Khóa, Năm học, Học kỳ -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="BatchId" class="form-label fw-semibold">Khóa học <span class="text-danger">*</span></label>
+                            <select asp-for="BatchId" class="form-select" asp-items="ViewBag.Batches">
+                                <option value="">-- Chọn khóa --</option>
+                            </select>
+                            <span asp-validation-for="BatchId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="AcademicYear" class="form-label fw-semibold">Năm học <span class="text-danger">*</span></label>
+                            <select asp-for="AcademicYear" class="form-select" asp-items="ViewBag.AcademicYears">
+                                <option value="">-- Chọn năm --</option>
+                            </select>
+                            <span asp-validation-for="AcademicYear" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Semester" class="form-label fw-semibold">Học kỳ <span class="text-danger">*</span></label>
+                            <select asp-for="Semester" class="form-select" asp-items="ViewBag.Semesters"></select>
+                            <span asp-validation-for="Semester" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Thời lượng, Trạng thái -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="DurationInWeeks" class="form-label fw-semibold">Thời lượng thực tập <span class="text-danger">*</span></label>
+                            <select asp-for="DurationInWeeks" class="form-select" asp-items="ViewBag.Durations"></select>
+                            <span asp-validation-for="DurationInWeeks" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Status" class="form-label fw-semibold">Trạng thái</label>
+                            <select asp-for="Status" class="form-select" asp-items="ViewBag.Statuses"></select>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="fw-bold mb-3"><i class="fa fa-clock me-2 text-secondary"></i>Mốc thời gian</h6>
+
+                    <!-- Row 4: Mở ĐK, Hạn ĐK -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="RegistrationStart" class="form-label fw-semibold">Mở đăng ký <span class="text-danger">*</span></label>
+                            <input asp-for="RegistrationStart" type="date" class="form-control" />
+                            <span asp-validation-for="RegistrationStart" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="RegistrationEnd" class="form-label fw-semibold">Hạn đăng ký <span class="text-danger">*</span></label>
+                            <input asp-for="RegistrationEnd" type="date" class="form-control" />
+                            <span asp-validation-for="RegistrationEnd" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Row 5: Bắt đầu TT, Hạn nộp BC -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="InternshipStart" class="form-label fw-semibold">Bắt đầu thực tập <span class="text-danger">*</span></label>
+                            <input asp-for="InternshipStart" type="date" class="form-control" />
+                            <span asp-validation-for="InternshipStart" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ReportDeadline" class="form-label fw-semibold">Hạn nộp báo cáo <span class="text-danger">*</span></label>
+                            <input asp-for="ReportDeadline" type="date" class="form-control" />
+                            <span asp-validation-for="ReportDeadline" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info small">
+                        <i class="fa fa-info-circle me-1"></i>
+                        <strong>Ngày kết thúc</strong> sẽ được tự động tính từ "Bắt đầu thực tập" + "Thời lượng".
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left me-1"></i> Quay lại
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save me-1"></i> Lưu đợt thực tập
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Info -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm bg-light">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="fa fa-lightbulb me-2 text-warning"></i>Hướng dẫn</h6>
+                <ul class="small mb-0">
+                    <li class="mb-2">Chọn <strong>Khóa học</strong> mà đợt thực tập áp dụng</li>
+                    <li class="mb-2"><strong>Thời lượng</strong> quyết định số tuần thực tập</li>
+                    <li class="mb-2">Các mốc thời gian phải theo thứ tự:<br>
+                        Mở ĐK → Hạn ĐK → Bắt đầu TT → Hạn nộp BC</li>
+                    <li>Trạng thái <strong>Bản nháp</strong> = chưa hiển thị cho SV</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

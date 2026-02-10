@@ -1,0 +1,70 @@
+@model IEnumerable<DNC.InternshipSystem.Core.Entities.Student>
+@using DNC.InternshipSystem.Core.Enums
+@{
+    var classId = Model.FirstOrDefault()?.ClassId ?? "";
+}
+
+@if (Model.Any())
+{
+    <div class="p-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+        <span class="small text-muted">Lớp: <strong>@classId</strong></span>
+        <button type="button" class="btn btn-danger btn-sm btn-delete-all-students" data-class-id="@classId" data-count="@Model.Count()">
+            <i class="fa fa-trash me-1"></i>Xóa tất cả sinh viên
+        </button>
+    </div>
+}
+
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 50px;">STT</th>
+                <th>MSSV</th>
+                <th>Họ tên</th>
+                <th>Giới tính</th>
+                <th>Ngày sinh</th>
+                <th>Email</th>
+                <th class="text-center">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="fa fa-inbox fa-2x mb-2 d-block"></i>
+                        Chưa có sinh viên trong lớp này
+                    </td>
+                </tr>
+            }
+            @foreach (var item in Model.OrderBy(s => s.OrderNumber))
+            {
+                <tr>
+                    <td class="text-muted fw-bold">@(item.OrderNumber > 0 ? item.OrderNumber.ToString() : "-")</td>
+                    <td><span class="badge bg-primary">@item.StudentCode</span></td>
+                    <td class="fw-semibold">@item.User?.FullName</td>
+                    <td>
+                        @if (item.Gender == Gender.Female)
+                        {
+                            <span class="text-danger"><i class="fa fa-venus"></i> Nữ</span>
+                        }
+                        else
+                        {
+                            <span class="text-primary"><i class="fa fa-mars"></i> Nam</span>
+                        }
+                    </td>
+                    <td>@(item.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</td>
+                    <td><small class="text-muted">@item.User?.Email</small></td>
+                    <td class="text-center">
+                        <a href="#" class="btn btn-sm btn-outline-primary">
+                            <i class="fa fa-eye"></i>
+                        </a>
+                        <a href="#" class="btn btn-sm btn-outline-warning">
+                            <i class="fa fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

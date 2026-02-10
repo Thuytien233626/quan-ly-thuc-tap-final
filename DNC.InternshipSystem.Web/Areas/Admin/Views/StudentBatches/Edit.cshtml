@@ -1,0 +1,71 @@
+@model DNC.InternshipSystem.Core.Entities.StudentBatch
+@{
+    ViewData["Title"] = "Sửa Khóa học";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">Sửa Khóa học: @Model.BatchCode</h4>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Khóa học</a></li>
+            <li class="breadcrumb-item active">Sửa</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-edit me-2 text-primary"></i>Chỉnh sửa thông tin</h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="BatchCode" class="form-label fw-semibold">Mã khóa <span class="text-danger">*</span></label>
+                            <input asp-for="BatchCode" class="form-control" />
+                            <span asp-validation-for="BatchCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ClassCode" class="form-label fw-semibold">Mã lớp <span class="text-danger">*</span></label>
+                            <input asp-for="ClassCode" class="form-control" />
+                            <span asp-validation-for="ClassCode" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EnrollmentYear" class="form-label fw-semibold">Năm nhập học <span class="text-danger">*</span></label>
+                            <input asp-for="EnrollmentYear" type="number" class="form-control" />
+                            <span asp-validation-for="EnrollmentYear" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="IsActive" class="form-label fw-semibold">Trạng thái</label>
+                            <div class="form-check form-switch mt-2">
+                                <input asp-for="IsActive" class="form-check-input" />
+                                <label class="form-check-label">Hoạt động</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left me-1"></i> Quay lại
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save me-1"></i> Cập nhật
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

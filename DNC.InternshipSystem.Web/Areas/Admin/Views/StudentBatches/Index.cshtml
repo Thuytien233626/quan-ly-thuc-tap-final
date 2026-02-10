@@ -1,0 +1,90 @@
+@model IEnumerable<DNC.InternshipSystem.Core.Entities.StudentBatch>
+@{
+    ViewData["Title"] = "Quản lý Khóa học";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Quản lý Khóa học</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+                <li class="breadcrumb-item active">Khóa học</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fa fa-plus me-1"></i> Thêm khóa mới
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold"><i class="fa fa-graduation-cap me-2 text-primary"></i>Danh sách Khóa học</h6>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 60px;">#</th>
+                    <th>Mã khóa</th>
+                    <th>Mã lớp</th>
+                    <th>Năm nhập học</th>
+                    <th class="text-center">Trạng thái</th>
+                    <th class="text-end" style="width: 150px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="fa fa-inbox fa-2x mb-2 d-block"></i>
+                            Chưa có khóa học nào
+                        </td>
+                    </tr>
+                }
+                @{ int index = 1; }
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="text-muted">@(index++)</td>
+                        <td><span class="badge bg-primary">@item.BatchCode</span></td>
+                        <td><span class="badge bg-secondary">@item.ClassCode</span></td>
+                        <td>@item.EnrollmentYear</td>
+                        <td class="text-center">
+                            @if (item.IsActive)
+                            {
+                                <span class="badge bg-success-subtle text-success">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary">Không hoạt động</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                <i class="fa fa-edit"></i>
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" 
+                                  onsubmit="return confirm('Bạn có chắc muốn xóa khóa @item.BatchCode?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,43 @@
+@model IEnumerable<DNC.InternshipSystem.Web.Areas.Admin.Controllers.LecturerPreviewItem>
+
+<input type="hidden" id="tempFilePath" value="@ViewBag.TempFilePath" />
+
+<div class="mb-3">
+    <div class="d-flex justify-content-between">
+        <span class="badge bg-success">@ViewBag.ValidCount hợp lệ</span>
+        <span class="badge bg-warning text-dark">@ViewBag.SkipCount bỏ qua</span>
+    </div>
+</div>
+
+<table class="table table-sm table-bordered mb-0">
+    <thead class="table-light">
+        <tr>
+            <th>Mã GV</th>
+            <th>Họ tên</th>
+            <th>Email</th>
+            <th>Học vị</th>
+            <th>Trạng thái</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr class="@(item.AlreadyExists ? "table-warning" : "")">
+                <td><code>@item.Code</code></td>
+                <td>@item.Name</td>
+                <td class="small">@item.Email</td>
+                <td><span class="badge bg-info-subtle text-info">@item.Rank</span></td>
+                <td>
+                    @if (item.AlreadyExists)
+                    {
+                        <span class="badge bg-warning text-dark"><i class="fa fa-exclamation-triangle me-1"></i>@item.Status</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success"><i class="fa fa-check me-1"></i>OK</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

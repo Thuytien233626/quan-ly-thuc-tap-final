@@ -1,0 +1,185 @@
+@model DNC.InternshipSystem.Core.Entities.InternshipTerm
+@using DNC.InternshipSystem.Core.Enums
+@{
+    ViewData["Title"] = "Chi tiết Đợt thực tập";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@{
+    string GetStatusBadge(TermStatus status) => status switch
+    {
+        TermStatus.Draft => "bg-secondary",
+        TermStatus.Open => "bg-success",
+        TermStatus.InProgress => "bg-primary",
+        TermStatus.Grading => "bg-warning text-dark",
+        TermStatus.Completed => "bg-info",
+        _ => "bg-secondary"
+    };
+
+    string GetStatusText(TermStatus status) => status switch
+    {
+        TermStatus.Draft => "Bản nháp",
+        TermStatus.Open => "Đang mở đăng ký",
+        TermStatus.InProgress => "Đang thực tập",
+        TermStatus.Grading => "Đang chấm điểm",
+        TermStatus.Completed => "Hoàn thành",
+        _ => status.ToString()
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">@Model.TermName</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index">Đợt thực tập</a></li>
+                <li class="breadcrumb-item active">Chi tiết</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+            <i class="fa fa-edit me-1"></i> Sửa
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa fa-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+<!-- Cac the thong ke -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h3 class="fw-bold text-primary mb-1">@Model.Batch?.BatchCode</h3>
+                <small class="text-muted">Khóa học</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h3 class="fw-bold text-success mb-1">@Model.DurationInWeeks</h3>
+                <small class="text-muted">Tuần thực tập</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h3 class="fw-bold text-info mb-1">HK@(Model.Semester)</h3>
+                <small class="text-muted">Học kỳ</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <span class="badge @GetStatusBadge(Model.Status) fs-6">@GetStatusText(Model.Status)</span>
+                <br><small class="text-muted">Trạng thái</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Lo trinh thoi gian -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-clock me-2 text-primary"></i>Mốc thời gian</h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-primary me-2">1</span>
+                                <strong>Mở đăng ký</strong>
+                            </div>
+                            <p class="mb-0 text-muted">@Model.RegistrationStart.ToString("dd/MM/yyyy")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-primary me-2">2</span>
+                                <strong>Hạn đăng ký</strong>
+                            </div>
+                            <p class="mb-0 text-muted">@Model.RegistrationEnd.ToString("dd/MM/yyyy")</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-success me-2">3</span>
+                                <strong>Bắt đầu thực tập</strong>
+                            </div>
+                            <p class="mb-0 text-muted">@Model.InternshipStart.ToString("dd/MM/yyyy")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-success me-2">4</span>
+                                <strong>Kết thúc thực tập</strong>
+                            </div>
+                            <p class="mb-0 text-muted">@Model.EndDate.ToString("dd/MM/yyyy")</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-warning text-dark me-2">5</span>
+                                <strong>Hạn nộp báo cáo</strong>
+                            </div>
+                            <p class="mb-0 text-muted">@Model.ReportDeadline.ToString("dd/MM/yyyy")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thong tin -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-info-circle me-2 text-primary"></i>Thông tin chung</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted">Năm học:</td>
+                        <td class="fw-semibold">@Model.AcademicYear</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Khóa:</td>
+                        <td><span class="badge bg-primary">@Model.Batch?.BatchCode</span> (@Model.Batch?.ClassCode)</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Học kỳ:</td>
+                        <td class="fw-semibold">Học kỳ @(Model.Semester)</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Thời lượng:</td>
+                        <td class="fw-semibold">@Model.DurationInWeeks tuần</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Hoạt động:</td>
+                        <td>
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">Có</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Không</span>
+                            }
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

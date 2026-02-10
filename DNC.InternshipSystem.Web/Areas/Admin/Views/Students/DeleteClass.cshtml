@@ -1,0 +1,89 @@
+@model DNC.InternshipSystem.Core.Entities.Class
+@{
+    ViewData["Title"] = "Xóa lớp";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">Xóa lớp</h4>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Sinh viên</a></li>
+            <li class="breadcrumb-item active">Xóa lớp</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-trash me-2 text-danger"></i>Xác nhận xóa</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger mb-4">
+                    <i class="fa fa-exclamation-triangle me-2"></i>
+                    <strong>Cảnh báo:</strong> Bạn đang chuẩn bị xóa lớp này. Hành động không thể hoàn tác!
+                </div>
+
+                <table class="table table-bordered mb-4">
+                    <tr>
+                        <th class="bg-light" style="width: 35%;">Mã lớp</th>
+                        <td><code>@Model.Id</code></td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Tên lớp</th>
+                        <td>@Model.Name</td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Chuyên ngành</th>
+                        <td>@Model.Major?.Name (@Model.Major?.Code)</td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Khóa</th>
+                        <td>@Model.Major?.Batch?.BatchCode (@Model.Major?.Batch?.EnrollmentYear - @Model.Major?.Batch?.GraduationYear)</td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">Số sinh viên</th>
+                        <td>
+                            @if (Model.Students?.Any() == true)
+                            {
+                                <span class="badge bg-danger">@Model.Students.Count sinh viên - KHÔNG THỂ XÓA</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">0 sinh viên - Có thể xóa</span>
+                            }
+                        </td>
+                    </tr>
+                </table>
+
+                @if (Model.Students?.Any() == true)
+                {
+                    <div class="alert alert-warning">
+                        <i class="fa fa-info-circle me-2"></i>
+                        Lớp này đang có sinh viên nên không thể xóa. Vui lòng chuyển hoặc xóa sinh viên trước.
+                    </div>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fa fa-arrow-left me-1"></i> Quay lại
+                    </a>
+                }
+                else
+                {
+                    <form asp-action="DeleteClass" method="post">
+                        <input type="hidden" name="classId" value="@Model.Id" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fa fa-arrow-left me-1"></i> Hủy
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fa fa-trash me-1"></i> Xác nhận xóa
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

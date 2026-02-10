@@ -1,0 +1,658 @@
+@model IEnumerable<DNC.InternshipSystem.Core.Entities.StudentBatch>
+@using DNC.InternshipSystem.Core.Enums
+@{
+    ViewData["Title"] = "Quản lý Sinh viên";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Quản lý Sinh viên</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+                <li class="breadcrumb-item active">Sinh viên</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <a asp-action="DownloadTemplate" class="btn btn-outline-success me-2">
+            <i class="fa fa-download me-1"></i> Tải mẫu Excel
+        </a>
+        <button type="button" class="btn btn-primary" id="btnOpenImport">
+            <i class="fa fa-file-excel me-1"></i> Import Excel
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Bang cau truc cay -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-sitemap me-2 text-primary"></i>Cấu trúc Khóa - Chuyên ngành - Lớp</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="accordion accordion-flush" id="batchAccordion">
+                    @foreach (var batch in Model)
+                    {
+                        var batchId = $"batch-{batch.Id}";
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-light" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#@batchId">
+                                    <span class="badge bg-primary me-2">@batch.BatchCode</span>
+                                    <span>@batch.EnrollmentYear - @batch.GraduationYear</span>
+                                    <span class="badge bg-secondary ms-auto me-2">@batch.Majors.Count chuyên ngành</span>
+                                </button>
+                            </h2>
+                            <div id="@batchId" class="accordion-collapse collapse" data-bs-parent="#batchAccordion">
+                                <div class="accordion-body p-0">
+                                    @if (batch.Majors.Any())
+                                    {
+                                        <div class="accordion accordion-flush" id="major-accordion-@batch.Id">
+                                            @foreach (var major in batch.Majors.Where(m => m.IsActive))
+                                            {
+                                                var majorId = $"major-{major.Id}";
+                                                <div class="accordion-item border-0">
+                                                    <h2 class="accordion-header">
+                                                        <button class="accordion-button collapsed ps-4" type="button"
+                                                                data-bs-toggle="collapse" data-bs-target="#@majorId">
+                                                            <i class="fa fa-graduation-cap me-2 text-success"></i>
+                                                            @major.Name
+                                                            <span class="badge bg-success-subtle text-success ms-auto me-2">@major.Classes.Count lớp</span>
+                                                        </button>
+                                                    </h2>
+                                                    <div id="@majorId" class="accordion-collapse collapse">
+                                                        <div class="list-group list-group-flush">
+                                                            @if (major.Classes.Any())
+                                                            {
+                                                                @foreach (var cls in major.Classes.Where(c => c.IsActive))
+                                                                {
+                                                                    var studentCount = cls.Students?.Count ?? 0;
+                                                                    <div class="list-group-item d-flex align-items-center ps-5 class-row">
+                                                                    <a href="#" class="flex-grow-1 text-decoration-none class-item"
+                                                                       data-class-id="@cls.Id" data-class-name="@cls.Name">
+                                                                        <i class="fa fa-users me-2 text-info"></i>
+                                                                        @cls.Id
+                                                                        <span class="badge bg-info-subtle text-info ms-2">@studentCount SV</span>
+                                                                    </a>
+                                                                    @if (cls.Lecturer != null)
+                                                                    {
+                                                                        <span class="badge bg-success-subtle text-success ms-2 btn-assign-lecturer" 
+                                                                              data-class-id="@cls.Id" data-class-name="@cls.Name" 
+                                                                              data-lecturer-id="@cls.LecturerId" 
+                                                                              style="cursor:pointer" title="Bấm để thay đổi GVHD">
+                                                                            <i class="fa fa-chalkboard-teacher me-1"></i> @cls.Lecturer.User?.FullName
+                                                                        </span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge bg-warning-subtle text-warning ms-2 btn-assign-lecturer" 
+                                                                              data-class-id="@cls.Id" data-class-name="@cls.Name"
+                                                                              style="cursor:pointer" title="Bấm để phân công GVHD">
+                                                                            <i class="fa fa-user-plus me-1"></i> Chưa phân công
+                                                                        </span>
+                                                                    }
+                                                                        <div class="btn-group btn-group-sm ms-2">
+                                                                            <button type="button" class="btn btn-outline-warning btn-sm btn-edit-class" 
+                                                                                    data-class-id="@cls.Id" data-class-name="@cls.Name" title="Sửa">
+                                                                                <i class="fa fa-edit"></i>
+                                                                            </button>
+                                                                            <button type="button" class="btn btn-outline-danger btn-sm btn-delete-class" 
+                                                                                    data-class-id="@cls.Id" data-class-name="@cls.Name" 
+                                                                                    data-student-count="@studentCount" title="Xóa">
+                                                                                <i class="fa fa-trash"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="list-group-item ps-5 text-muted small">
+                                                                    <i class="fa fa-info-circle me-1"></i>Chưa có lớp
+                                                                </div>
+                                                            }
+                                                            <button type="button" class="list-group-item list-group-item-action ps-5 text-primary btn-create-class" 
+                                                                    data-major-id="@major.Id" data-major-name="@major.Name" data-batch-code="@major.Batch?.BatchCode">
+                                                                <i class="fa fa-plus me-2"></i>Thêm lớp mới
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                        <button type="button" class="list-group-item list-group-item-action ps-4 text-success border-0 btn-create-major" 
+                                                data-batch-id="@batch.Id" data-batch-code="@batch.BatchCode">
+                                            <i class="fa fa-plus me-2"></i>Thêm chuyên ngành
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <div class="p-3 text-muted small">
+                                            <i class="fa fa-info-circle me-1"></i>Chưa có chuyên ngành
+                                            <button type="button" class="d-block mt-2 text-success btn btn-link p-0 btn-create-major" 
+                                                    data-batch-id="@batch.Id" data-batch-code="@batch.BatchCode">
+                                                <i class="fa fa-plus me-1"></i>Thêm chuyên ngành
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bang danh sach sinh vien -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fa fa-user-graduate me-2 text-primary"></i>
+                    <span id="studentListTitle">Danh sách Sinh viên</span>
+                </h6>
+                <span class="badge bg-primary" id="studentCount">0 sinh viên</span>
+            </div>
+            <div class="card-body p-0" id="studentListContainer">
+                <div class="text-center text-muted py-5">
+                    <i class="fa fa-hand-point-left fa-3x mb-3 d-block"></i>
+                    <p class="mb-0">Chọn một lớp từ cây bên trái để xem danh sách sinh viên</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ========== HO TRO: Thong bao Toast ==========
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+    });
+    
+    // ========== CLICK VAO LOP ==========
+    document.querySelectorAll('.class-item').forEach(function(item) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.class-item').forEach(el => el.classList.remove('active'));
+            this.classList.add('active');
+            
+            var classId = this.dataset.classId;
+            document.getElementById('studentListTitle').innerText = 'Sinh viên lớp ' + classId;
+            
+            fetch('/Admin/Students/GetStudentsByClass?classId=' + encodeURIComponent(classId))
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('studentListContainer').innerHTML = html;
+                    var count = document.querySelectorAll('#studentListContainer tbody tr').length;
+                    document.getElementById('studentCount').innerText = count + ' sinh viên';
+                });
+        });
+    });
+    
+    // ========== XOA TAT CA SINH VIEN - Uy quyen su kien ==========
+    document.getElementById('studentListContainer').addEventListener('click', async function(e) {
+        const btn = e.target.closest('.btn-delete-all-students');
+        if (!btn) return;
+        
+        const classId = btn.dataset.classId;
+        const count = btn.dataset.count;
+        
+        const result = await Swal.fire({
+            title: '<i class="fa fa-exclamation-triangle text-danger me-2"></i>Xác nhận xóa?',
+            html: `Bạn có chắc chắn muốn xóa <strong>TẤT CẢ ${count} sinh viên</strong> trong lớp <strong>${classId}</strong>?<br><br><small class="text-danger">⚠️ Hành động này không thể hoàn tác! Tài khoản sinh viên cũng sẽ bị xóa.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fa fa-trash me-1"></i>Xóa tất cả',
+            cancelButtonText: 'Hủy',
+            input: 'text',
+            inputPlaceholder: 'Nhập "XOA" để xác nhận',
+            inputValidator: (value) => {
+                if (value !== 'XOA') {
+                    return 'Vui lòng nhập "XOA" để xác nhận!';
+                }
+            }
+        });
+        
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const fd = new FormData();
+            fd.append('classId', classId);
+            
+            const res = await fetch('/Admin/Students/DeleteAllStudentsInClassAjax', { method: 'POST', body: fd });
+            const data = await res.json();
+            
+            if (data.success) {
+                await Swal.fire({ 
+                    icon: 'success', 
+                    title: 'Đã xóa!', 
+                    text: `Đã xóa ${data.count} sinh viên khỏi lớp ${classId}.`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+            }
+        }
+    });
+    
+    // ========== PHAN CONG GIANG VIEN - Uy quyen su kien ==========
+    document.getElementById('batchAccordion').addEventListener('click', async function(e) {
+        const btn = e.target.closest('.btn-assign-lecturer');
+        if (!btn) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+
+        const classId = btn.dataset.classId;
+        const className = btn.dataset.className;
+        const currentLecturerId = btn.dataset.lecturerId || '';
+        
+        Swal.fire({ title: 'Đang tải danh sách GV...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+        try {
+            const res = await fetch('/Admin/Students/GetAvailableLecturersAjax');
+            const lecturers = await res.json();
+            
+            // Build lecturer cards HTML
+            let lecturerListHtml = lecturers.map(l => {
+                const isSelected = (l.id === currentLecturerId);
+                const countBadge = l.count > 0 ? `<span class="badge bg-info ms-1">${l.count} lớp</span>` : '';
+                return `
+                    <div class="lecturer-item p-2 border rounded mb-2 ${isSelected ? 'border-primary bg-primary-subtle' : ''}" 
+                         data-id="${l.id}" data-name="${l.name}" data-code="${l.code}" style="cursor:pointer">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <strong class="text-primary">[${l.code}]</strong> ${l.name} ${countBadge}
+                                <div class="small text-muted">${l.spec || ''}</div>
+                            </div>
+                            ${isSelected ? '<i class="fa fa-check-circle text-primary"></i>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const { value: selectedLecturerId } = await Swal.fire({
+                title: '<i class="fa fa-chalkboard-teacher text-primary me-2"></i>Phân công Giảng viên',
+                html: `
+                    <div class="text-start">
+                        <p class="mb-2">Phân công GVHD cho lớp: <strong>${className || classId}</strong></p>
+                        <input type="text" id="swal-search" class="form-control mb-3" placeholder="Tìm theo tên hoặc mã GV...">
+                        <div id="swal-lecturer-list" style="max-height: 300px; overflow-y: auto;">
+                            <div class="lecturer-item p-2 border rounded mb-2 border-warning bg-warning-subtle" data-id="" style="cursor:pointer">
+                                <div class="d-flex align-items-center">
+                                    <i class="fa fa-user-slash text-warning me-2"></i>
+                                    <span>Hủy phân công (Chưa phân công)</span>
+                                </div>
+                            </div>
+                            ${lecturerListHtml}
+                        </div>
+                        <input type="hidden" id="swal-selected-id" value="${currentLecturerId}">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-save me-1"></i>Lưu phân công',
+                cancelButtonText: 'Hủy',
+                focusConfirm: false,
+                didOpen: () => {
+                    // Search filter
+                    document.getElementById('swal-search').addEventListener('input', function() {
+                        const keyword = this.value.toLowerCase();
+                        document.querySelectorAll('#swal-lecturer-list .lecturer-item').forEach(item => {
+                            const name = (item.dataset.name || '').toLowerCase();
+                            const code = (item.dataset.code || '').toLowerCase();
+                            item.style.display = (name.includes(keyword) || code.includes(keyword) || !item.dataset.id) ? '' : 'none';
+                        });
+                    });
+                    
+                    // Click to select
+                    document.querySelectorAll('#swal-lecturer-list .lecturer-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            document.querySelectorAll('#swal-lecturer-list .lecturer-item').forEach(i => {
+                                i.classList.remove('border-primary', 'bg-primary-subtle');
+                                i.querySelector('.fa-check-circle')?.remove();
+                            });
+                            this.classList.add('border-primary', 'bg-primary-subtle');
+                            if(!this.querySelector('.fa-check-circle') && this.dataset.id) {
+                                this.querySelector('.d-flex').insertAdjacentHTML('beforeend', '<i class="fa fa-check-circle text-primary"></i>');
+                            }
+                            document.getElementById('swal-selected-id').value = this.dataset.id;
+                        });
+                    });
+                },
+                preConfirm: () => document.getElementById('swal-selected-id').value
+            });
+            
+            if (selectedLecturerId !== undefined) { 
+                Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const fd = new FormData();
+                fd.append('classId', classId);
+                if(selectedLecturerId) fd.append('lecturerId', selectedLecturerId);
+                
+                const assignRes = await fetch('/Admin/Students/AssignLecturerAjax', { method: 'POST', body: fd });
+                const assignData = await assignRes.json();
+                
+                if (assignData.success) {
+                    await Swal.fire({ icon: 'success', title: 'Thành công!', text: `Đã cập nhật GVHD cho lớp ${classId}`, timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: assignData.message });
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Không thể tải danh sách giảng viên.' });
+        }
+    });
+    
+    // ========== TAO LOP MOI - SweetAlert2 ==========
+    document.querySelectorAll('.btn-create-class').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const majorId = this.dataset.majorId;
+            const majorName = this.dataset.majorName;
+            const batchCode = this.dataset.batchCode;
+            
+            const { value: formValues } = await Swal.fire({
+                title: '<i class="fa fa-plus-circle text-success me-2"></i>Thêm lớp mới',
+                html: `
+                    <div class="text-start">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Chuyên ngành</label>
+                            <input type="text" class="form-control bg-light" value="${majorName} (${batchCode})" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Mã lớp <span class="text-danger">*</span></label>
+                            <input type="text" id="swal-classId" class="form-control" placeholder="VD: DH23TIN01">
+                            <small class="text-muted">Format: DH + Năm + Mã ngành + Số thứ tự</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tên lớp</label>
+                            <input type="text" id="swal-className" class="form-control" placeholder="VD: Công nghệ Thông tin - 01">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-plus me-1"></i>Tạo lớp',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#198754',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const classId = document.getElementById('swal-classId').value.trim();
+                    if (!classId) {
+                        Swal.showValidationMessage('Vui lòng nhập mã lớp!');
+                        return false;
+                    }
+                    return {
+                        classId: classId,
+                        className: document.getElementById('swal-className').value.trim()
+                    };
+                }
+            });
+            
+            if (formValues) {
+                Swal.fire({ title: 'Đang tạo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const fd = new FormData();
+                fd.append('majorId', majorId);
+                fd.append('classId', formValues.classId);
+                fd.append('className', formValues.className);
+                
+                const res = await fetch('/Admin/Students/CreateClassAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Thành công!', text: `Đã tạo lớp ${formValues.classId}`, timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+    
+    // ========== SUA LOP - SweetAlert2 ==========
+    document.querySelectorAll('.btn-edit-class').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const classId = this.dataset.classId;
+            const className = this.dataset.className;
+            
+            const { value: newName } = await Swal.fire({
+                title: '<i class="fa fa-edit text-warning me-2"></i>Sửa thông tin lớp',
+                html: `
+                    <div class="text-start">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Mã lớp</label>
+                            <input type="text" class="form-control bg-light" value="${classId}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tên lớp <span class="text-danger">*</span></label>
+                            <input type="text" id="swal-editName" class="form-control" value="${className}">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-save me-1"></i>Lưu thay đổi',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#ffc107',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const name = document.getElementById('swal-editName').value.trim();
+                    if (!name) { Swal.showValidationMessage('Vui lòng nhập tên lớp!'); return false; }
+                    return name;
+                }
+            });
+            
+            if (newName) {
+                Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const fd = new FormData();
+                fd.append('classId', classId);
+                fd.append('name', newName);
+                
+                const res = await fetch('/Admin/Students/EditClassAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    Toast.fire({ icon: 'success', title: 'Đã cập nhật thành công!' });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+    
+    // ========== XOA LOP - SweetAlert2 ==========
+    document.querySelectorAll('.btn-delete-class').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const classId = this.dataset.classId;
+            const studentCount = parseInt(this.dataset.studentCount) || 0;
+            
+            if (studentCount > 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Không thể xóa!',
+                    html: `Lớp <strong>${classId}</strong> đang có <strong>${studentCount} sinh viên</strong>.<br>Vui lòng chuyển hoặc xóa sinh viên trước.`
+                });
+                return;
+            }
+            
+            const result = await Swal.fire({
+                title: 'Xác nhận xóa?',
+                html: `Bạn có chắc chắn muốn xóa lớp <strong>${classId}</strong>?<br><small class="text-muted">Hành động này không thể hoàn tác!</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fa fa-trash me-1"></i>Xóa lớp',
+                cancelButtonText: 'Hủy'
+            });
+            
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'Đang xóa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const fd = new FormData();
+                fd.append('classId', classId);
+                
+                const res = await fetch('/Admin/Students/DeleteClassAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Đã xóa!', text: `Lớp ${classId} đã được xóa.`, timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+    
+    // ========== TAO CHUYEN NGANH - SweetAlert2 ==========
+    document.querySelectorAll('.btn-create-major').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const batchId = this.dataset.batchId;
+            const batchCode = this.dataset.batchCode;
+            
+            const { value: formValues } = await Swal.fire({
+                title: '<i class="fa fa-plus-circle text-success me-2"></i>Thêm chuyên ngành',
+                html: `
+                    <div class="text-start">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Khóa</label>
+                            <input type="text" class="form-control bg-light" value="Khóa ${batchCode}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Mã chuyên ngành <span class="text-danger">*</span></label>
+                            <input type="text" id="swal-majorCode" class="form-control" placeholder="VD: TIN, CNPM, KTPM">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tên chuyên ngành <span class="text-danger">*</span></label>
+                            <input type="text" id="swal-majorName" class="form-control" placeholder="VD: Công nghệ Thông tin">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-plus me-1"></i>Tạo',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#198754',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const code = document.getElementById('swal-majorCode').value.trim();
+                    const name = document.getElementById('swal-majorName').value.trim();
+                    if (!code || !name) { Swal.showValidationMessage('Vui lòng nhập đầy đủ thông tin!'); return false; }
+                    return { code, name };
+                }
+            });
+            
+            if (formValues) {
+                Swal.fire({ title: 'Đang tạo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const fd = new FormData();
+                fd.append('batchId', batchId);
+                fd.append('code', formValues.code);
+                fd.append('name', formValues.name);
+                
+                const res = await fetch('/Admin/Students/CreateMajorAjax', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    await Swal.fire({ icon: 'success', title: 'Thành công!', text: `Đã tạo chuyên ngành ${formValues.name}`, timer: 1500, showConfirmButton: false });
+                    location.reload();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
+                }
+            }
+        });
+    });
+    
+    // ========== NHAP EXCEL - SweetAlert2 nhieu buoc ==========
+    document.getElementById('btnOpenImport').addEventListener('click', async function() {
+        // Buoc 1: Chon file
+        const { value: file } = await Swal.fire({
+            title: '<i class="fa fa-file-excel text-success me-2"></i>Import Sinh viên',
+            html: `
+                <div class="text-center py-3">
+                    <i class="fa fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+                    <p class="text-muted">Chọn file Excel (.xlsx, .xls)</p>
+                    <input type="file" id="swal-file" class="form-control" accept=".xlsx,.xls">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-upload me-1"></i>Tải lên & Xem trước',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#0d6efd',
+            focusConfirm: false,
+            preConfirm: () => {
+                const file = document.getElementById('swal-file').files[0];
+                if (!file) { Swal.showValidationMessage('Vui lòng chọn file!'); return false; }
+                return file;
+            }
+        });
+        
+        if (!file) return;
+        
+        // Buoc 2: Xem truoc
+        Swal.fire({ title: 'Đang phân tích file...', html: '<div class="spinner-border text-primary"></div>', showConfirmButton: false, allowOutsideClick: false });
+        
+        const fd = new FormData();
+        fd.append('excelFile', file);
+        
+        const previewRes = await fetch('/Admin/Students/ImportPreviewAjax', { method: 'POST', body: fd });
+        const previewHtml = await previewRes.text();
+        
+        const previewResult = await Swal.fire({
+            title: '<i class="fa fa-eye text-info me-2"></i>Xem trước dữ liệu',
+            html: `<div style="max-height: 400px; overflow-y: auto; text-align: left;">${previewHtml}</div>`,
+            width: '900px',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check me-1"></i>Xác nhận Import',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#198754',
+            showConfirmButton: !previewHtml.includes('alert-danger') && !previewHtml.includes('thiếu các cột')
+        });
+        
+        if (!previewResult.isConfirmed) return;
+        
+        // Buoc 3: Xac nhan Nhap
+        const tempFilePath = document.getElementById('tempFilePath')?.value;
+        if (!tempFilePath) {
+            Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Không tìm thấy file tạm. Vui lòng thử lại.' });
+            return;
+        }
+        
+        Swal.fire({ title: 'Đang import...', html: '<div class="spinner-border text-success"></div><p class="mt-2">Vui lòng chờ...</p>', showConfirmButton: false, allowOutsideClick: false });
+        
+        const confirmFd = new FormData();
+        confirmFd.append('tempFilePath', tempFilePath);
+        
+        const resultRes = await fetch('/Admin/Students/ConfirmImportAjax', { method: 'POST', body: confirmFd });
+        const resultHtml = await resultRes.text();
+        
+        await Swal.fire({
+            title: '<i class="fa fa-check-circle text-success me-2"></i>Kết quả Import',
+            html: `<div style="max-height: 400px; overflow-y: auto; text-align: left;">${resultHtml}</div>`,
+            width: '800px',
+            confirmButtonText: 'Đóng',
+            confirmButtonColor: '#0d6efd'
+        });
+        
+        location.reload();
+    });
+});
+</script>
+}

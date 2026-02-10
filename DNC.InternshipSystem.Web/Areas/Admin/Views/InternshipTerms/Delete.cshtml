@@ -1,0 +1,66 @@
+@model DNC.InternshipSystem.Core.Entities.InternshipTerm
+
+@{
+    ViewData["Title"] = "Xóa đợt thực tập";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="mb-4">
+    <h4 class="fw-bold mb-1 text-danger">Xóa Đợt thực tập</h4>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="/Admin/AdminHome">Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Đợt thực tập</a></li>
+            <li class="breadcrumb-item active">Xóa</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger shadow-sm">
+            <div class="card-header bg-danger text-white py-3">
+                <h6 class="mb-0"><i class="fa fa-exclamation-triangle me-2"></i>Cảnh báo xóa</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Bạn có chắc chắn muốn xóa đợt thực tập này? Hành động này không thể hoàn tác.</p>
+
+                <table class="table table-borderless mb-4">
+                    <tr>
+                        <td class="text-muted" style="width:120px;">Tên đợt:</td>
+                        <td class="fw-semibold">@Model.TermName</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Thời gian:</td>
+                        <td>@Model.InternshipStart.ToString("dd/MM/yyyy") - @Model.EndDate.ToString("dd/MM/yyyy")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Trạng thái:</td>
+                        <td>
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Không hoạt động</span>
+                            }
+                        </td>
+                    </tr>
+                </table>
+
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left me-1"></i> Hủy bỏ
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-trash me-1"></i> Xác nhận xóa
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
