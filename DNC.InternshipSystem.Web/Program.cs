@@ -2,15 +2,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+// Them cac dich vu vao container.
+builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
 
-// Add Database Context
+// Ban quyen EPPlus
+OfficeOpenXml.ExcelPackage.License.SetNonCommercialPersonal("DNC-IMS");
+
+// Them Database Context
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<DNC.InternshipSystem.Infrastructure.Data.AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// Add Identity
+// Them Identity
 builder.Services.AddIdentity<DNC.InternshipSystem.Core.Entities.AppUser, Microsoft.AspNetCore.Identity.IdentityRole<Guid>>()
     .AddEntityFrameworkStores<DNC.InternshipSystem.Infrastructure.Data.AppDbContext>()
     .AddDefaultTokenProviders();
@@ -23,7 +26,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Cau hinh HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -55,60 +58,18 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
+// Viec seed du lieu da duoc chuyen sang AppDbContext.cs (OnModelCreating)
 using (var scope = app.Services.CreateScope())
 {
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<DNC.InternshipSystem.Core.Entities.AppUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
-    // Create roles
-    string[] roles = { "Admin", "Lecturer", "Student" };
-    foreach (var role in roles)
+    // Chay Seed Data (Runtime)
+    try 
     {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole<Guid>(role));
+        await DNC.InternshipSystem.Infrastructure.Data.DbInitializer.Initialize(scope.ServiceProvider);
     }
-
-    // Create Admin user
-    var adminUser = await userManager.FindByNameAsync("admin");
-    if (adminUser == null)
+    catch (Exception ex)
     {
-        adminUser = new DNC.InternshipSystem.Core.Entities.AppUser
-        {
-            UserName = "admin",
-            Email = "admin@nctu.edu.vn",
-            FullName = "Quản trị viên",
-            EmailConfirmed = true
-        };
-        await userManager.CreateAsync(adminUser, "Admin@123");
-        await userManager.AddToRoleAsync(adminUser, "Admin");
-    }
-    //Create Lecturer user
-    var lecturerUser = await userManager.FindByNameAsync("lecturer");
-    if (lecturerUser == null)
-    {
-        lecturerUser = new DNC.InternshipSystem.Core.Entities.AppUser
-        {
-            UserName = "lecturer",
-            Email = "lecturer@nctu.edu.vn",
-            FullName = "Giảng viên",
-            EmailConfirmed = true
-        };
-        await userManager.CreateAsync(lecturerUser, "Lecturer@123");
-        await userManager.AddToRoleAsync(lecturerUser, "Lecturer");
-    }
-    //Create Student user
-    var studentUser = await userManager.FindByNameAsync("student");
-    if(studentUser == null)
-    {
-        studentUser = new DNC.InternshipSystem.Core.Entities.AppUser
-        {
-            UserName = "student",
-            Email = "student@nctu.edu.vn",
-            FullName = "Sinh viên",
-            EmailConfirmed = true
-        };
-        await userManager.CreateAsync(studentUser, "Student@123");
-        await userManager.AddToRoleAsync(studentUser, "Student");
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Co loi xay ra khi seed du lieu vao database.");
     }
 }
 

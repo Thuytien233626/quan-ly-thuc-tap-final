@@ -1,14 +1,398 @@
+@model DNC.InternshipSystem.Web.Areas.Admin.Models.DashboardViewModel
+
 @{
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
     ViewData["Title"] = "Dashboard";
 }
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-5 text-center">
-        <h2 class="text-primary fw-bold">Xin chào Administrator!</h2>
-        <p class="text-muted">Hệ thống quản lý thực tập đã sẵn sàng.</p>
-        <button class="btn btn-primary mt-3">
-            <i class="fa fa-rocket me-2"></i> Bắt đầu làm việc
-        </button>
+<div class="container-fluid">
+    <!-- Phan tieu de (Hero) -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-dark fw-bold mb-1">Tổng quan hệ thống</h2>
+            <p class="text-muted mb-0">Hệ thống quản lý thực tập - Khoa Công nghệ thông tin</p>
+        </div>
+        <div class="text-end">
+            <div class="badge bg-white text-dark border p-2 px-3 shadow-sm rounded-pill">
+                <i class="far fa-calendar-alt me-2 text-primary"></i> @DateTime.Now.ToString("dd/MM/yyyy")
+            </div>
+        </div>
+    </div>
+
+    <!-- Luoi thong ke -->
+    <div class="row g-4 mb-4">
+        <!-- Cac dot dang mo -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="stats-icon-box bg-success bg-opacity-10 text-success">
+                        <i class="fas fa-calendar-check text-success"></i>
+                    </div>
+                    <div class="badge bg-success bg-opacity-10 text-success rounded-pill">Đang mở</div>
+                </div>
+                <div>
+                    <div class="card-title-custom">Đợt thực tập</div>
+                    <div class="card-value-custom">@Model.ActiveTermCount</div>
+                    <div class="small text-success mt-2">
+                        <i class="fas fa-check-circle me-1"></i> Hệ thống sẵn sàng
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tong so sinh vien -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="stats-icon-box bg-primary bg-opacity-10 text-primary">
+                        <i class="fas fa-user-graduate text-primary"></i>
+                    </div>
+                    @if(Model.ActiveStudents > 0) {
+                        <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill">@Model.ActiveStudents đang TT</div>
+                    }
+                </div>
+                <div>
+                    <div class="card-title-custom">Sinh viên</div>
+                    <div class="card-value-custom">@Model.TotalStudents</div>
+                    <div class="small text-muted mt-2">@Model.ActiveStudents SV đang thực tập</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tong so giang vien -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="stats-icon-box bg-info bg-opacity-10 text-info">
+                        <i class="fas fa-chalkboard-teacher text-info"></i>
+                    </div>
+                    @if(Model.ActiveLecturers > 0) {
+                        <div class="badge bg-info bg-opacity-10 text-info rounded-pill">@Model.ActiveLecturers đang HD</div>
+                    }
+                </div>
+                <div>
+                    <div class="card-title-custom">Giảng viên</div>
+                    <div class="card-value-custom">@Model.TotalLecturers</div>
+                    <div class="small text-muted mt-2">@Model.ActiveLecturers GV đang hướng dẫn</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tong so doanh nghiep -->
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="stats-icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="fas fa-building text-warning"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="card-title-custom">Doanh nghiệp</div>
+                    <div class="card-value-custom">@Model.TotalCompanies</div>
+                    <div class="small text-muted mt-2">Đối tác tiếp nhận SV</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hang bieu do -->
+    <div class="row g-4 mb-4">
+        <!-- Bieu do tron: Dat/Khong dat -->
+        <div class="col-xl-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 p-4 pb-0">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-chart-pie text-primary me-2"></i> Kết quả thực tập
+                    </h5>
+                    <p class="text-muted small mb-0 mt-1">Tỷ lệ Đạt / Không đạt / Chưa chấm</p>
+                </div>
+                <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                    @if(Model.PassedCount + Model.FailedCount + Model.NotGradedCount == 0)
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-chart-pie fa-3x mb-3 opacity-25"></i>
+                            <p>Chưa có dữ liệu chấm điểm</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="max-width: 320px; width: 100%;">
+                            <canvas id="gradingDoughnutChart"></canvas>
+                        </div>
+                    }
+                </div>
+                <!-- Thong ke chu giai -->
+                <div class="card-footer bg-white border-0 px-4 pb-4 pt-0">
+                    <div class="row text-center g-2">
+                        <div class="col-4">
+                            <div class="p-2 bg-success bg-opacity-10 rounded-3">
+                                <div class="fw-bold text-success fs-5">@Model.PassedCount</div>
+                                <div class="small text-muted">Đạt</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-danger bg-opacity-10 rounded-3">
+                                <div class="fw-bold text-danger fs-5">@Model.FailedCount</div>
+                                <div class="small text-muted">Không đạt</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-secondary bg-opacity-10 rounded-3">
+                                <div class="fw-bold text-secondary fs-5">@Model.NotGradedCount</div>
+                                <div class="small text-muted">Chưa chấm</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bieu do cot: Phan bo diem -->
+        <div class="col-xl-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 p-4 pb-0">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-chart-bar text-info me-2"></i> Phân bố điểm tổng kết
+                    </h5>
+                    <p class="text-muted small mb-0 mt-1">Số lượng sinh viên theo khoảng điểm</p>
+                </div>
+                <div class="card-body p-4">
+                    @if(Model.ScoreDistribution.Sum() == 0)
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-chart-bar fa-3x mb-3 opacity-25"></i>
+                            <p>Chưa có dữ liệu điểm</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <canvas id="scoreBarChart" style="max-height: 280px;"></canvas>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gan day & Thao tac nhanh -->
+    <div class="row g-4 mb-4">
+        <!-- Bang dang ky gan day -->
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 p-4 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="fas fa-clock text-warning me-2"></i> Đăng ký gần đây
+                        </h5>
+                        <a asp-area="Admin" asp-controller="Registration" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill">
+                            Xem tất cả <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    @if(Model.RecentRegistrations.Count == 0)
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
+                            <p>Chưa có đăng ký nào</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sinh viên</th>
+                                        <th>Ngành</th>
+                                        <th>Công ty</th>
+                                        <th class="text-center">Trạng thái</th>
+                                        <th>Ngày đăng ký</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach(var reg in Model.RecentRegistrations)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold">@reg.StudentName</div>
+                                                <small class="text-muted">@reg.StudentCode</small>
+                                            </td>
+                                            <td><span class="badge bg-light text-dark border">@reg.MajorName</span></td>
+                                            <td class="text-primary fw-semibold">@reg.CompanyName</td>
+                                            <td class="text-center">
+                                                @if(reg.Status == 1)
+                                                {
+                                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Đã duyệt</span>
+                                                }
+                                                else if(reg.Status == 0)
+                                                {
+                                                    <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">Chờ duyệt</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">Từ chối</span>
+                                                }
+                                            </td>
+                                            <td class="text-muted small">@reg.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Thao tac nhanh -->
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 p-4 pb-0">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-bolt text-warning me-2"></i> Thao tác nhanh
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-grid gap-3">
+                        <a asp-area="Admin" asp-controller="Students" asp-action="Index" class="btn btn-outline-primary py-3 rounded-3 d-flex align-items-center gap-2">
+                            <i class="fas fa-file-import"></i> <span>Quản lý Sinh viên</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Allocation" asp-action="Index" class="btn btn-outline-info py-3 rounded-3 d-flex align-items-center gap-2">
+                            <i class="fas fa-users-cog"></i> <span>Phân công GVHD</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Grading" asp-action="Index" class="btn btn-outline-success py-3 rounded-3 d-flex align-items-center gap-2">
+                            <i class="fas fa-award"></i> <span>Chấm điểm thực tập</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Grading" asp-action="Export" class="btn btn-outline-dark py-3 rounded-3 d-flex align-items-center gap-2">
+                            <i class="fas fa-file-excel"></i> <span>Xuất báo cáo Excel</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- Trang thai he thong -->
+                <div class="card-footer bg-white border-0 px-4 pb-4 pt-0">
+                    <div class="alert alert-success border-0 bg-success bg-opacity-10 mb-0 d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-success shadow-sm" style="width: 10px; height: 10px;"></div>
+                        <div class="text-success fw-bold small">Hệ thống hoạt động bình thường</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isDark = () => document.body.classList.contains('dark-mode');
+    const getTextColor = () => isDark() ? '#94a3b8' : '#64748b';
+    const getGridColor = () => isDark() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+    let doughnutChart, barChart;
+
+    // === Bieu do tron: Dat/Khong dat ===
+    const doughnutCanvas = document.getElementById('gradingDoughnutChart');
+    if (doughnutCanvas) {
+        doughnutChart = new Chart(doughnutCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Đạt (≥5.0)', 'Không đạt (<5.0)', 'Chưa chấm'],
+                datasets: [{
+                    data: [@Model.PassedCount, @Model.FailedCount, @Model.NotGradedCount],
+                    backgroundColor: [
+                        'rgba(25, 135, 84, 0.8)',
+                        'rgba(220, 53, 69, 0.8)',
+                        'rgba(108, 117, 125, 0.4)'
+                    ],
+                    borderColor: isDark() ? '#1e293b' : '#ffffff',
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 16,
+                            usePointStyle: true,
+                            pointStyleWidth: 10,
+                            color: getTextColor(),
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // === Bieu do cot: Phan bo diem ===
+    const barCanvas = document.getElementById('scoreBarChart');
+    if (barCanvas) {
+        barChart = new Chart(barCanvas, {
+            type: 'bar',
+            data: {
+                labels: ['0 - 2', '2 - 4', '4 - 6', '6 - 8', '8 - 10'],
+                datasets: [{
+                    label: 'Số sinh viên',
+                    data: [@Model.ScoreDistribution[0], @Model.ScoreDistribution[1], @Model.ScoreDistribution[2], @Model.ScoreDistribution[3], @Model.ScoreDistribution[4]],
+                    backgroundColor: [
+                        'rgba(220, 53, 69, 0.7)',
+                        'rgba(255, 193, 7, 0.7)',
+                        'rgba(13, 202, 240, 0.7)',
+                        'rgba(25, 135, 84, 0.7)',
+                        'rgba(13, 110, 253, 0.7)'
+                    ],
+                    borderColor: ['#dc3545', '#ffc107', '#0dcaf0', '#198754', '#0d6efd'],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, color: getTextColor(), font: { size: 11 } },
+                        grid: { color: getGridColor() }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: getTextColor(), font: { size: 12 } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // Lang nghe su kien chuyen doi giao dien toi
+    document.getElementById('darkModeToggle').addEventListener('change', function() {
+        setTimeout(() => {
+            const textColor = getTextColor();
+            const gridColor = getGridColor();
+            const borderColor = isDark() ? '#1e293b' : '#ffffff';
+
+            if (doughnutChart) {
+                doughnutChart.options.plugins.legend.labels.color = textColor;
+                doughnutChart.data.datasets[0].borderColor = borderColor;
+                doughnutChart.update();
+            }
+            if (barChart) {
+                barChart.options.scales.x.ticks.color = textColor;
+                barChart.options.scales.y.ticks.color = textColor;
+                barChart.options.scales.y.grid.color = gridColor;
+                barChart.update();
+            }
+        }, 100);
+    });
+});
+</script>
+}

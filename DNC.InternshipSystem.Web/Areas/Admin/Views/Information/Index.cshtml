@@ -1,0 +1,42 @@
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Thông tin hệ thống";
+}
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-5 text-center">
+        <div class="mb-4">
+            <img src="~/logo.png" alt="DNC Logo" style="max-height: 80px;">
+        </div>
+        <h3 class="fw-bold text-dark">DNC Internship Management System</h3>
+        <p class="text-muted">Phiên bản 1.0.0 (Stable)</p>
+        
+        <div class="mt-4 p-4 bg-light rounded-4 d-inline-block text-start" style="max-width: 500px;">
+            <div class="d-flex gap-3 mb-3">
+                <div class="text-primary"><i class="fas fa-code-branch fa-lg"></i></div>
+                <div>
+                    <div class="fw-bold">Framework</div>
+                    <div class="small">ASP.NET Core 9.0 (MVC)</div>
+                </div>
+            </div>
+            <div class="d-flex gap-3 mb-3">
+                <div class="text-primary"><i class="fas fa-database fa-lg"></i></div>
+                <div>
+                    <div class="fw-bold">Database</div>
+                    <div class="small">SQL Server 2022</div>
+                </div>
+            </div>
+            <div class="d-flex gap-3">
+                <div class="text-primary"><i class="fas fa-shield-alt fa-lg"></i></div>
+                <div>
+                    <div class="fw-bold">Security</div>
+                    <div class="small">ASP.NET Core Identity & JWT</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 text-muted small">
+            &copy; @DateTime.Now.Year - Đại học Nam Cần Thơ. All rights reserved.
+        </div>
+    </div>
+</div>
