@@ -1,0 +1,84 @@
+@model IEnumerable<dynamic>
+@{
+    Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
+    ViewData["Title"] = "Duyệt nhật ký";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Duyệt nhật ký thực tập</h4>
+        <p class="text-muted mb-0 small">Danh sách các sinh viên có nhật ký cần xem xét.</p>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Sinh viên</th>
+                        <th>Lớp</th>
+                        <th class="text-center">Số lượng chờ duyệt</th>
+                        <th class="text-center">Gửi gần nhất</th>
+                        <th class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            var student = item.Registration.Student;
+                            var user = student?.User;
+                            var className = student?.Class?.Name;
+                            
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">
+                                                @(user?.FullName?.Substring(0, 1) ?? "S")
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@user?.FullName</div>
+                                            <small class="text-muted">@student?.StudentCode</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">@className</span></td>
+                                <td class="text-center">
+                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                        @item.PendingCount nhật ký
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <small class="text-muted">
+                                        <i class="fa fa-clock me-1"></i> @item.LatestSubmission.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <a asp-action="Details" asp-route-id="@item.Registration.Id" class="btn btn-primary btn-sm">
+                                        <i class="fa fa-pencil-alt me-1"></i> Duyệt ngay
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="fa fa-check-circle fa-3x text-success mb-3"></i>
+                                <h5 class="text-success fw-bold">Tuyệt vời!</h5>
+                                <p class="mb-0">Bạn đã duyệt hết tất cả nhật ký.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

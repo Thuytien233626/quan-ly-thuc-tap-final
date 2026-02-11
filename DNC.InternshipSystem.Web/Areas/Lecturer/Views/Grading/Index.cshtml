@@ -1,0 +1,114 @@
+@using DNC.InternshipSystem.Core.Entities
+@model List<Registration>
+@{
+    Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
+    ViewData["Title"] = "Chấm điểm thực tập";
+    var grades = ViewBag.Grades as List<Grade> ?? new List<Grade>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Chấm điểm thực tập</h4>
+        <p class="text-muted mb-0 small">Danh sách sinh viên cần nhập điểm hướng dẫn.</p>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Sinh viên</th>
+                        <th>Lớp</th>
+                        <th class="text-center">Điểm Doanh nghiệp</th>
+                        <th class="text-center">Điểm GVHD</th>
+                        <th class="text-center">Tổng kết</th>
+                        <th class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            var student = item.Student;
+                            var user = student?.User;
+                            var grade = grades.FirstOrDefault(g => g.RegistrationId == item.Id);
+                            var instructorScore = grade?.InstructorScore;
+                            
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">
+                                                @(user?.FullName?.Substring(0, 1) ?? "S")
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@user?.FullName</div>
+                                            <small class="text-muted">@student?.StudentCode</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">@student?.Class?.Name</span></td>
+                                <td class="text-center">
+                                    @if (item.CompanyScore.HasValue)
+                                    {
+                                        <span class="fw-bold text-dark">@item.CompanyScore</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">--</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (instructorScore.HasValue)
+                                    {
+                                        <span class="fw-bold text-primary">@instructorScore</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger">Chưa nhập</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (item.FinalScore.HasValue)
+                                    {
+                                        <span class="fw-bold text-success">@item.FinalScore</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">--</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <a asp-action="Grade" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                        <i class="fa fa-pen me-1"></i> @(instructorScore.HasValue ? "Sửa điểm" : "Nhập điểm")
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <p class="mb-0">Không có sinh viên nào cần chấm điểm.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

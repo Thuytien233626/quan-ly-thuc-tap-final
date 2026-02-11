@@ -1,0 +1,68 @@
+@using DNC.InternshipSystem.Core.Entities
+@model Grade
+@{
+    Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
+    ViewData["Title"] = "Nhập điểm";
+    var registration = ViewBag.Registration as Registration;
+    var student = registration?.Student;
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold mb-1">Nhập điểm hướng dẫn</h4>
+                <p class="text-muted mb-0 small">
+                    Sinh viên: <strong>@(student?.User?.FullName ?? "N/A")</strong> - 
+                    MSSV: <strong>@(student?.StudentCode ?? "N/A")</strong>
+                </p>
+            </div>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fa fa-arrow-left me-1"></i> Trở về
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="Grade" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="RegistrationId" />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                             <label class="form-label fw-semibold">Điểm doanh nghiệp</label>
+                             <input type="text" class="form-control" value="@(registration?.CompanyScore?.ToString() ?? "Chưa có")" disabled />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="InstructorScore" class="form-label fw-semibold">Điểm giảng viên hướng dẫn <span class="text-danger">*</span></label>
+                            <input asp-for="InstructorScore" type="number" step="0.1" min="0" max="10" class="form-control" placeholder="Nhập điểm từ 0 - 10" required />
+                            <span asp-validation-for="InstructorScore" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Note" class="form-label fw-semibold">Nhận xét chung</label>
+                            <textarea asp-for="Note" class="form-control" rows="4" placeholder="Nhập nhận xét về quá trình thực tập của sinh viên..."></textarea>
+                            <span asp-validation-for="Note" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 mt-4 text-end">
+                            <a asp-action="Index" class="btn btn-light border me-2">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fa fa-save me-1"></i> Lưu kết quả
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="alert alert-info mt-4">
+            <i class="fa fa-info-circle me-2"></i>
+            <strong>Lưu ý:</strong> Điểm số sẽ được sử dụng để tính điểm tổng kết cuối kỳ. Vui lòng kiểm tra kỹ trước khi lưu.
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

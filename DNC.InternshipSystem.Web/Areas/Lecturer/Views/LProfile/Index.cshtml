@@ -1,0 +1,125 @@
+@using DNC.InternshipSystem.Core.Entities
+@{
+    Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
+    ViewData["Title"] = "Hồ sơ cá nhân";
+
+    var lecturer = ViewBag.Lecturer as Lecturer;
+    var user = lecturer?.User;
+    int assignedStudents = ViewBag.AssignedStudents ?? 0;
+    int totalLogbooks = ViewBag.TotalLogbooks ?? 0;
+    int gradedStudents = ViewBag.GradedStudents ?? 0;
+}
+
+<div class="row g-4">
+    <!-- Profile Card -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center p-5">
+                <!-- Avatar -->
+                <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto d-flex align-items-center justify-content-center mb-4 border border-3 border-primary border-opacity-25" 
+                     style="width: 100px; height: 100px;">
+                    <i class="fa fa-chalkboard-teacher fa-2x"></i>
+                </div>
+                
+                <h4 class="fw-bold mb-1">@(user?.FullName ?? "Giảng viên")</h4>
+                <p class="text-muted mb-3">@(lecturer?.AcademicRank ?? "Giảng viên")</p>
+                
+                <div class="d-flex justify-content-center gap-2 mb-4">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
+                        <i class="fa fa-id-badge me-1"></i> @(lecturer?.LecturerCode ?? "N/A")
+                    </span>
+                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                        <i class="fa fa-circle" style="font-size: 6px;"></i> Đang hoạt động
+                    </span>
+                </div>
+
+                <hr>
+
+                <!-- Quick Stats -->
+                <div class="row text-center g-0">
+                    <div class="col-4">
+                        <h5 class="fw-bold text-primary mb-0">@assignedStudents</h5>
+                        <small class="text-muted" style="font-size: 0.7rem;">Sinh viên</small>
+                    </div>
+                    <div class="col-4 border-start border-end">
+                        <h5 class="fw-bold text-warning mb-0">@totalLogbooks</h5>
+                        <small class="text-muted" style="font-size: 0.7rem;">Nhật ký</small>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="fw-bold text-success mb-0">@gradedStudents</h5>
+                        <small class="text-muted" style="font-size: 0.7rem;">Đã chấm</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Details -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fa fa-user-circle text-primary me-2"></i>Thông tin cá nhân</h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Họ và tên</label>
+                        <div class="form-control bg-light border-0 fw-semibold">@(user?.FullName ?? "N/A")</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Mã giảng viên</label>
+                        <div class="form-control bg-light border-0 fw-semibold">@(lecturer?.LecturerCode ?? "N/A")</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Email</label>
+                        <div class="form-control bg-light border-0">
+                            <i class="fa fa-envelope text-muted me-2"></i> @(user?.Email ?? "N/A")
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Học hàm / Học vị</label>
+                        <div class="form-control bg-light border-0">
+                            <i class="fa fa-graduation-cap text-muted me-2"></i> @(lecturer?.AcademicRank ?? "N/A")
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Chuyên môn</label>
+                        <div class="form-control bg-light border-0">
+                            <i class="fa fa-briefcase text-muted me-2"></i> @(lecturer?.Specialization ?? "N/A")
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Khoa</label>
+                        <div class="form-control bg-light border-0">
+                            <i class="fa fa-university text-muted me-2"></i> @(lecturer?.Department?.Name ?? "N/A")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lop phu trach -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fa fa-door-open text-info me-2"></i>Lớp phụ trách</h6>
+            </div>
+            <div class="card-body">
+                @if (lecturer?.Classes != null && lecturer.Classes.Any())
+                {
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var cls in lecturer.Classes)
+                        {
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
+                                <i class="fa fa-users me-1"></i> @cls.Name
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0 small">Chưa được phân công lớp nào.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

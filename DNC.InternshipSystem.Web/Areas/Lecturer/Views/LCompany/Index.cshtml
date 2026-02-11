@@ -1,0 +1,87 @@
+@model IEnumerable<dynamic>
+@{
+    Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
+    ViewData["Title"] = "Doanh nghiệp thực tập";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Doanh nghiệp thực tập</h4>
+        <p class="text-muted mb-0 small">Danh sách các doanh nghiệp nơi sinh viên của bạn đang thực tập.</p>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="row g-4">
+        @foreach (var company in Model)
+        {
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="fa fa-building fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-dark">@company.Name</h6>
+                                    @if (!string.IsNullOrEmpty((string)company.Province))
+                                    {
+                                        <span class="badge bg-light text-muted border small">
+                                            <i class="fa fa-map-marker-alt me-1"></i> @company.Province
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">
+                                @company.StudentCount <i class="fa fa-user-graduate ms-1"></i>
+                            </span>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty((string)company.Address))
+                        {
+                            <div class="mb-2 small text-muted">
+                                <i class="fa fa-location-dot me-2 text-danger"></i> @company.Address
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty((string)company.Phone))
+                        {
+                            <div class="mb-3 small text-muted">
+                                <i class="fa fa-phone me-2 text-success"></i> @company.Phone
+                            </div>
+                        }
+
+                        <hr class="my-3">
+
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var student in company.Students)
+                            {
+                                if (student?.User != null)
+                                {
+                                    <div class="d-flex align-items-center gap-2 border rounded-pill px-3 py-1" style="font-size: 0.8rem;">
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width: 24px; height: 24px; font-size: 0.65rem;">
+                                            <i class="fa fa-user"></i>
+                                        </div>
+                                        <span class="fw-semibold">@student.User.FullName</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fa fa-building fa-3x text-muted mb-3 opacity-25"></i>
+            <h5 class="text-muted fw-semibold">Chưa có doanh nghiệp nào</h5>
+            <p class="text-muted small">Sinh viên chưa được phân công hoặc chưa đăng ký thực tập.</p>
+        </div>
+    </div>
+}

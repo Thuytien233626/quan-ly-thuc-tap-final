@@ -1,14 +1,197 @@
+@using DNC.InternshipSystem.Core.Entities
 @{
     Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
     ViewData["Title"] = "Dashboard";
+
+    var lecturer = ViewBag.Lecturer as Lecturer;
+    var assignedCount = ViewBag.AssignedStudentsCount ?? 0;
+    var pendingLogbooks = ViewBag.PendingLogbooksCount ?? 0;
+    var gradedCount = ViewBag.GradedStudentsCount ?? 0;
+    var recentStudents = ViewBag.RecentStudents as List<Registration> ?? new List<Registration>();
+    
+    // Tinh ti le hoan thanh cham diem
+    int total = assignedCount > 0 ? assignedCount : 1;
+    int gradedPercent = (int)Math.Round((double)gradedCount / total * 100);
 }
 
+<!-- Welcome Section -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="text-dark fw-bold mb-1">Xin chào, <span class="text-primary">@(lecturer?.User?.FullName ?? "Giảng viên")</span> 👋</h2>
+        <p class="text-muted mb-0">Chào mừng trở lại hệ thống quản lý thực tập.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <span class="badge bg-light text-secondary border px-3 py-2">
+            <i class="fa fa-id-badge me-1"></i> @(lecturer?.LecturerCode ?? "N/A")
+        </span>
+        <span class="badge bg-light text-secondary border px-3 py-2">
+            <i class="fa fa-graduation-cap me-1"></i> @(lecturer?.AcademicRank ?? "Giảng viên")
+        </span>
+    </div>
+</div>
+
+@if (ViewBag.Message != null)
+{
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle me-2"></i> @ViewBag.Message
+    </div>
+}
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <!-- Sinh vien phu trach -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Sinh viên phụ trách</h6>
+                        <h2 class="mb-0 fw-bold text-dark">@assignedCount</h2>
+                    </div>
+                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center text-primary" 
+                         style="width: 48px; height: 48px;">
+                        <i class="fa fa-users fs-4"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center text-muted small">
+                    <span class="text-success fw-bold me-1"><i class="fa fa-arrow-up"></i> Active</span>
+                    <span>trong học kỳ này</span>
+                </div>
+                <a asp-action="Index" asp-controller="MyStudents" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nhat ky cho duyet -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Nhật ký chờ duyệt</h6>
+                        <h2 class="mb-0 fw-bold text-@(pendingLogbooks > 0 ? "warning" : "success")">@pendingLogbooks</h2>
+                    </div>
+                    <div class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center text-warning" 
+                         style="width: 48px; height: 48px;">
+                        <i class="fa fa-book-reader fs-4"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center text-muted small">
+                    @if (pendingLogbooks > 0)
+                    {
+                        <span class="text-warning fw-bold me-1">Cần xử lý ngay</span>
+                    }
+                    else
+                    {
+                        <span class="text-success fw-bold me-1">Đã hoàn thành</span>
+                    }
+                    <span>công việc tuần này</span>
+                </div>
+                <a asp-action="Index" asp-controller="LogbookReview" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tien do cham diem -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Đã chấm điểm</h6>
+                        <h2 class="mb-0 fw-bold text-info">@gradedCount <span class="text-muted fs-6 fw-normal">/ @assignedCount</span></h2>
+                    </div>
+                    <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center text-info" 
+                         style="width: 48px; height: 48px;">
+                        <i class="fa fa-clipboard-check fs-4"></i>
+                    </div>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-info" style="width: @gradedPercent%"></div>
+                </div>
+                <div class="mt-2 text-muted small">Hoàn thành @gradedPercent% chỉ tiêu</div>
+                <a asp-action="Index" asp-controller="Grading" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
 <div class="card border-0 shadow-sm">
-    <div class="card-body p-5 text-center">
-        <h2 class="text-primary fw-bold">Xin chào Lecturer!</h2>
-        <p class="text-muted">I can did it</p>
-        <button class="btn btn-primary mt-3">
-            <i class="fa fa-rocket me-2"></i> I am trying my best
-        </button>
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="fa fa-history text-primary me-2"></i>Sinh viên vừa cập nhật</h6>
+        <a asp-action="Index" asp-controller="MyStudents" class="btn btn-sm btn-light text-primary fw-semibold">
+            Xem tất cả <i class="fa fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Sinh viên</th>
+                        <th>Lớp</th>
+                        <th>Công ty thực tập</th>
+                        <th>Cập nhật gần nhất</th>
+                        <th class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (recentStudents.Any())
+                    {
+                        @foreach (var item in recentStudents)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
+                                             style="width: 36px; height: 36px;">
+                                            <span class="fw-bold" style="font-size: 0.8rem;">
+                                                @(item.Student?.User?.FullName?.Substring(0, 1) ?? "S")
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@item.Student?.User?.FullName</div>
+                                            <small class="text-muted">@item.Student?.StudentCode</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">@item.Student?.Class?.Name</span></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-building text-muted me-2"></i>
+                                        <span class="text-truncate" style="max-width: 200px;">
+                                            @(item.Company?.Name ?? item.ExternalCompanyName ?? "N/A")
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        <i class="fa fa-clock me-1"></i> 
+                                        @(item.UpdatedDate?.ToString("dd/MM/yyyy HH:mm") ?? item.CreatedDate.ToString("dd/MM/yyyy"))
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <a asp-controller="MyStudents" asp-action="Details" asp-route-id="@item.StudentId" 
+                                       class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-state-2130362-1800926.png" 
+                                     alt="Empty" style="width: 120px; opacity: 0.5;" class="mb-3">
+                                <p class="mb-0">Chưa có sinh viên nào được phân công.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>

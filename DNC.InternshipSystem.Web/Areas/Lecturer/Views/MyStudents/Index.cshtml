@@ -1,0 +1,156 @@
+@model IEnumerable<DNC.InternshipSystem.Core.Entities.Registration>
+@{
+    Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
+    ViewData["Title"] = "Danh sách sinh viên";
+    
+    int currentPage = ViewBag.CurrentPage;
+    int totalPages = ViewBag.TotalPages;
+    string search = ViewBag.Search;
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Sinh viên hướng dẫn</h4>
+        <p class="text-muted mb-0 small">Danh sách sinh viên thực tập do bạn phụ trách.</p>
+    </div>
+</div>
+
+<!-- Search & Filter -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted"></i></span>
+                    <input type="text" name="search" class="form-control border-start-0 ps-0" 
+                           placeholder="Tìm theo tên hoặc MSSV..." value="@search">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+            </div>
+            @if (!string.IsNullOrEmpty(search))
+            {
+                <div class="col-md-2">
+                    <a asp-action="Index" class="btn btn-outline-secondary w-100">Xóa lọc</a>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+<!-- Student List -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Sinh viên</th>
+                        <th>Lớp</th>
+                        <th>Đơn vị thực tập</th>
+                        <th>Vị trí</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">
+                                                @(item.Student?.User?.FullName?.Substring(0, 1) ?? "S")
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@item.Student?.User?.FullName</div>
+                                            <small class="text-muted">@item.Student?.StudentCode</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">@item.Student?.Class?.Name</span></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fa fa-building text-muted me-2"></i>
+                                        <span class="text-truncate" style="max-width: 200px;" title="@(item.Company?.Name ?? item.ExternalCompanyName)">
+                                            @(item.Company?.Name ?? item.ExternalCompanyName ?? "N/A")
+                                        </span>
+                                    </div>
+                                </td>
+                                <td><small class="text-muted">@item.Position</small></td>
+                                <td class="text-center">
+                                    <span class="badge bg-success-subtle text-success">Đang thực tập</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light border" type="button" data-bs-toggle="dropdown">
+                                            <i class="fa fa-ellipsis-v text-muted"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                            <li>
+                                                <a class="dropdown-item" asp-controller="MyStudents" asp-action="Details" asp-route-id="@item.StudentId">
+                                                    <i class="fa fa-eye text-primary me-2"></i> Xem hồ sơ
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" asp-controller="LogbookReview" asp-action="Details" asp-route-id="@item.Id">
+                                                    <i class="fa fa-book-reader text-warning me-2"></i> Xem nhật ký
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" asp-controller="Grading" asp-action="Grade" asp-route-id="@item.Id">
+                                                    <i class="fa fa-clipboard-check text-success me-2"></i> Chấm điểm
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-state-2130362-1800926.png" 
+                                     alt="Empty" style="width: 120px; opacity: 0.5;" class="mb-3">
+                                <p class="mb-0">Không tìm thấy sinh viên nào.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    @if (totalPages > 1)
+    {
+        <div class="card-footer bg-white py-3">
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)" asp-route-search="@search">Trước</a>
+                    </li>
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(currentPage == i ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-search="@search">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-search="@search">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
