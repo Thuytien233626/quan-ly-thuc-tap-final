@@ -1,0 +1,395 @@
+@using DNC.InternshipSystem.Core.Entities
+@{
+    Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
+    ViewData["Title"] = "Đăng ký thực tập";
+
+    var companies = ViewBag.Companies as List<Company> ?? new List<Company>();
+    var provinces = ViewBag.Provinces as List<string> ?? new List<string>();
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalItems = ViewBag.TotalItems ?? 0;
+    string searchVal = ViewBag.Search ?? "";
+    string selectedProvince = ViewBag.SelectedProvince ?? "";
+
+    // Mau icon cho card, xoay vong theo index
+    var iconColors = new[] { "info", "primary", "success", "warning", "danger", "secondary" };
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Đăng ký thực tập</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Student/StudentHome">Dashboard</a></li>
+                <li class="breadcrumb-item active">Đăng ký</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+            <i class="fa fa-building me-1"></i> @totalItems doanh nghiệp
+        </span>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="registerTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="partner-tab" data-bs-toggle="tab" data-bs-target="#partnerPane" type="button" role="tab">
+            <i class="fa fa-handshake me-1"></i> Doanh nghiệp đối tác
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="external-tab" data-bs-toggle="tab" data-bs-target="#externalPane" type="button" role="tab">
+            <i class="fa fa-pen-fancy me-1"></i> Tự liên hệ doanh nghiệp
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="registerTabContent">
+    <!-- TAB 1: Danh sach DN doi tac -->
+    <div class="tab-pane fade show active" id="partnerPane" role="tabpanel">
+        <!-- Bo loc (submit ve server) -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <form method="get" asp-area="Student" asp-controller="SRegister" asp-action="Index">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Tìm kiếm</label>
+                            <input type="text" class="form-control" name="search" placeholder="Tên công ty..." value="@searchVal">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Tỉnh / Thành phố</label>
+                            <select class="form-select" name="province">
+                                <option value="">Tất cả</option>
+                                @foreach (var prov in provinces)
+                                {
+                                    <option value="@prov" selected="@(prov == selectedProvince)">@prov</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-info text-white w-100">
+                                <i class="fa fa-search me-1"></i> Lọc
+                            </button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(searchVal) || !string.IsNullOrEmpty(selectedProvince))
+                        {
+                            <div class="col-md-2">
+                                <a href="/Student/SRegister" class="btn btn-outline-secondary w-100">
+                                    <i class="fa fa-times me-1"></i> Bỏ lọc
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Danh sach card DN tu DB -->
+        <div class="row g-4" id="companyGrid">
+            @if (companies.Any())
+            {
+                @for (int i = 0; i < companies.Count; i++)
+                {
+                    var company = companies[i];
+                    var color = iconColors[i % iconColors.Length];
+                    <div class="col-md-6 col-xl-4 company-card">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-start justify-content-between mb-3">
+                                    <div class="rounded-3 bg-@color bg-opacity-10 text-@color d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="fa fa-building fa-lg"></i>
+                                    </div>
+                                    <span class="badge bg-success-subtle text-success">Đối tác</span>
+                                </div>
+                                <h6 class="fw-bold mb-1">@company.Name</h6>
+                                <p class="text-muted small mb-1">
+                                    <i class="fa fa-map-marker-alt me-1"></i>@(string.IsNullOrEmpty(company.Address) ? company.Province : company.Address)
+                                </p>
+                                @if (!string.IsNullOrEmpty(company.Province))
+                                {
+                                    <p class="text-muted small mb-2">
+                                        <i class="fa fa-city me-1"></i>@company.Province
+                                    </p>
+                                }
+                                @if (!string.IsNullOrEmpty(company.PhoneNumber))
+                                {
+                                    <p class="text-muted small mb-2">
+                                        <i class="fa fa-phone me-1"></i>@company.PhoneNumber
+                                    </p>
+                                }
+                                <div class="d-flex gap-2 mt-auto">
+                                    <button class="btn btn-sm btn-outline-info flex-fill btn-view-company"
+                                            data-name="@company.Name"
+                                            data-address="@company.Address"
+                                            data-province="@company.Province"
+                                            data-phone="@company.PhoneNumber"
+                                            data-contact="@company.ContactPerson"
+                                            data-email="@company.ContactEmail">
+                                        <i class="fa fa-eye me-1"></i> Chi tiết
+                                    </button>
+                                    <button class="btn btn-sm btn-info text-white flex-fill btn-register-company"
+                                            data-id="@company.Id"
+                                            data-name="@company.Name">
+                                        <i class="fa fa-paper-plane me-1"></i> Đăng ký
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center py-5">
+                    <i class="fa fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                    @if (!string.IsNullOrEmpty(searchVal) || !string.IsNullOrEmpty(selectedProvince))
+                    {
+                        <p class="text-muted">Không tìm thấy doanh nghiệp phù hợp với bộ lọc.</p>
+                        <a href="/Student/SRegister" class="btn btn-outline-info btn-sm">
+                            <i class="fa fa-redo me-1"></i> Xem tất cả
+                        </a>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Chưa có doanh nghiệp đối tác nào trong hệ thống.</p>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- PHAN TRANG -->
+        @if (totalPages > 1)
+        {
+            <nav aria-label="Pagination" class="mt-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Trang <strong>@currentPage</strong> / @totalPages (tổng @totalItems doanh nghiệp)
+                    </small>
+                    <ul class="pagination pagination-sm mb-0">
+                        @{
+                            // Xay dung query string co san
+                            string BuildUrl(int p)
+                            {
+                                var qs = new List<string> { $"page={p}" };
+                                if (!string.IsNullOrEmpty(searchVal)) qs.Add($"search={Uri.EscapeDataString(searchVal)}");
+                                if (!string.IsNullOrEmpty(selectedProvince)) qs.Add($"province={Uri.EscapeDataString(selectedProvince)}");
+                                return $"/Student/SRegister?{string.Join("&", qs)}";
+                            }
+                        }
+
+                        <!-- Trang truoc -->
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@BuildUrl(currentPage - 1)">
+                                <i class="fa fa-chevron-left"></i>
+                            </a>
+                        </li>
+
+                        @{
+                            // Hien thi cac so trang
+                            int startPage = Math.Max(1, currentPage - 2);
+                            int endPage = Math.Min(totalPages, currentPage + 2);
+
+                            if (startPage > 1)
+                            {
+                                <li class="page-item"><a class="page-link" href="@BuildUrl(1)">1</a></li>
+                                if (startPage > 2)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                            }
+
+                            for (int p = startPage; p <= endPage; p++)
+                            {
+                                <li class="page-item @(p == currentPage ? "active" : "")">
+                                    <a class="page-link" href="@BuildUrl(p)">@p</a>
+                                </li>
+                            }
+
+                            if (endPage < totalPages)
+                            {
+                                if (endPage < totalPages - 1)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                                <li class="page-item"><a class="page-link" href="@BuildUrl(totalPages)">@totalPages</a></li>
+                            }
+                        }
+
+                        <!-- Trang sau -->
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                            <a class="page-link" href="@BuildUrl(currentPage + 1)">
+                                <i class="fa fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        }
+    </div>
+
+    <!-- TAB 2: Tu lien he DN -->
+    <div class="tab-pane fade" id="externalPane" role="tabpanel">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="mb-0 fw-bold"><i class="fa fa-pen-fancy text-info me-2"></i>Đăng ký doanh nghiệp tự liên hệ</h6>
+                        <small class="text-muted">Điền thông tin doanh nghiệp bạn đã tự liên hệ để thực tập.</small>
+                    </div>
+                    <div class="card-body">
+                        <form id="externalForm">
+                            <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
+                                <i class="fa fa-building me-2"></i>Thông tin Doanh nghiệp
+                            </h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold">Tên công ty <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" placeholder="VD: Công ty TNHH ABC" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Mã số thuế</label>
+                                    <input type="text" class="form-control" placeholder="VD: 1801234567">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required>
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
+                                <i class="fa fa-user me-2"></i>Người liên hệ tại Doanh nghiệp
+                            </h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Họ tên người liên hệ <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" placeholder="VD: Nguyễn Văn A" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Chức vụ</label>
+                                    <input type="text" class="form-control" placeholder="VD: Trưởng phòng IT">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" placeholder="0901234567" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Email</label>
+                                    <input type="email" class="form-control" placeholder="email@company.com">
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
+                                <i class="fa fa-briefcase me-2"></i>Thông tin Thực tập
+                            </h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold">Vị trí thực tập <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" placeholder="VD: Thực tập sinh lập trình Web" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Ghi chú</label>
+                                    <textarea class="form-control" rows="3" placeholder="Ghi chú thêm (nếu có)..."></textarea>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="reset" class="btn btn-outline-secondary">
+                                    <i class="fa fa-redo me-1"></i> Đặt lại
+                                </button>
+                                <button type="submit" class="btn btn-info text-white">
+                                    <i class="fa fa-paper-plane me-1"></i> Gửi đơn đăng ký
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const Toast = Swal.mixin({
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
+    });
+
+    // Dang ky DN doi tac
+    document.querySelectorAll('.btn-register-company').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const name = this.dataset.name;
+            const companyId = this.dataset.id;
+            
+            const { value: position } = await Swal.fire({
+                title: `<i class="fa fa-paper-plane text-info me-2"></i>Đăng ký tại`,
+                html: `
+                    <p class="fw-bold text-info mb-3">${name}</p>
+                    <div class="text-start">
+                        <label class="form-label fw-semibold">Vị trí thực tập <span class="text-danger">*</span></label>
+                        <input type="text" id="swal-position" class="form-control" placeholder="VD: Thực tập sinh lập trình">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-paper-plane me-1"></i>Gửi đơn',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#0ea5e9',
+                preConfirm: () => {
+                    const val = document.getElementById('swal-position').value.trim();
+                    if (!val) { Swal.showValidationMessage('Vui lòng nhập vị trí!'); return false; }
+                    return val;
+                }
+            });
+
+            if (position) {
+                Toast.fire({ icon: 'success', title: 'Đã gửi đơn đăng ký thành công!' });
+            }
+        });
+    });
+
+    // Xem chi tiet DN
+    document.querySelectorAll('.btn-view-company').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const name = this.dataset.name;
+            const address = this.dataset.address || 'Chưa cập nhật';
+            const province = this.dataset.province || 'Chưa cập nhật';
+            const phone = this.dataset.phone || 'Chưa cập nhật';
+            const contact = this.dataset.contact || 'Chưa cập nhật';
+            const email = this.dataset.email || 'Chưa cập nhật';
+
+            Swal.fire({
+                title: `<i class="fa fa-building text-info me-2"></i>${name}`,
+                html: `
+                    <div class="text-start">
+                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Địa chỉ:</div><div class="col-8">${address}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Tỉnh/TP:</div><div class="col-8">${province}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">SĐT:</div><div class="col-8">${phone}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Người liên hệ:</div><div class="col-8">${contact}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Email:</div><div class="col-8">${email}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Trạng thái:</div><div class="col-8"><span class="badge bg-success">Đối tác</span></div></div>
+                    </div>
+                `,
+                width: '550px',
+                showCloseButton: true,
+                showConfirmButton: false
+            });
+        });
+    });
+
+    // Submit form tu lien he
+    document.getElementById('externalForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        Swal.fire({
+            icon: 'success',
+            title: 'Đã gửi đơn!',
+            text: 'Đơn đăng ký của bạn đã được gửi. Vui lòng chờ Giáo vụ phê duyệt.',
+            confirmButtonColor: '#0ea5e9'
+        });
+    });
+});
+</script>
+}

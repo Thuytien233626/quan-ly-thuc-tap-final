@@ -1,14 +1,270 @@
+@using DNC.InternshipSystem.Core.Entities
 @{
     Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
     ViewData["Title"] = "Dashboard";
+
+    var student = ViewBag.Student as Student;
+    var registration = ViewBag.Registration as Registration;
+    var currentTerm = ViewBag.CurrentTerm as InternshipTerm;
+    int logbookCount = ViewBag.LogbookCount ?? 0;
+    string fullName = ViewBag.UserFullName ?? "Sinh viên";
+
+    // Trang thai dang ky
+    string regStatusText = "Chưa đăng ký";
+    string regStatusClass = "status-none";
+    if (registration != null)
+    {
+        switch (registration.Status)
+        {
+            case 0: regStatusText = "Chờ duyệt"; regStatusClass = "status-pending"; break;
+            case 1: regStatusText = "Đã duyệt"; regStatusClass = "status-approved"; break;
+            case 2: regStatusText = "Bị từ chối"; regStatusClass = "status-rejected"; break;
+            case 3: regStatusText = "Hoàn thành"; regStatusClass = "status-completed"; break;
+        }
+    }
+
+    // Dot thuc tap
+    string termInfo = "Chưa có đợt";
+    if (currentTerm != null)
+    {
+        termInfo = $"HK{currentTerm.Semester} - {currentTerm.AcademicYear}";
+    }
+
+    // GVHD
+    string lecturerName = "Chưa phân công";
+    if (registration?.Lecturer?.User != null)
+    {
+        string rank = !string.IsNullOrEmpty(registration.Lecturer.AcademicRank)
+            ? registration.Lecturer.AcademicRank + ". "
+            : "";
+        lecturerName = rank + registration.Lecturer.User.FullName;
+    }
+
+    // Noi thuc tap
+    string companyName = "Chưa xác định";
+    if (registration?.Company != null)
+    {
+        companyName = registration.Company.Name;
+    }
+    else if (!string.IsNullOrEmpty(registration?.ExternalCompanyName))
+    {
+        companyName = registration.ExternalCompanyName;
+    }
+
+    // Thong tin ca nhan
+    string studentCode = student?.StudentCode ?? "N/A";
+    string className = student?.Class != null ? $"{student.Class.Name}" : "N/A";
+    string classId = student?.ClassId ?? "";
+    string majorName = student?.Class?.Major?.Name ?? "N/A";
+    string email = student?.User?.Email ?? "N/A";
+    int totalWeeks = currentTerm?.DurationInWeeks ?? 0;
 }
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-5 text-center">
-        <h2 class="text-primary fw-bold">Hi Tine!</h2>
-        <p class="text-muted">You can do it </p>
-        <button class="btn btn-primary mt-3">
-            <i class="fa fa-rocket me-2"></i> Keep going
-        </button>
+<!-- Hero Welcome -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="text-dark fw-bold mb-1">Xin chào, <span class="text-info">@fullName</span> 👋</h2>
+        <p class="text-muted mb-0">Theo dõi tiến độ thực tập và các thông tin quan trọng tại đây.</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <!-- Trang thai dang ky -->
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <div class="card-title-custom">Trạng thái đăng ký</div>
+                    <span class="student-status-badge @regStatusClass mt-1">
+                        <i class="fa fa-circle" style="font-size: 6px;"></i> @regStatusText
+                    </span>
+                </div>
+                <span class="stats-icon-box bg-warning-subtle text-warning">
+                    <i class="fa fa-file-signature"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dot thuc tap -->
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <div class="card-title-custom">Đợt thực tập</div>
+                    <h5 class="mb-0 fw-bold">@termInfo</h5>
+                </div>
+                <span class="stats-icon-box bg-info-subtle text-info">
+                    <i class="fa fa-calendar-alt"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Giang vien huong dan -->
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <div class="card-title-custom">Giảng viên hướng dẫn</div>
+                    <h6 class="mb-0 fw-bold @(registration?.Lecturer != null ? "" : "text-muted")">@lecturerName</h6>
+                </div>
+                <span class="stats-icon-box bg-primary-subtle text-primary">
+                    <i class="fa fa-chalkboard-teacher"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Noi thuc tap -->
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <div class="card-title-custom">Nơi thực tập</div>
+                    <h6 class="mb-0 fw-bold @(registration?.Company != null || !string.IsNullOrEmpty(registration?.ExternalCompanyName) ? "" : "text-muted")">@companyName</h6>
+                </div>
+                <span class="stats-icon-box bg-success-subtle text-success">
+                    <i class="fa fa-building"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Timeline moc quan trong -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="fw-bold mb-0"><i class="fa fa-clock text-info me-2"></i>Các mốc thời gian quan trọng</h6>
+            </div>
+            <div class="card-body">
+                @if (currentTerm != null)
+                {
+                    var now = DateTime.Now;
+                    var milestones = new[]
+                    {
+                        new { Title = "Mở đăng ký thực tập", Date = currentTerm.RegistrationStart, Icon = "fa-door-open" },
+                        new { Title = "Hạn nộp đơn đăng ký", Date = currentTerm.RegistrationEnd, Icon = "fa-file-alt" },
+                        new { Title = "Bắt đầu thực tập", Date = currentTerm.InternshipStart, Icon = "fa-play-circle" },
+                        new { Title = "Hạn nộp báo cáo", Date = currentTerm.ReportDeadline, Icon = "fa-upload" },
+                        new { Title = "Kết thúc đợt thực tập", Date = currentTerm.EndDate, Icon = "fa-flag-checkered" }
+                    };
+
+                    <div class="d-flex flex-column gap-3">
+                        @for (int i = 0; i < milestones.Length; i++)
+                        {
+                            var ms = milestones[i];
+                            bool isPast = now > ms.Date;
+                            bool isCurrent = !isPast && (i == 0 || now > milestones[i - 1].Date);
+                            string circleClass = isPast
+                                ? "bg-success text-white"
+                                : isCurrent
+                                    ? "bg-info text-white"
+                                    : "bg-light text-muted border";
+
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center @circleClass"
+                                         style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                        @if (isPast)
+                                        {
+                                            <i class="fa fa-check"></i>
+                                        }
+                                        else if (isCurrent)
+                                        {
+                                            <i class="fa fa-spinner fa-spin"></i>
+                                        }
+                                        else
+                                        {
+                                            @(i + 1)
+                                        }
+                                    </div>
+                                    @if (i < milestones.Length - 1)
+                                    {
+                                        <div style="width: 2px; height: 30px; background: #e2e8f0;"></div>
+                                    }
+                                </div>
+                                <div>
+                                    <div class="fw-semibold @(isCurrent ? "text-info" : isPast ? "" : "text-muted")">@ms.Title</div>
+                                    <small class="text-muted">
+                                        @ms.Date.ToString("dd/MM/yyyy")
+                                        @if (isPast)
+                                        {
+                                            <span> - Đã hoàn thành</span>
+                                        }
+                                        else if (isCurrent)
+                                        {
+                                            var daysLeft = (ms.Date - now).Days;
+                                            <span> - Còn @daysLeft ngày</span>
+                                        }
+                                    </small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-3">
+                        <i class="fa fa-info-circle me-1"></i> Chưa có đợt thực tập đang hoạt động.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Thong tin ca nhan & Hanh dong nhanh -->
+    <div class="col-lg-4">
+        <!-- Thong tin lop -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="fw-bold mb-0"><i class="fa fa-id-card text-primary me-2"></i>Thông tin của bạn</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2 d-flex justify-content-between">
+                    <span class="text-muted small">Họ tên:</span>
+                    <span class="fw-semibold">@fullName</span>
+                </div>
+                <div class="mb-2 d-flex justify-content-between">
+                    <span class="text-muted small">MSSV:</span>
+                    <span class="fw-semibold">@studentCode</span>
+                </div>
+                <div class="mb-2 d-flex justify-content-between">
+                    <span class="text-muted small">Lớp:</span>
+                    <span class="fw-semibold">@className</span>
+                </div>
+                <div class="mb-2 d-flex justify-content-between">
+                    <span class="text-muted small">Ngành:</span>
+                    <span class="fw-semibold">@majorName</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted small">Email:</span>
+                    <span class="fw-semibold small">@email</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hanh dong nhanh -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="fw-bold mb-0"><i class="fa fa-bolt text-warning me-2"></i>Hành động nhanh</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-area="Student" asp-controller="SRegister" asp-action="Index" class="btn btn-info text-white">
+                        <i class="fa fa-file-signature me-2"></i>Đăng ký thực tập
+                    </a>
+                    <a asp-area="Student" asp-controller="Logbook" asp-action="Index" class="btn btn-outline-primary">
+                        <i class="fa fa-book-open me-2"></i>Viết nhật ký
+                    </a>
+                    <a asp-area="Student" asp-controller="Submission" asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="fa fa-upload me-2"></i>Nộp báo cáo
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
