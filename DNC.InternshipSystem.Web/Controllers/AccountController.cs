@@ -34,9 +34,17 @@ public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl =
 
     if (ModelState.IsValid)
     {
-        // 1. Kiem tra User/Pass
+        // 1. Ho tro login bang ca username va email
+        string loginName = model.Username;
+        if (model.Username.Contains("@"))
+        {
+            var userByEmail = await _userManager.FindByEmailAsync(model.Username);
+            if (userByEmail != null)
+                loginName = userByEmail.UserName!;
+        }
+
         var result = await _signInManager.PasswordSignInAsync(
-            model.Username,
+            loginName,
             model.Password,
             model.RememberMe,
             lockoutOnFailure: false);
@@ -50,7 +58,7 @@ public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl =
             }
 
             // 3. Neu khong co returnUrl -> Kiem tra Role de chuyen huong
-            var user = await _userManager.FindByNameAsync(model.Username);
+            var user = await _userManager.FindByNameAsync(loginName);
             if (user == null)
             {
                 return RedirectToAction("Index", "Home");

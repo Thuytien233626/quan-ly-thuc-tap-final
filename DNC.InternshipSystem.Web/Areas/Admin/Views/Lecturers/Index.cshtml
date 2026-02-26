@@ -111,7 +111,23 @@
 @section Scripts {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
+
+    // Ham bo dau tieng Viet va tao email tu ho ten
+    function removeVietnameseDiacritics(str) {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+    }
+
+    function generateEmailFromName(fullName) {
+        const cleaned = removeVietnameseDiacritics(fullName).toLowerCase().trim();
+        const parts = cleaned.split(/\s+/);
+        if (parts.length === 0) return '';
+        if (parts.length === 1) return parts[0] + '@@nctu.edu.vn';
+        const initials = parts.slice(0, -1).map(w => w.charAt(0)).join('');
+        const lastName = parts[parts.length - 1];
+        return initials + lastName + '@@nctu.edu.vn';
+    }
+
     const Toast = Swal.mixin({
         toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
     });
@@ -138,7 +154,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="col-7">
                             <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
-                            <input type="email" id="swal-email" class="form-control" placeholder="email@dnc.edu.vn">
+                            <input type="email" id="swal-email" class="form-control" placeholder="email@@nctu.edu.vn">
+                            <small class="text-muted">Tự động sinh từ họ tên, có thể sửa</small>
                         </div>
                         <div class="col-5">
                             <label class="form-label fw-semibold">Số điện thoại</label>
@@ -156,6 +173,19 @@ document.addEventListener('DOMContentLoaded', function() {
             cancelButtonText: 'Hủy',
             confirmButtonColor: '#0d6efd',
             width: '500px',
+            didOpen: () => {
+                const nameInput = document.getElementById('swal-name');
+                const emailInput = document.getElementById('swal-email');
+                nameInput.addEventListener('blur', function() {
+                    const name = this.value.trim();
+                    if (name && !emailInput.dataset.edited) {
+                        emailInput.value = generateEmailFromName(name);
+                    }
+                });
+                emailInput.addEventListener('input', function() {
+                    this.dataset.edited = 'true';
+                });
+            },
             preConfirm: () => {
                 const name = document.getElementById('swal-name').value.trim();
                 const email = document.getElementById('swal-email').value.trim();
@@ -182,7 +212,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await res.json();
             
             if (data.success) {
-                Toast.fire({ icon: 'success', title: 'Đã thêm giảng viên!' });
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Thêm giảng viên thành công!',
+                    html: `<div class="text-start">
+                        <p class="mb-2"><strong>Mã GV:</strong> ${data.code}</p>
+                        <p class="mb-2"><strong>Tài khoản (email):</strong> ${form.email}</p>
+                        <p class="mb-2"><strong>Mật khẩu:</strong> <code>${data.password}</code></p>
+                        <div class="alert alert-info small mt-3 mb-0">
+                            <i class="fa fa-info-circle me-1"></i>Giảng viên dùng <strong>email</strong> và <strong>mật khẩu</strong> trên để đăng nhập hệ thống.
+                        </div>
+                    </div>`,
+                    confirmButtonText: 'Đã hiểu'
+                });
                 location.reload();
             } else {
                 Swal.fire({ icon: 'error', title: 'Lỗi!', text: data.message });
