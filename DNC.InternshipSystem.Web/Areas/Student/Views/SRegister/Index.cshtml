@@ -14,7 +14,9 @@
     // Mau icon cho card, xoay vong theo index
     var iconColors = new[] { "info", "primary", "success", "warning", "danger", "secondary" };
 }
-
+<div id="antiForgeryTokenContainer" style="display: none;">
+    @Html.AntiForgeryToken()
+</div>
 <!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -234,28 +236,34 @@
     <div class="tab-pane fade" id="externalPane" role="tabpanel">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <div class="card border-0 shadow-sm">
+                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                    <i class="fa fa-info-circle me-2"></i>
+                    <strong>Lưu ý:</strong> Tính năng đăng ký doanh nghiệp tự liên hệ sẽ được cập nhật sớm. 
+                    Hiện tại, vui lòng liên hệ với bộ phận quản lý thực tập để đăng ký.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div class="card border-0 shadow-sm" style="opacity: 0.5;">
                     <div class="card-header bg-white py-3">
                         <h6 class="mb-0 fw-bold"><i class="fa fa-pen-fancy text-info me-2"></i>Đăng ký doanh nghiệp tự liên hệ</h6>
                         <small class="text-muted">Điền thông tin doanh nghiệp bạn đã tự liên hệ để thực tập.</small>
                     </div>
                     <div class="card-body">
-                        <form id="externalForm">
+                        <form id="externalForm" disabled>
                             <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
                                 <i class="fa fa-building me-2"></i>Thông tin Doanh nghiệp
                             </h6>
                             <div class="row g-3 mb-4">
                                 <div class="col-md-8">
                                     <label class="form-label fw-semibold">Tên công ty <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="VD: Công ty TNHH ABC" required>
+                                    <input type="text" class="form-control" placeholder="VD: Công ty TNHH ABC" required disabled>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold">Mã số thuế</label>
-                                    <input type="text" class="form-control" placeholder="VD: 1801234567">
+                                    <input type="text" class="form-control" placeholder="VD: 1801234567" disabled>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required>
+                                    <input type="text" class="form-control" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required disabled>
                                 </div>
                             </div>
 
@@ -265,19 +273,19 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Họ tên người liên hệ <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="VD: Nguyễn Văn A" required>
+                                    <input type="text" class="form-control" placeholder="VD: Nguyễn Văn A" required disabled>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Chức vụ</label>
-                                    <input type="text" class="form-control" placeholder="VD: Trưởng phòng IT">
+                                    <input type="text" class="form-control" placeholder="VD: Trưởng phòng IT" disabled>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
-                                    <input type="tel" class="form-control" placeholder="0901234567" required>
+                                    <input type="tel" class="form-control" placeholder="0901234567" required disabled>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Email</label>
-                                    <input type="email" class="form-control" placeholder="email@company.com">
+                                    <input type="email" class="form-control" placeholder="email@company.com" disabled>
                                 </div>
                             </div>
 
@@ -287,20 +295,20 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-8">
                                     <label class="form-label fw-semibold">Vị trí thực tập <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="VD: Thực tập sinh lập trình Web" required>
+                                    <input type="text" class="form-control" placeholder="VD: Thực tập sinh lập trình Web" required disabled>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-semibold">Ghi chú</label>
-                                    <textarea class="form-control" rows="3" placeholder="Ghi chú thêm (nếu có)..."></textarea>
+                                    <textarea class="form-control" rows="3" placeholder="Ghi chú thêm (nếu có)..." disabled></textarea>
                                 </div>
                             </div>
 
                             <hr class="my-4">
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="reset" class="btn btn-outline-secondary">
+                                <button type="reset" class="btn btn-outline-secondary" disabled>
                                     <i class="fa fa-redo me-1"></i> Đặt lại
                                 </button>
-                                <button type="submit" class="btn btn-info text-white">
+                                <button type="submit" class="btn btn-info text-white" disabled>
                                     <i class="fa fa-paper-plane me-1"></i> Gửi đơn đăng ký
                                 </button>
                             </div>
@@ -313,48 +321,150 @@
 </div>
 
 @section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const Toast = Swal.mixin({
-        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
-    });
+document.addEventListener('DOMContentLoaded', function () {
 
-    // Dang ky DN doi tac
+    const tokenElement = document.querySelector('#antiForgeryTokenContainer input[name="__RequestVerificationToken"]');
+    const token = tokenElement ? tokenElement.value : '';
+
+    console.log('Page loaded. Token available:', !!token);
+
+    // ===== ĐĂNG KÝ DOANH NGHIỆP ĐỐI TÁC =====
     document.querySelectorAll('.btn-register-company').forEach(btn => {
-        btn.addEventListener('click', async function() {
-            const name = this.dataset.name;
+        btn.addEventListener('click', async function (e) {
+            e.preventDefault();
+
             const companyId = this.dataset.id;
+            const companyName = this.dataset.name;
             
+            console.log('Register button clicked. Company ID:', companyId, 'Name:', companyName);
+
+            if (!companyId) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Không tìm thấy thông tin doanh nghiệp.',
+                    confirmButtonColor: '#0ea5e9'
+                });
+                return;
+            }
+
             const { value: position } = await Swal.fire({
                 title: `<i class="fa fa-paper-plane text-info me-2"></i>Đăng ký tại`,
                 html: `
-                    <p class="fw-bold text-info mb-3">${name}</p>
+                    <p class="fw-bold text-info mb-3">${companyName}</p>
                     <div class="text-start">
-                        <label class="form-label fw-semibold">Vị trí thực tập <span class="text-danger">*</span></label>
-                        <input type="text" id="swal-position" class="form-control" placeholder="VD: Thực tập sinh lập trình">
+                        <label class="form-label fw-semibold">
+                            Vị trí thực tập <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="swal-position" class="form-control"
+                               placeholder="VD: Thực tập sinh lập trình" autofocus>
                     </div>
                 `,
                 showCancelButton: true,
-                confirmButtonText: '<i class="fa fa-paper-plane me-1"></i>Gửi đơn',
+                confirmButtonText: '<i class="fa fa-paper-plane me-1"></i> Gửi đơn',
                 cancelButtonText: 'Hủy',
                 confirmButtonColor: '#0ea5e9',
+                didOpen: () => {
+                    document.getElementById('swal-position').focus();
+                },
                 preConfirm: () => {
                     const val = document.getElementById('swal-position').value.trim();
-                    if (!val) { Swal.showValidationMessage('Vui lòng nhập vị trí!'); return false; }
+                    if (!val) {
+                        Swal.showValidationMessage('Vui lòng nhập vị trí!');
+                        return false;
+                    }
                     return val;
                 }
             });
 
-            if (position) {
-                Toast.fire({ icon: 'success', title: 'Đã gửi đơn đăng ký thành công!' });
+            if (!position) {
+                console.log('User cancelled registration');
+                return;
             }
+
+            console.log('Submitting registration:', { companyId, position });
+            submitRegistration(companyId, position, companyName);
         });
     });
 
-    // Xem chi tiet DN
+    async function submitRegistration(companyId, position, companyName) {
+        try {
+            Swal.fire({
+                title: 'Đang xử lý...',
+                html: 'Vui lòng chờ',
+                didOpen: () => Swal.showLoading(),
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', token);
+            formData.append('companyId', companyId);
+            formData.append('position', position);
+
+            console.log('Sending POST to /Student/SRegister/SubmitInternal');
+
+            const response = await fetch('/Student/SRegister/SubmitInternal', {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', {
+                contentType: response.headers.get('content-type')
+            });
+
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Failed to parse JSON:', e);
+                throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 200)}`);
+            }
+
+            console.log('Parsed result:', result);
+
+            Swal.close();
+
+            if (response.ok && result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: result.message,
+                    confirmButtonColor: '#0ea5e9'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Không thể đăng ký',
+                    text: result.message || 'Lỗi không xác định',
+                    confirmButtonColor: '#0ea5e9'
+                });
+            }
+
+        } catch (err) {
+            console.error('Error:', err);
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi hệ thống',
+                html: `<p>Không thể gửi yêu cầu.</p><p class="text-muted small mt-2">${err.message}</p>`,
+                confirmButtonColor: '#0ea5e9'
+            });
+        }
+    }
+
+    // ===== XEM CHI TIẾT DOANH NGHIỆP =====
     document.querySelectorAll('.btn-view-company').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const name = this.dataset.name;
+        btn.addEventListener('click', function () {
+            const name = this.dataset.name || '';
             const address = this.dataset.address || 'Chưa cập nhật';
             const province = this.dataset.province || 'Chưa cập nhật';
             const phone = this.dataset.phone || 'Chưa cập nhật';
@@ -364,13 +474,27 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 title: `<i class="fa fa-building text-info me-2"></i>${name}`,
                 html: `
-                    <div class="text-start">
-                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Địa chỉ:</div><div class="col-8">${address}</div></div>
-                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Tỉnh/TP:</div><div class="col-8">${province}</div></div>
-                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">SĐT:</div><div class="col-8">${phone}</div></div>
-                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Người liên hệ:</div><div class="col-8">${contact}</div></div>
-                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Email:</div><div class="col-8">${email}</div></div>
-                        <div class="row mb-2"><div class="col-4 text-muted fw-semibold">Trạng thái:</div><div class="col-8"><span class="badge bg-success">Đối tác</span></div></div>
+                    <div class="text-start small">
+                        <div class="row mb-3">
+                            <div class="col-5 fw-semibold">Địa chỉ:</div>
+                            <div class="col-7 text-muted">${address}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 fw-semibold">Tỉnh/TP:</div>
+                            <div class="col-7 text-muted">${province}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 fw-semibold">SĐT:</div>
+                            <div class="col-7 text-muted">${phone}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 fw-semibold">Người liên hệ:</div>
+                            <div class="col-7 text-muted">${contact}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-5 fw-semibold">Email:</div>
+                            <div class="col-7 text-muted">${email}</div>
+                        </div>
                     </div>
                 `,
                 width: '550px',
@@ -380,16 +504,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Submit form tu lien he
-    document.getElementById('externalForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        Swal.fire({
-            icon: 'success',
-            title: 'Đã gửi đơn!',
-            text: 'Đơn đăng ký của bạn đã được gửi. Vui lòng chờ Giáo vụ phê duyệt.',
-            confirmButtonColor: '#0ea5e9'
-        });
-    });
 });
 </script>
 }
