@@ -42,11 +42,15 @@ namespace DNC.InternshipSystem.Infrastructure.Data
 
             foreach (var l in lecturers)
             {
-                if (await userManager.FindByNameAsync(l.UserName) == null)
+                // Kiểm tra theo email (vì login dùng email)
+                var normalizedEmail = l.Email.Trim().ToUpper();
+                var existingUser = await userManager.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+                
+                if (existingUser == null)
                 {
                     var user = new AppUser
                     {
-                        UserName = l.UserName,
+                        UserName = l.Email,  // Dùng email làm username
                         Email = l.Email,
                         FullName = l.Name,
                         EmailConfirmed = true
@@ -55,10 +59,10 @@ namespace DNC.InternshipSystem.Infrastructure.Data
                     
                     if (result.Succeeded)
                     {
+                        Console.WriteLine($"✓ Tạo Giảng viên: {l.Email} (UserName={user.UserName})");
                         await userManager.AddToRoleAsync(user, "Lecturer");
 
                         // Tao profile Giang vien
-                        // Kiem tra neu profile da ton tai
                         if (!await context.Lecturers.AnyAsync(lec => lec.UserId == user.Id))
                         {
                             var lecturerCount = await context.Lecturers.CountAsync();
@@ -73,6 +77,14 @@ namespace DNC.InternshipSystem.Infrastructure.Data
                             await context.SaveChangesAsync();
                         }
                     }
+                    else
+                    {
+                        Console.WriteLine($"✗ Lỗi tạo GV {l.Email}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"~ GV {l.Email} đã tồn tại (UserName={existingUser.UserName})");
                 }
             }
 

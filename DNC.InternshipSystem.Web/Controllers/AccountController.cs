@@ -2,6 +2,7 @@
 using DNC.InternshipSystem.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DNC.InternshipSystem.Web.Controllers
 {
@@ -9,11 +10,14 @@ namespace DNC.InternshipSystem.Web.Controllers
     {
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
+        private readonly DNC.InternshipSystem.Infrastructure.Data.AppDbContext _context;
 
-        public AccountController(SignInManager<AppUser> signInManager, UserManager<AppUser> userManager)
+        public AccountController(SignInManager<AppUser> signInManager, UserManager<AppUser> userManager,
+            DNC.InternshipSystem.Infrastructure.Data.AppDbContext context)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _context = context;
         }
 
         // LAY: /Account/Login
@@ -24,25 +28,50 @@ namespace DNC.InternshipSystem.Web.Controllers
             return View();
         }
 
-        // GUI: /Account/Login
-       // POST: /Account/Login
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
-{
-    ViewData["ReturnUrl"] = returnUrl;
-
-    if (ModelState.IsValid)
-    {
-        // 1. Kiem tra User/Pass
-        var result = await _signInManager.PasswordSignInAsync(
-            model.Username,
-            model.Password,
-            model.RememberMe,
-            lockoutOnFailure: false);
-
-        if (result.Succeeded)
+        // POST: /Account/Login
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
+
+            if (ModelState.IsValid)
+            {
+                // Nhan dang nhap theo username/email/mssv tuong ung voi vai tro
+                var credential = model.Email?.Trim() ?? string.Empty;
+
+                // tim user bang UserName (admin, giang vien email, sinh vien mssv)
+                AppUser? user = await _userManager.FindByNameAsync(credential);
+
+                // neu khong tim thay va credential co @ thi thu tim theo email
+                if (user == null && credential.Contains("@"))
+                {
+                    var normalizedEmail = credential.ToUpper();
+                    user = await _userManager.Users
+                        .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+                }
+
+                if (user == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng.");
+                    return View(model);
+                }
+
+                if (user == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng.");
+                    return View(model);
+                }
+
+                // Kiểm tra password:
+                var result = await _signInManager.PasswordSignInAsync(
+                    user.UserName,
+                    model.Password,
+                    model.RememberMe,
+                    lockoutOnFailure: false);
+
+                if (result.Succeeded)
+                {
             // 2. Logic phan quyen va dieu huong
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -50,11 +79,7 @@ public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl =
             }
 
             // 3. Neu khong co returnUrl -> Kiem tra Role de chuyen huong
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user == null)
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // Sử dụng biến user đã xác thực
             var roles = await _userManager.GetRolesAsync(user);
 
             if (roles.Contains("Admin"))

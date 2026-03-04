@@ -215,10 +215,10 @@
                 <div class="mb-3">
                     <label class="form-label fw-semibold small text-secondary">Tài khoản</label>
                     <div class="input-group">
-                        <span class="input-group-text bg-white text-muted border-end-0"><i class="fas fa-user"></i></span>
-                        <input asp-for="Username" class="form-control border-start-0 ps-0" placeholder="Email hoặc MSSV" id="usernameInput" />
+                        <span class="input-group-text bg-white text-muted border-end-0"><i class="fas fa-envelope"></i></span>
+                        <input asp-for="Email" class="form-control border-start-0 ps-0" placeholder="Username / Email / MSSV" id="emailInput" />
                     </div>
-                    <span asp-validation-for="Username" class="text-danger small"></span>
+                    <span asp-validation-for="Email" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
@@ -253,7 +253,7 @@
                     <div class="quick-badge" onclick="fillLogin('admin', 'Admin@123')">
                         <i class="fas fa-user-shield text-danger"></i> Admin
                     </div>
-                    <div class="quick-badge" onclick="fillLogin('GV001', 'Lecturer@123')">
+                    <div class="quick-badge" onclick="fillLogin('nhakhoi@nctu.edu.vn', 'Lecturer@123')">
                         <i class="fas fa-chalkboard-teacher text-primary"></i> Giảng viên
                     </div>
                     <div class="quick-badge" onclick="fillLogin('233626', 'Sv@233626')">
@@ -265,12 +265,12 @@
     </div>
 
     <script>
-        function fillLogin(user, pass) {
-            document.getElementById('usernameInput').value = user;
+        function fillLogin(email, pass) {
+            document.getElementById('emailInput').value = email;
             document.getElementById('passwordInput').value = pass;
             
             // Highlight effect
-            const inputs = [document.getElementById('usernameInput'), document.getElementById('passwordInput')];
+            const inputs = [document.getElementById('emailInput'), document.getElementById('passwordInput')];
             inputs.forEach(input => {
                 input.style.backgroundColor = '#e7f1ff';
                 setTimeout(() => {

@@ -20,8 +20,7 @@ namespace DNC.InternshipSystem.Core.Entities
         
         // Cham diem
         public double? CompanyScore { get; set; }
-        public double? ReportScore { get; set; }
-        public double? VivaScore { get; set; }
+        public double? InstructorScore { get; set; }
         public double? FinalScore { get; set; }
 
         public Student? Student { get; set; }

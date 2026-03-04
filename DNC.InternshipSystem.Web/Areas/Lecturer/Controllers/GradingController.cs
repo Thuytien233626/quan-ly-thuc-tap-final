@@ -20,6 +20,25 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Tính điểm tổng = (Điểm DN * 0.4) + (Điểm GVHD * 0.6)
+        /// </summary>
+        /// <remarks>
+        /// Công thức: (CompanyScore * 0.4) + (InstructorScore * 0.6)
+        /// Trả về null nếu thiếu bất kỳ điểm nào
+        /// </remarks>
+        private double? CalculateFinalScore(double? companyScore, double? instructorScore)
+        {
+            if (companyScore.HasValue && instructorScore.HasValue)
+            {
+                return Math.Round(
+                    (companyScore.Value * 0.4) + 
+                    (instructorScore.Value * 0.6), 2);
+            }
+
+            return null;
+        }
+
         // GET: /Lecturer/Grading
         public async Task<IActionResult> Index()
         {
@@ -105,21 +124,32 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Grade(Grade gradeModel)
         {
-             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
-            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            // Xác thực người dùng
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return RedirectToAction("Login", "Account", new { area = "" });
 
-            // Validate quyen so huu
-            var registration = await _context.Registrations.FindAsync(gradeModel.RegistrationId);
-            if (registration == null || registration.LecturerId != lecturer!.UserId)
-            {
+            // Lấy thông tin giảng viên
+            var lecturer = await _context.Lecturers
+                .FirstOrDefaultAsync(l => l.UserId == user.Id);
+
+            if (lecturer == null)
                 return Forbid();
-            }
 
-            var existingGrade = await _context.Grades.FirstOrDefaultAsync(g => g.RegistrationId == gradeModel.RegistrationId);
-            
+            // Lấy thông tin đăng ký thực tập
+            var registration = await _context.Registrations
+                .FirstOrDefaultAsync(r => r.Id == gradeModel.RegistrationId);
+
+            if (registration == null || registration.LecturerId != lecturer.UserId)
+                return Forbid();
+
+            // Lấy hoặc tạo bản ghi điểm chấm công
+            var existingGrade = await _context.Grades
+                .FirstOrDefaultAsync(g => g.RegistrationId == gradeModel.RegistrationId);
+
             if (existingGrade == null)
             {
+                // Tạo bản ghi mới
                 existingGrade = new Grade
                 {
                     RegistrationId = gradeModel.RegistrationId,
@@ -127,20 +157,22 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
                     Note = gradeModel.Note,
                     GradedDate = DateTime.Now
                 };
+
                 _context.Grades.Add(existingGrade);
             }
             else
             {
+                // Cập nhật bản ghi hiện tại
                 existingGrade.InstructorScore = gradeModel.InstructorScore;
                 existingGrade.Note = gradeModel.Note;
                 existingGrade.GradedDate = DateTime.Now;
-                _context.Grades.Update(existingGrade);
             }
 
-            // Cap nhat luon vao bang Registration de dong bo (optional, tuy logic he thong)
-            // registration.ReportScore = ... (neu can)
-            // Hien tai Registration co cot FinalScore, se duoc tinh toan tu dong o noi khac hoac trigger
-            
+            // **FIX: Cập nhật điểm tổng trên Registration**
+            registration.InstructorScore = gradeModel.InstructorScore;
+            registration.FinalScore = CalculateFinalScore(registration.CompanyScore, gradeModel.InstructorScore);
+            registration.UpdatedDate = DateTime.Now;  // ← QUAN TRỌNG: Ghi dấu thời gian cập nhật
+
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Đã lưu điểm thành công.";

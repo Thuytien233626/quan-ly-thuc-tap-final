@@ -51,8 +51,8 @@
                         <th>Sinh viên</th>
                         <th>Đơn vị thực tập</th>
                         <th class="text-center" style="width: 100px;">Điểm DN <br><small class="text-muted">(40%)</small></th>
-                        <th class="text-center" style="width: 100px;">Báo cáo <br><small class="text-muted">(30%)</small></th>
-                        <th class="text-center" style="width: 100px;">Vấn đáp <br><small class="text-muted">(30%)</small></th>
+                        <th class="text-center" style="width: 100px;">Điểm GVHD <br><small class="text-muted">(0%)</small></th>
+
                         <th class="text-center" style="width: 100px;">Tổng kết</th>
                         <th class="text-center" style="width: 80px;">Hành động</th>
                     </tr>
@@ -87,16 +87,7 @@
                                            data-id="@item.Id" name="companyScore" min="0" max="10" step="0.1" 
                                            value="@item.CompanyScore" placeholder="-">
                                 </td>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm text-center score-input" 
-                                           data-id="@item.Id" name="reportScore" min="0" max="10" step="0.1" 
-                                           value="@item.ReportScore" placeholder="-">
-                                </td>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm text-center score-input" 
-                                           data-id="@item.Id" name="vivaScore" min="0" max="10" step="0.1" 
-                                           value="@item.VivaScore" placeholder="-">
-                                </td>
+                                <td> @item.InstructorScore</td>
                                 <td class="text-center fw-bold fs-5 final-score @(item.FinalScore >= 5 ? "text-success" : (item.FinalScore < 5 && item.FinalScore != null ? "text-danger" : "text-muted"))">
                                     @(item.FinalScore.HasValue ? item.FinalScore.Value.ToString("0.0") : "-")
                                 </td>
