@@ -31,31 +31,32 @@ namespace DNC.InternshipSystem.Infrastructure.Data
                 await userManager.AddToRoleAsync(admin, "Admin");
             }
 
-            // Danh sach Giang vien
+            // Danh sach Giang vien (UserName = Email de login bang email)
             var lecturers = new[]
             {
-                new { Name = "Ts. Ngô Hồ Anh Khôi", Email = "nhakhoi@nctu.edu.vn", UserName = "GV001", Rank = "Tiến sĩ" },
-                new { Name = "Ths. Bùi Thị Diễm Trinh", Email = "btdtrinh@nctu.edu.vn", UserName = "GV002", Rank = "Thạc sĩ" },
-                new { Name = "Ths. Đặng Mạnh Huy", Email = "dmhuy@nctu.edu.vn", UserName = "GV003", Rank = "Thạc sĩ" },
-                new { Name = "Ths. Đoàn Hòa Minh", Email = "dhminh@nctu.edu.vn", UserName = "GV004", Rank = "Thạc sĩ" }
+                new { Name = "Ts. Ngô Hồ Anh Khôi", Email = "nhakhoi@nctu.edu.vn", Rank = "Tiến sĩ" },
+                new { Name = "Ths. Bùi Thị Diễm Trinh", Email = "btdtrinh@nctu.edu.vn", Rank = "Thạc sĩ" },
+                new { Name = "Ths. Đặng Mạnh Huy", Email = "dmhuy@nctu.edu.vn", Rank = "Thạc sĩ" },
+                new { Name = "Ths. Đoàn Hòa Minh", Email = "dhminh@nctu.edu.vn", Rank = "Thạc sĩ" }
             };
 
             foreach (var l in lecturers)
             {
-                // Kiểm tra theo email (vì login dùng email)
-                var normalizedEmail = l.Email.Trim().ToUpper();
-                var existingUser = await userManager.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
-                
-                if (existingUser == null)
-                {
-                    var user = new AppUser
-                    {
-                        UserName = l.Email,  // Dùng email làm username
-                        Email = l.Email,
-                        FullName = l.Name,
-                        EmailConfirmed = true
-                    };
-                    var result = await userManager.CreateAsync(user, "Lecturer@123");
+// Kiểm tra theo email (vì login dùng email)
+var normalizedEmail = l.Email.Trim().ToUpper();
+var existingUser = await userManager.Users
+    .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+
+if (existingUser == null)
+{
+    var user = new AppUser
+    {
+        UserName = l.Email,  // Dùng email làm username
+        Email = l.Email,
+        FullName = l.Name,
+        EmailConfirmed = true
+    };
+                    var result = await userManager.CreateAsync(user, "Giangvien@123");
                     
                     if (result.Succeeded)
                     {

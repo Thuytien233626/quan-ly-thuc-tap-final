@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Infrastructure.Data;
-
+using System.Security.Claims; 
 namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
 {
     [Area("Student")]
@@ -71,5 +71,98 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
 
             return View();
         }
+      
+
+
+      // POST: /Student/SRegister/SubmitInternal
+       [HttpPost]
+       [ValidateAntiForgeryToken]
+       public async Task<IActionResult> SubmitInternal(int companyId, string position)
+       {
+           try
+           {
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+
+          {
+            return Json(new { success = false, message = "Không thể xác định sinh viên." });
+
+           }
+
+
+            Guid studentUserId = Guid.Parse(userIdClaim);
+
+            var student = await _context.Students
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.UserId == studentUserId);
+             if (student == null)
+        {
+            return Json(new { success = false, message = "Sinh viên không tồn tại trong hệ thống." });
+        }
+
+        bool existed = await _context.Registrations
+            .AnyAsync(r => r.StudentId == studentUserId);
+             if (existed)
+           {
+            return Json(new
+            {
+                success = false,
+                message = "Mỗi sinh viên chỉ được đăng ký 1 doanh nghiệp."
+            });
+           }
+            if (string.IsNullOrWhiteSpace(position))
+            {
+
+                return Json(new
+                {
+                    success = false,
+                    message = "Vui lòng nhập vị trí thực tập."
+                });
+            }
+
+        var currentTerm = await _context.InternshipTerms
+            .Where(t => t.IsActive)
+            .OrderByDescending(t => t.RegistrationStart)
+            .FirstOrDefaultAsync();
+
+        if (currentTerm == null)
+        {
+            return Json(new
+            {
+                success = false,
+                message = "Không có đợt thực tập nào đang mở."
+            });
+        }
+
+        var registration = new DNC.InternshipSystem.Core.Entities.Registration
+        {
+            StudentId = studentUserId,
+            TermId = currentTerm.Id,
+            CompanyId = companyId,
+            Position = position,
+            Status = 0, // CHỜ DUYỆT
+            CreatedDate = DateTime.Now
+        };
+
+        _context.Registrations.Add(registration);
+        await _context.SaveChangesAsync();
+
+        return Json(new
+        {
+            success = true,
+            message = "Đăng ký thực tập thành công. Vui lòng chờ giảng viên duyệt."
+        });
+    }
+    catch (Exception ex)
+    {
+        return Json(new
+        {
+            success = false,
+            message = "Lỗi hệ thống: " + ex.Message
+        });
+    }
+}
+
     }
 }

@@ -56,6 +56,44 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
             return Content($"Đã cập nhật {count} giảng viên. Quay lại trang Index để xem kết quả.");
         }
 
+        // Chay 1 lan de fix tat ca GV cu: /Admin/Lecturers/FixLecturerAccounts
+        // Reset mat khau ve Giangvien@123 + doi UserName = Email
+        [HttpGet]
+        public async Task<IActionResult> FixLecturerAccounts()
+        {
+            var lecturers = await _context.Lecturers.Include(l => l.User).ToListAsync();
+            int updated = 0;
+            var errors = new List<string>();
+
+            foreach (var l in lecturers)
+            {
+                if (l.User == null) continue;
+
+                // 1. Doi UserName = Email (de login bang email)
+                if (l.User.UserName != l.User.Email && !string.IsNullOrEmpty(l.User.Email))
+                {
+                    l.User.UserName = l.User.Email;
+                    l.User.NormalizedUserName = l.User.Email.ToUpper();
+                    await _userManager.UpdateAsync(l.User);
+                }
+
+                // 2. Reset mat khau ve Giangvien@123
+                var token = await _userManager.GeneratePasswordResetTokenAsync(l.User);
+                var result = await _userManager.ResetPasswordAsync(l.User, token, "Giangvien@123");
+
+                if (result.Succeeded)
+                    updated++;
+                else
+                    errors.Add($"{l.User.Email}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+
+            var msg = $"✅ Đã cập nhật {updated}/{lecturers.Count} giảng viên. Mật khẩu mới: Giangvien@123";
+            if (errors.Any())
+                msg += $"\n❌ Lỗi: {string.Join("; ", errors)}";
+
+            return Content(msg);
+        }
+
         // ========================================
         // AJAX ENDPOINTS
         // ========================================
@@ -81,8 +119,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                     CreatedDate = DateTime.Now
                 };
 
-                // Mật khẩu mặc định: Dnc@12345 (Hệ thống yêu cầu chữ hoa, chữ thường, số, ký tự đặc biệt)
-                var result = await _userManager.CreateAsync(user, "Dnc@12345");
+                var result = await _userManager.CreateAsync(user, "Giangvien@123");
                 if (!result.Succeeded)
                     return Json(new { success = false, message = string.Join(", ", result.Errors.Select(e => e.Description)) });
 
@@ -98,7 +135,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                 });
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, code = code, password = "Dnc@12345" });
+                return Json(new { success = true, code = code, password = "Giangvien@123" });
             }
             catch (Exception ex)
             {

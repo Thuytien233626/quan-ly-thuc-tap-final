@@ -10,7 +10,7 @@ namespace DNC.InternshipSystem.Core.Entities
         
         // Quan he navigation
         public virtual Major? Major { get; set; }
-        public virtual Lecturer? Lecturer { get; set; }
+        public virtual Lecturer Lecturer { get; set; } = null!;
         public virtual ICollection<DNC.InternshipSystem.Core.Entities.Student> Students { get; set; } = new List<DNC.InternshipSystem.Core.Entities.Student>();
     }
 }

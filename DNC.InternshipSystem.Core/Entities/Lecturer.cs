@@ -11,7 +11,7 @@ namespace DNC.InternshipSystem.Core.Entities
         public string? Specialization { get; set; } // Chuyên môn: CNPM, Mạng MT...
 
         // Quan he navigation
-        public AppUser? User { get; set; }
+       public AppUser User { get; set; } = null!;
         public Department? Department { get; set; }
         public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
     }

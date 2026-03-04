@@ -936,7 +936,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                 .Select(l => new 
                 {
                     id = l.UserId,
-                    name = l.User.FullName,
+                    name = l.User != null ? l.User.FullName : "",
                     code = l.LecturerCode,
                     count = l.Classes.Count, // Số lớp đang phụ trách
                     spec = l.Specialization
