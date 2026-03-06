@@ -10,5 +10,8 @@ namespace DNC.InternshipSystem.Core.Entities
         public bool IsActive { get; set; } = true;
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
+        // Navigation property
+        public Student? Student { get; set; }
+        public Lecturer? Lecturer { get; set; }
     }
 }

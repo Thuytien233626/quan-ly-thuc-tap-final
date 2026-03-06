@@ -43,7 +43,7 @@ namespace DNC.InternshipSystem.Infrastructure.Data
             
             builder.Entity<Student>()
                 .HasOne(s => s.User)
-                .WithOne()
+                .WithOne(u => u.Student)
                 .HasForeignKey<Student>(s => s.UserId)
                 .IsRequired();
 
@@ -53,7 +53,7 @@ namespace DNC.InternshipSystem.Infrastructure.Data
 
             builder.Entity<Lecturer>()
                 .HasOne(l => l.User)
-                .WithOne()
+                .WithOne(u => u.Lecturer)
                 .HasForeignKey<Lecturer>(l => l.UserId)
                 .IsRequired();
 

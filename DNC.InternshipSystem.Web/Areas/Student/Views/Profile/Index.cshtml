@@ -1,0 +1,287 @@
+@model DNC.InternshipSystem.Core.Entities.Student
+@using DNC.InternshipSystem.Core.Enums
+
+@{
+    Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
+    ViewData["Title"] = "Hồ sơ sinh viên";
+}
+
+<div class="container py-4">
+
+    <div class="row g-4">
+
+        <!-- LEFT PROFILE -->
+        <div class="col-lg-4">
+
+            <div class="card shadow border-0 profile-card">
+
+                <div class="card-body text-center">
+
+                    <!-- AVATAR -->
+                    <div class="avatar-wrapper mb-3">
+
+                        <img id="avatarPreview"
+                             src="@(string.IsNullOrEmpty(Model.ProfileImage) ? "/images/default-avatar.png" : Model.ProfileImage)"
+                             class="avatar-img">
+
+                    </div>
+
+                    <!-- UPLOAD -->
+                    @if (string.IsNullOrEmpty(Model.ProfileImage))
+                    {
+                        <form method="post"
+                              asp-action="UploadImage"
+                              enctype="multipart/form-data">
+
+                            <input type="file"
+                                   name="image"
+                                   id="avatarInput"
+                                   class="form-control mb-2"
+                                   accept="image/*"
+                                   onchange="previewImage(event)" />
+
+                            <button type="submit"
+                                    class="btn btn-primary w-100">
+
+                                📷 Upload Avatar
+
+                            </button>
+
+                        </form>
+                    }
+
+                    <hr>
+
+                    <!-- NAME -->
+                    <h5 class="fw-bold mb-1">
+                        @(Model?.User?.FullName ?? "Sinh viên")
+                    </h5>
+
+                    
+                    <p class="text-muted mb-1">
+                        Email: @Model.User.Email
+                    </p>
+
+                    <p class="text-muted mb-1">
+                        MSSV: @Model.StudentCode
+                    </p>
+
+
+                    <span class="badge bg-primary">
+                        Sinh viên thực tập
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RIGHT INFO -->
+        <div class="col-lg-8">
+
+            <div class="card shadow border-0">
+
+                <div class="card-header bg-primary text-white">
+
+                    <h5 class="mb-0">
+                        Thông tin cá nhân
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-4">
+
+                        <!-- NAME -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Họ tên
+                            </label>
+
+                            <input class="form-control"
+                                   value="@(Model?.User?.FullName ?? "Chưa cập nhật")"
+                                   readonly>
+
+                        </div>
+
+                        <!-- EMAIL -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Email
+                            </label>
+
+                            <input class="form-control"
+                                   value="@(Model?.User?.Email ?? "Chưa cập nhật")"
+                                   readonly>
+
+                        </div>
+
+                        <!-- MSSV -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Mã sinh viên
+                            </label>
+
+                            <input class="form-control"
+                                   value="@Model.StudentCode"
+                                   readonly>
+
+                        </div>
+
+                        <!-- CLASS -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Lớp
+                            </label>
+
+                            <input class="form-control"
+                                   value="@Model.Class?.Name"
+                                   readonly>
+
+                        </div>
+
+                        <!-- GENDER -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Giới tính
+                            </label>
+
+                            <input class="form-control"
+                                   value="@(Model.Gender == Gender.Male ? "Nam" : "Nữ")"
+                                   readonly>
+
+                        </div>
+
+                        <!-- DOB -->
+                        <div class="col-md-6">
+
+                            <label class="form-label fw-semibold">
+                                Ngày sinh
+                            </label>
+
+                            <input class="form-control"
+                                   value="@(Model.DateOfBirth?.ToString("dd/MM/yyyy"))"
+                                   readonly>
+
+                        </div>
+
+                        <!-- PHONE -->
+                        <div class="col-md-12">
+
+                            <label class="form-label fw-semibold">
+                                Số điện thoại
+                            </label>
+
+                            <div class="input-group">
+
+                                <input type="text"
+                                       class="form-control"
+                                       value="@Model.Phone"
+                                       id="phone">
+
+                                <button class="btn btn-success"
+                                        onclick="updatePhone()">
+
+                                    Lưu
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+@section Scripts{
+
+<script>
+
+function previewImage(event){
+
+    const reader = new FileReader();
+
+    reader.onload = function(){
+
+        document.getElementById("avatarPreview").src = reader.result;
+
+    }
+
+    reader.readAsDataURL(event.target.files[0]);
+
+}
+
+
+function updatePhone(){
+
+    const phone = document.getElementById("phone").value;
+
+    fetch('/Student/Profile/UpdatePhone',{
+        method:'POST',
+        headers:{
+            'Content-Type':'application/x-www-form-urlencoded'
+        },
+        body:'phone='+encodeURIComponent(phone)
+    })
+    .then(()=>{
+        alert("Cập nhật thành công");
+        location.reload();
+    })
+
+}
+
+</script>
+
+
+<style>
+
+.profile-card{
+padding-top:20px;
+}
+
+.avatar-wrapper{
+display:flex;
+justify-content:center;
+}
+
+.avatar-img{
+width:150px;
+height:150px;
+border-radius:50%;
+object-fit:cover;
+border:5px solid #f1f1f1;
+box-shadow:0 5px 20px rgba(0,0,0,0.15);
+}
+
+.card{
+border-radius:12px;
+transition:all .3s;
+}
+
+.card:hover{
+transform:translateY(-4px);
+box-shadow:0 20px 40px rgba(0,0,0,0.12);
+}
+
+</style>
+
+}

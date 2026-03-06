@@ -251,7 +251,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                 
                 // Nhan dien lai cac cot
                 int headerRow = -1;
-                int colMSSV = -1, colHoDem = -1, colTen = -1, colGioiTinh = -1, colNgaySinh = -1, colLopHoc = -1;
+                int colMSSV = -1, colHoDem = -1, colTen = -1, colFullName = -1, colGioiTinh = -1, colNgaySinh = -1, colLopHoc = -1;
                 
                 for (int row = 1; row <= Math.Min(15, rowCount); row++)
                 {
@@ -261,6 +261,8 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                         
                         if (cellValue.Contains("mã sinh viên") || cellValue.Contains("ma sinh vien") || cellValue == "mssv")
                         { headerRow = row; colMSSV = col; }
+                        else if (cellValue.Contains("họ tên") || cellValue.Contains("ho ten") || cellValue.Contains("fullname") || cellValue.Contains("full name"))
+                        { colFullName = col; }
                         else if (cellValue.Contains("họ đệm") || cellValue.Contains("ho dem") || cellValue == "họ")
                         { colHoDem = col; }
                         else if (cellValue == "tên" || cellValue == "ten")
@@ -287,8 +289,32 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                         if (string.IsNullOrEmpty(studentCode) || !studentCode.All(char.IsDigit))
                             continue; // Am tham bo qua cac dong khong hop le
                         
-                        var lastName = colHoDem > 0 ? worksheet.Cells[row, colHoDem].Value?.ToString()?.Trim() ?? "" : "";
-                        var firstName = colTen > 0 ? worksheet.Cells[row, colTen].Value?.ToString()?.Trim() ?? "" : "";
+                        string lastName = "";
+                        string firstName = "";
+                        
+                        // Kiểm tra xem có cột Họ tên duy nhất hay không
+                        if (colFullName > 0)
+                        {
+                            var fullNameValue = worksheet.Cells[row, colFullName].Value?.ToString()?.Trim() ?? "";
+                            // Tách họ tên: lấy từ sau dấu cách cuối cùng làm tên
+                            var parts = fullNameValue.Split(' ');
+                            if (parts.Length > 1)
+                            {
+                                firstName = parts[parts.Length - 1];
+                                lastName = string.Join(" ", parts.Take(parts.Length - 1));
+                            }
+                            else
+                            {
+                                firstName = fullNameValue;
+                            }
+                        }
+                        else
+                        {
+                            // Nếu có cột Họ đệm và Tên riêng
+                            lastName = colHoDem > 0 ? worksheet.Cells[row, colHoDem].Value?.ToString()?.Trim() ?? "" : "";
+                            firstName = colTen > 0 ? worksheet.Cells[row, colTen].Value?.ToString()?.Trim() ?? "" : "";
+                        }
+                        
                         var genderText = colGioiTinh > 0 ? worksheet.Cells[row, colGioiTinh].Value?.ToString()?.Trim() ?? "" : "";
                         var dobValue = colNgaySinh > 0 ? worksheet.Cells[row, colNgaySinh].Value : null;
                         var classCode = colLopHoc > 0 ? worksheet.Cells[row, colLopHoc].Value?.ToString()?.Trim() ?? "" : "";
