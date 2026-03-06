@@ -1,0 +1,124 @@
+@model DNC.InternshipSystem.Core.Entities.Registration
+
+<div class="container mt-4">
+
+<h3 class="mb-4">📄 Đơn đăng ký thực tập của tôi</h3>
+
+@if (Model == null)
+{
+    <div class="alert alert-warning">
+        Bạn chưa đăng ký thực tập.
+    </div>
+}
+else
+{
+
+<div class="card shadow-sm p-4 mb-3">
+
+<h5 class="mb-3">🏢 Thông tin doanh nghiệp</h5>
+
+<div class="row mb-3">
+
+<div class="col-md-6">
+<label class="form-label">Tên doanh nghiệp</label>
+<input class="form-control" value="@Model.Company?.Name" readonly />
+</div>
+
+<div class="col-md-6">
+<label class="form-label">Tỉnh / Thành phố</label>
+<input class="form-control" value="@Model.Company?.Province" readonly />
+</div>
+
+</div>
+
+</div>
+
+
+<div class="card shadow-sm p-4 mb-3">
+
+<h5 class="mb-3">📅 Thông tin đợt thực tập</h5>
+
+<div class="row mb-3">
+
+<div class="col-md-6">
+<label class="form-label">Tên đợt</label>
+<input class="form-control" value="@Model.Term?.TermName" readonly />
+</div>
+
+<div class="col-md-6">
+<label class="form-label">Ngày đăng ký</label>
+<input class="form-control" value="@Model.CreatedDate.ToShortDateString()" readonly />
+</div>
+
+</div>
+
+</div>
+
+
+<div class="card shadow-sm p-4 mb-3">
+
+<h5 class="mb-3">💼 Thông tin đăng ký</h5>
+
+<div class="row mb-3">
+
+<div class="col-md-6">
+<label class="form-label">Vị trí thực tập</label>
+<input class="form-control" value="@Model.Position" readonly />
+</div>
+
+<div class="col-md-6">
+<label class="form-label">Trạng thái</label>
+
+<div>
+
+@if (Model.Status == 0)
+{
+<span class="badge bg-warning fs-6">Chờ duyệt</span>
+}
+else if (Model.Status == 1)
+{
+<span class="badge bg-success fs-6">Đã duyệt</span>
+}
+else
+{
+<span class="badge bg-danger fs-6">Từ chối</span>
+}
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="text-end">
+
+@if (Model.Status == 0)
+{
+<form asp-area="Student"
+      asp-controller="SRegister"
+      asp-action="UpdateRegistration"
+      method="post">
+
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="id" value="@Model.Id" />
+
+    <button type="submit" class="btn btn-warning">
+        🔄 Đăng ký lại
+    </button>
+
+</form>
+}
+
+<a asp-action="Index" class="btn btn-secondary">
+Quay lại
+</a>
+
+</div>
+
+}
+
+</div>

@@ -163,6 +163,49 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
         });
     }
 }
+[HttpGet]
+public async Task<IActionResult> MyRegistration()
+{
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userIdClaim))
+    {
+        return Unauthorized();
+    }
 
+    Guid studentUserId = Guid.Parse(userIdClaim);
+
+    var registration = await _context.Registrations
+        .Include(r => r.Company)
+        .Include(r => r.Term)
+        .FirstOrDefaultAsync(r => r.StudentId == studentUserId);
+
+    return View(registration);
+}
+// POST: /Student/SRegister/UpdateRegistrations
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> UpdateRegistration(Guid id)
+{
+    var registration = await _context.Registrations
+        .FirstOrDefaultAsync(r => r.Id == id);
+
+    if (registration == null)
+        return NotFound();
+
+    // Chỉ cho sửa khi đang CHỜ DUYỆT
+    if (registration.Status != 0)
+    {
+        TempData["Error"] = "Chỉ được sửa khi đơn đang chờ duyệt.";
+        return RedirectToAction("MyRegistration");
+    }
+
+    // XÓA đơn đăng ký
+    _context.Registrations.Remove(registration);
+
+    await _context.SaveChangesAsync();
+
+    // Quay lại trang đăng ký doanh nghiệp
+    return RedirectToAction("Index");
+}
     }
 }
