@@ -48,6 +48,12 @@
         </button>
     </li>
 </ul>
+<a asp-area="Student"
+   asp-controller="SRegister"
+   asp-action="MyRegistration"
+   class="btn btn-primary">
+   Xem đăng ký
+</a>
 
 <div class="tab-content" id="registerTabContent">
     <!-- TAB 1: Danh sach DN doi tac -->
@@ -238,93 +244,161 @@
             <div class="col-lg-8">
                 <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
                     <i class="fa fa-info-circle me-2"></i>
-                    <strong>Lưu ý:</strong> Tính năng đăng ký doanh nghiệp tự liên hệ sẽ được cập nhật sớm. 
-                    Hiện tại, vui lòng liên hệ với bộ phận quản lý thực tập để đăng ký.
+                   <strong> Nếu bạn đã tự liên hệ và được doanh nghiệp đồng ý cho thực tập, hãy điền thông tin vào form bên dưới để đăng ký. Trường hợp bạn chưa liên hệ được doanh nghiệp, vui lòng ưu tiên đăng ký tại các doanh nghiệp đối tác ở tab bên cạnh.</strong>
+                   
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <div class="card border-0 shadow-sm" style="opacity: 0.5;">
+                <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white py-3">
                         <h6 class="mb-0 fw-bold"><i class="fa fa-pen-fancy text-info me-2"></i>Đăng ký doanh nghiệp tự liên hệ</h6>
                         <small class="text-muted">Điền thông tin doanh nghiệp bạn đã tự liên hệ để thực tập.</small>
                     </div>
                     <div class="card-body">
-                        <form id="externalForm" disabled>
-                            <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
-                                <i class="fa fa-building me-2"></i>Thông tin Doanh nghiệp
-                            </h6>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-8">
-                                    <label class="form-label fw-semibold">Tên công ty <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="VD: Công ty TNHH ABC" required disabled>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Mã số thuế</label>
-                                    <input type="text" class="form-control" placeholder="VD: 1801234567" disabled>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required disabled>
-                                </div>
-                            </div>
+                       <form id="externalForm"
+      method="post"
+      asp-area="Student"
+      asp-controller="SRegister"
+      asp-action="SubmitExternal">
 
-                            <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
-                                <i class="fa fa-user me-2"></i>Người liên hệ tại Doanh nghiệp
-                            </h6>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Họ tên người liên hệ <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="VD: Nguyễn Văn A" required disabled>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Chức vụ</label>
-                                    <input type="text" class="form-control" placeholder="VD: Trưởng phòng IT" disabled>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
-                                    <input type="tel" class="form-control" placeholder="0901234567" required disabled>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Email</label>
-                                    <input type="email" class="form-control" placeholder="email@company.com" disabled>
-                                </div>
-                            </div>
+    @Html.AntiForgeryToken()
 
-                            <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
-                                <i class="fa fa-briefcase me-2"></i>Thông tin Thực tập
-                            </h6>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-8">
-                                    <label class="form-label fw-semibold">Vị trí thực tập <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="VD: Thực tập sinh lập trình Web" required disabled>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold">Ghi chú</label>
-                                    <textarea class="form-control" rows="3" placeholder="Ghi chú thêm (nếu có)..." disabled></textarea>
-                                </div>
-                            </div>
+    <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
+        <i class="fa fa-building me-2"></i>Thông tin Doanh nghiệp
+    </h6>
 
-                            <hr class="my-4">
-                            <div class="d-flex justify-content-end gap-2">
-                                <button type="reset" class="btn btn-outline-secondary" disabled>
-                                    <i class="fa fa-redo me-1"></i> Đặt lại
-                                </button>
-                                <button type="submit" class="btn btn-info text-white" disabled>
-                                    <i class="fa fa-paper-plane me-1"></i> Gửi đơn đăng ký
-                                </button>
-                                </div>
-                        </form>
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-8">
+            <label class="form-label fw-semibold">
+                Tên công ty <span class="text-danger">*</span>
+            </label>
+            <input name="CompanyName"
+                   type="text"
+                   class="form-control"
+                   placeholder="VD: Công ty TNHH ABC"
+                   required>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Mã số thuế</label>
+            <input name="TaxCode"
+                   type="text"
+                   class="form-control"
+                   placeholder="VD: 1801234567">
+        </div>
+
+        <div class="col-12">
+            <label class="form-label fw-semibold">
+                Địa chỉ <span class="text-danger">*</span>
+            </label>
+            <input name="Address"
+                   type="text"
+                   class="form-control"
+                   placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                   required>
+        </div>
+
+    </div>
+
+
+    <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
+        <i class="fa fa-user me-2"></i>Người liên hệ tại Doanh nghiệp
+    </h6>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">
+                Họ tên người liên hệ <span class="text-danger">*</span>
+            </label>
+            <input name="ContactPerson"
+                   type="text"
+                   class="form-control"
+                   placeholder="VD: Nguyễn Văn A"
+                   required>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Chức vụ</label>
+            <input name="PositionTitle"
+                   type="text"
+                   class="form-control"
+                   placeholder="VD: Trưởng phòng IT">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">
+                Số điện thoại <span class="text-danger">*</span>
+            </label>
+            <input name="Phone"
+                   type="tel"
+                   class="form-control"
+                   placeholder="0901234567"
+                   required>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Email</label>
+            <input name="Email"
+                   type="email"
+                   class="form-control"
+                   placeholder="email@company.com"
+                   required>
+        </div>
+
+    </div>
+
+
+    <h6 class="fw-bold text-info mb-3 border-bottom pb-2">
+        <i class="fa fa-briefcase me-2"></i>Thông tin Thực tập
+    </h6>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-8">
+            <label class="form-label fw-semibold">
+                Vị trí thực tập <span class="text-danger">*</span>
+            </label>
+            <input name="Position"
+                   type="text"
+                   class="form-control"
+                   placeholder="VD: Thực tập sinh lập trình Web"
+                   required>
+        </div>
+
+        <div class="col-12">
+            <label class="form-label fw-semibold">Ghi chú</label>
+            <textarea name="Note"
+                      class="form-control"
+                      rows="3"
+                      placeholder="Ghi chú thêm (nếu có)..."></textarea>
+        </div>
+
+    </div>
+
+
+    <hr class="my-4">
+
+    <div class="d-flex justify-content-end gap-2">
+
+        <button type="reset" class="btn btn-outline-secondary">
+            <i class="fa fa-redo me-1"></i> Đặt lại
+        </button>
+
+        <button type="submit" class="btn btn-info text-white">
+            <i class="fa fa-paper-plane me-1"></i> Gửi đơn đăng ký
+        </button>
+
+    </div>
+
+</form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<a asp-area="Student"
-   asp-controller="SRegister"
-   asp-action="MyRegistration"
-   class="btn btn-primary">
-   Xem đăng ký
-</a>
+
 @section Scripts {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -472,7 +546,75 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Lấy dữ liệu từ form
             const formData = new FormData(this);
-            formData.append('__RequestVerificationToken', token); // Thêm token bảo mật
+            // FormData đã tự động bao gồm __RequestVerificationToken từ @Html.AntiForgeryToken()
+            
+            // Validate các trường bắt buộc
+            const companyName = formData.get('CompanyName')?.trim();
+            const address = formData.get('Address')?.trim();
+            const contactPerson = formData.get('ContactPerson')?.trim();
+            const phone = formData.get('Phone')?.trim();
+            const email = formData.get('Email')?.trim();
+            const position = formData.get('Position')?.trim();
+            
+            if (!companyName) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thiếu thông tin',
+                    text: 'Vui lòng nhập tên công ty.',
+                    confirmButtonColor: '#0ea5e9'
+                });
+                return;
+            }
+            
+            if (!address) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thiếu thông tin',
+                    text: 'Vui lòng nhập địa chỉ công ty.',
+                    confirmButtonColor: '#0ea5e9'
+                });
+                return;
+            }
+            
+            if (!contactPerson) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thiếu thông tin',
+                    text: 'Vui lòng nhập tên người liên hệ.',
+                    confirmButtonColor: '#0ea5e9'
+                });
+                return;
+            }
+            
+            if (!phone) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thiếu thông tin',
+                    text: 'Vui lòng nhập số điện thoại người liên hệ.',
+                    confirmButtonColor: '#0ea5e9'
+                });
+                return;
+            }
+            
+            if (!email) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thiếu thông tin',
+                    text: 'Vui lòng nhập email người liên hệ.',
+                    confirmButtonColor: '#0ea5e9'
+                });
+                return;
+            }
+            
+            if (!position) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thiếu thông tin',
+                    text: 'Vui lòng nhập vị trí thực tập.',
+                    confirmButtonColor: '#0ea5e9'
+                });
+                return;
+            }
 
             try {
                 // Hiển thị loading
@@ -484,13 +626,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     allowEscapeKey: false
                 });
 
+                console.log('Submitting external form to /Student/SRegister/SubmitExternal');
+                console.log('FormData keys:', Array.from(formData.keys()));
+
                 // Gửi request lên server
                 const response = await fetch('/Student/SRegister/SubmitExternal', {
                     method: 'POST',
                     body: formData
                 });
 
-                const result = await response.json();
+                console.log('Response status:', response.status);
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseErr) {
+                    console.error('Failed to parse JSON response:', parseErr);
+                    throw new Error('Server returned invalid response: ' + responseText.substring(0, 200));
+                }
+
                 Swal.close();
 
                 if (response.ok && result.success) {
@@ -516,7 +672,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi hệ thống',
-                    text: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.',
+                    html: `<p>Không thể kết nối đến máy chủ.</p><p class="text-muted small mt-2">${err.message}</p>`,
                     confirmButtonColor: '#0ea5e9'
                 });
             }

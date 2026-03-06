@@ -45,13 +45,18 @@ app.UseAuthorization();
 app.MapStaticAssets();
 
 app.MapControllerRoute(
-    name: "areas",
+    name: "admin-area",
     pattern: "{area:exists}/{controller=AdminHome}/{action=Index}/{id?}"
 );
 
 app.MapControllerRoute(
-    name: "areas",
+    name: "lecturer-area",
     pattern: "{area:exists}/{controller=LecturerHome}/{action=Index}/{id?}"
+);
+
+app.MapControllerRoute(
+    name: "student-area",
+    pattern: "{area:exists}/{controller}/{action}/{id?}"
 );
 
 app.MapControllerRoute(

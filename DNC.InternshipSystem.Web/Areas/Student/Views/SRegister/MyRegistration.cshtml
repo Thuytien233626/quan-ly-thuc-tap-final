@@ -9,27 +9,26 @@
     <div class="alert alert-warning">
         Bạn chưa đăng ký thực tập.
     </div>
+    <a asp-action="Index" class="btn btn-secondary">
+Quay lại
+</a>
 }
 else
 {
 
-<div class="card shadow-sm p-4 mb-3">
+<div class="card p-3 mb-3">
+    <h5>🏢 Doanh nghiệp</h5>
 
-<h5 class="mb-3">🏢 Thông tin doanh nghiệp</h5>
-
-<div class="row mb-3">
-
-<div class="col-md-6">
-<label class="form-label">Tên doanh nghiệp</label>
-<input class="form-control" value="@Model.Company?.Name" readonly />
-</div>
-
-<div class="col-md-6">
-<label class="form-label">Tỉnh / Thành phố</label>
-<input class="form-control" value="@Model.Company?.Province" readonly />
-</div>
-
-</div>
+    @if (Model.CompanyId != null)
+    {
+        <p><b>Tên:</b> @Model.Company?.Name</p>
+        <p><b>Tỉnh:</b> @Model.Company?.Province</p>
+    }
+    else
+    {
+        <p><b>Tên:</b> @Model.ExternalCompanyName</p>
+        <p><b>Địa chỉ:</b> @Model.ExternalCompanyAddress</p>
+    }
 
 </div>
 
@@ -106,16 +105,17 @@ else
 
     <input type="hidden" name="id" value="@Model.Id" />
 
-    <button type="submit" class="btn btn-warning">
-        🔄 Đăng ký lại
-    </button>
+   <button type="submit" class="btn btn-warning">
+    <i class="fa fa-refresh"></i> Đăng ký lại
+</button>
+
+<a asp-action="Index" class="btn btn-outline-secondary">
+    <i class="fa fa-arrow-left"></i> Quay lại
+</a>
 
 </form>
 }
 
-<a asp-action="Index" class="btn btn-secondary">
-Quay lại
-</a>
 
 </div>
 

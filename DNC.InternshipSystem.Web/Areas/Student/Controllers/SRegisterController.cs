@@ -163,6 +163,126 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
         });
     }
 }
+
+// POST: /Student/SRegister/SubmitExternal
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> SubmitExternal(
+    string CompanyName,
+    string TaxCode,
+    string Address,
+    string ContactPerson,
+    string PositionTitle,
+    string Phone,
+    string Email,
+    string Position,
+    string Note)
+{
+    try
+    {
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] Called with CompanyName={CompanyName}, Address={Address}");
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return Json(new { success = false, message = "Không xác định được sinh viên." });
+        }
+
+        Guid studentUserId = Guid.Parse(userIdClaim);
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] Student User ID: {studentUserId}");
+
+        // kiểm tra sinh viên
+        var student = await _context.Students
+            .FirstOrDefaultAsync(s => s.UserId == studentUserId);
+
+        if (student == null)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SubmitExternal] Student not found");
+            return Json(new { success = false, message = "Sinh viên không tồn tại." });
+        }
+
+        // kiểm tra đã đăng ký chưa
+        bool existed = await _context.Registrations
+            .AnyAsync(r => r.StudentId == studentUserId);
+
+        if (existed)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SubmitExternal] Student already has a registration");
+            return Json(new
+            {
+                success = false,
+                message = "Bạn đã đăng ký thực tập rồi."
+            });
+        }
+
+        // tìm kỳ thực tập
+        var currentTerm = await _context.InternshipTerms
+            .Where(t => t.IsActive)
+            .FirstOrDefaultAsync();
+
+        if (currentTerm == null)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SubmitExternal] No active internship term found");
+            return Json(new
+            {
+                success = false,
+                message = "Không có đợt thực tập đang mở."
+            });
+        }
+
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] Current term: {currentTerm.Id}, Name: {currentTerm.TermName}");
+
+        // tạo registration với thông tin doanh nghiệp ngoài
+        // Không tạo Company record, chỉ lưu thông tin vào ExternalCompanyName và ExternalCompanyAddress
+        var registration = new DNC.InternshipSystem.Core.Entities.Registration
+        {
+            StudentId = studentUserId,
+            TermId = currentTerm.Id,
+            CompanyId = null, // không liên kết với Company record
+            ExternalCompanyName = CompanyName ?? string.Empty,
+            ExternalCompanyAddress = Address ?? string.Empty,
+            Position = Position ?? string.Empty,
+            Status = 0,
+            CreatedDate = DateTime.Now
+        };
+
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] Creating registration: ExternalCompanyName={registration.ExternalCompanyName}, ExternalCompanyAddress={registration.ExternalCompanyAddress}, Position={registration.Position}");
+
+        _context.Registrations.Add(registration);
+        await _context.SaveChangesAsync();
+
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] Registration created successfully with ID: {registration.Id}");
+
+        return Json(new
+        {
+            success = true,
+            message = "Đăng ký doanh nghiệp ngoài thành công. Vui lòng chờ giảng viên duyệt."
+        });
+    }
+    catch (DbUpdateException dbEx)
+    {
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] DbUpdateException: {dbEx.Message}");
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] InnerException: {dbEx.InnerException?.Message}");
+        return Json(new
+        {
+            success = false,
+            message = "Lỗi cơ sở dữ liệu: " + dbEx.InnerException?.Message ?? dbEx.Message
+        });
+    }
+    catch (Exception ex)
+    {
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] Exception: {ex.GetType().Name}: {ex.Message}");
+        System.Diagnostics.Debug.WriteLine($"[SubmitExternal] StackTrace: {ex.StackTrace}");
+        return Json(new
+        {
+            success = false,
+            message = "Lỗi hệ thống: " + ex.Message
+        });
+    }
+}
+
+// GET: /Student/SRegister/MyRegistration
 [HttpGet]
 public async Task<IActionResult> MyRegistration()
 {
