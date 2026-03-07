@@ -102,7 +102,7 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
         }
 
         bool existed = await _context.Registrations
-            .AnyAsync(r => r.StudentId == studentUserId);
+            .AnyAsync(r => r.StudentId == studentUserId && r.Status != 2);
              if (existed)
            {
             return Json(new
@@ -194,7 +194,7 @@ public async Task<IActionResult> SubmitExternal(
 
         // kiểm tra sinh viên
         var student = await _context.Students
-            .FirstOrDefaultAsync(s => s.UserId == studentUserId);
+            .FirstOrDefaultAsync(s => s.UserId == studentUserId );
 
         if (student == null)
         {
@@ -204,7 +204,7 @@ public async Task<IActionResult> SubmitExternal(
 
         // kiểm tra đã đăng ký chưa
         bool existed = await _context.Registrations
-            .AnyAsync(r => r.StudentId == studentUserId);
+            .AnyAsync(r => r.StudentId == studentUserId && r.Status != 2);
 
         if (existed)
         {
@@ -293,11 +293,11 @@ public async Task<IActionResult> MyRegistration()
     }
 
     Guid studentUserId = Guid.Parse(userIdClaim);
-
-    var registration = await _context.Registrations
-        .Include(r => r.Company)
-        .Include(r => r.Term)
-        .FirstOrDefaultAsync(r => r.StudentId == studentUserId);
+var registration = await _context.Registrations
+    .Include(r => r.Company)
+    .Include(r => r.Term)
+    .Where(r => r.StudentId == studentUserId && r.Status != 2)
+    .FirstOrDefaultAsync();
 
     return View(registration);
 }
