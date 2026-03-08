@@ -1,3 +1,4 @@
+```razor
 @using DNC.InternshipSystem.Core.Entities
 @{
     Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
@@ -12,262 +13,497 @@
     var registration = ViewBag.Registration as Registration;
 }
 
-<!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-1">Nhật ký thực tập</h4>
         <p class="text-muted mb-0 small">Ghi chép công việc hàng tuần trong quá trình thực tập.</p>
     </div>
-    @if (hasRegistration)
-    {
-        <button class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#addLogModal">
-            <i class="fa fa-plus me-1"></i> Viết nhật ký mới
-        </button>
-    }
 </div>
 
 @if (!hasRegistration)
 {
-    <div class="card border-0 shadow-sm">
-        <div class="card-body text-center py-5">
-            <i class="fa fa-info-circle fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">Bạn chưa có đơn đăng ký thực tập</h5>
-            <p class="text-muted">Vui lòng đăng ký thực tập trước khi viết nhật ký.</p>
-            <a asp-area="Student" asp-controller="SRegister" asp-action="Index" class="btn btn-info text-white">
-                <i class="fa fa-file-signature me-1"></i> Đăng ký thực tập
-            </a>
-        </div>
-    </div>
+<div class="card border-0 shadow-sm">
+<div class="card-body text-center py-5">
+<i class="fa fa-info-circle fa-3x text-muted mb-3"></i>
+<h5 class="text-muted">Bạn chưa có đơn đăng ký thực tập</h5>
+<p class="text-muted">Vui lòng đăng ký thực tập trước khi viết nhật ký.</p>
+
+<a asp-area="Student"
+   asp-controller="SRegister"
+   asp-action="Index"
+   class="btn btn-info text-white">
+
+<i class="fa fa-file-signature me-1"></i>
+Đăng ký thực tập
+
+</a>
+</div>
+</div>
 }
 else
 {
-    <!-- Thong ke tong quan -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="stats-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="card-title-custom">Tổng số tuần</div>
-                        <div class="card-value-custom">@totalWeeks</div>
-                    </div>
-                    <span class="stats-icon-box bg-info-subtle text-info"><i class="fa fa-calendar-week"></i></span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stats-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="card-title-custom">Đã nộp</div>
-                        <div class="card-value-custom text-success">@submittedWeeks</div>
-                    </div>
-                    <span class="stats-icon-box bg-success-subtle text-success"><i class="fa fa-check-circle"></i></span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stats-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="card-title-custom">Chưa nộp</div>
-                        <div class="card-value-custom text-danger">@pendingWeeks</div>
-                    </div>
-                    <span class="stats-icon-box bg-danger-subtle text-danger"><i class="fa fa-exclamation-circle"></i></span>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Danh sach nhat ky -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h6 class="fw-bold mb-0"><i class="fa fa-book-open text-info me-2"></i>Danh sách nhật ký theo tuần</h6>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">Tuần</th>
-                            <th>Ngày ghi</th>
-                            <th>Nội dung công việc</th>
-                            <th class="text-center">Nhận xét GV</th>
-                            <th class="text-center">Trạng thái</th>
-                            <th class="text-center">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (logbooks.Any())
-                        {
-                            @foreach (var log in logbooks)
-                            {
-                                <tr>
-                                    <td class="ps-4"><span class="badge bg-info text-white">Tuần @log.WeekNumber</span></td>
-                                    <td>@log.StartDate.ToString("dd/MM/yyyy") - @log.EndDate.ToString("dd/MM/yyyy")</td>
-                                    <td class="text-truncate" style="max-width: 280px;">@log.Content</td>
-                                    <td class="text-center">
-                                        @if (!string.IsNullOrEmpty(log.LecturerComment))
-                                        {
-                                            <span class="badge bg-primary-subtle text-primary">Đã nhận xét</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted small">—</span>
-                                        }
-                                    </td>
-                                    <td class="text-center"><span class="badge bg-success-subtle text-success">Đã nộp</span></td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-info btn-view-log"
-                                                data-week="@log.WeekNumber"
-                                                data-start="@log.StartDate.ToString("dd/MM/yyyy")"
-                                                data-end="@log.EndDate.ToString("dd/MM/yyyy")"
-                                                data-content="@log.Content"
-                                                data-comment="@(log.LecturerComment ?? "")"
-                                                data-submitted="@log.SubmittedDate.ToString("dd/MM/yyyy HH:mm")">
-                                            <i class="fa fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        }
+<div class="row g-3 mb-4">
 
-                        @* Hien thi cac tuan chua nop *@
-                        @if (totalWeeks > 0 && registration?.Term != null)
-                        {
-                            var submittedWeekNumbers = logbooks.Select(l => l.WeekNumber).ToHashSet();
-                            var internshipStart = registration.Term.InternshipStart;
-                            var now = DateTime.Now;
+<div class="col-md-4">
+<div class="stats-card">
+<div class="d-flex justify-content-between align-items-center">
 
-                            @for (int w = 1; w <= totalWeeks; w++)
-                            {
-                                if (submittedWeekNumbers.Contains(w)) continue;
-
-                                var weekStart = internshipStart.AddDays((w - 1) * 7);
-                                var weekEnd = weekStart.AddDays(6);
-                                bool isFuture = weekStart > now;
-
-                                <tr>
-                                    <td class="ps-4">
-                                        <span class="badge @(isFuture ? "bg-secondary" : "bg-warning text-dark")">Tuần @w</span>
-                                    </td>
-                                    <td>@weekStart.ToString("dd/MM/yyyy") - @weekEnd.ToString("dd/MM/yyyy")</td>
-                                    <td class="text-muted fst-italic">@(isFuture ? "Chưa đến hạn" : "Chưa có nội dung")</td>
-                                    <td class="text-center"><span class="text-muted">—</span></td>
-                                    <td class="text-center">
-                                        <span class="badge @(isFuture ? "bg-secondary-subtle text-secondary" : "bg-warning-subtle text-warning")">
-                                            @(isFuture ? "Chưa mở" : "Chờ nộp")
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        @if (!isFuture)
-                                        {
-                                            <button class="btn btn-sm btn-info text-white"><i class="fa fa-pen"></i></button>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        }
-
-                        @if (!logbooks.Any() && totalWeeks == 0)
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    <i class="fa fa-inbox me-1"></i> Chưa có dữ liệu nhật ký.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Modal Them Nhat ky -->
-<div class="modal fade" id="addLogModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="fa fa-book-open text-info me-2"></i>Viết nhật ký mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Tuần số</label>
-                        <input type="number" class="form-control" min="1" max="@totalWeeks" placeholder="VD: 4">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Từ ngày</label>
-                        <input type="date" class="form-control">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Đến ngày</label>
-                        <input type="date" class="form-control">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Công việc đã thực hiện <span class="text-danger">*</span></label>
-                        <textarea class="form-control" rows="4" placeholder="Mô tả chi tiết các công việc bạn đã làm trong tuần này..."></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-info text-white" onclick="submitLogbook()">
-                    <i class="fa fa-save me-1"></i> Lưu nhật ký
-                </button>
-            </div>
-        </div>
-    </div>
+<div>
+<div class="card-title-custom">Tổng số tuần</div>
+<div class="card-value-custom">@totalWeeks</div>
 </div>
 
-@section Scripts {
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Xem chi tiet logbook
-    document.querySelectorAll('.btn-view-log').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const week = this.dataset.week;
-            const start = this.dataset.start;
-            const end = this.dataset.end;
-            const content = this.dataset.content;
-            const comment = this.dataset.comment;
-            const submitted = this.dataset.submitted;
+<span class="stats-icon-box bg-info-subtle text-info">
+<i class="fa fa-calendar-week"></i>
+</span>
 
-            Swal.fire({
-                title: `<i class="fa fa-book-open text-info me-2"></i>Nhật ký - Tuần ${week}`,
-                html: `
-                    <div class="text-start">
-                        <div class="mb-2"><small class="text-muted">Thời gian:</small> <strong>${start} - ${end}</strong></div>
-                        <div class="mb-2"><small class="text-muted">Nộp lúc:</small> ${submitted}</div>
-                        <hr>
-                        <div class="mb-2"><strong>Nội dung công việc:</strong></div>
-                        <div class="bg-light p-3 rounded mb-3" style="white-space: pre-wrap;">${content}</div>
-                        ${comment ? `<div class="mb-2"><strong>Nhận xét giảng viên:</strong></div><div class="bg-primary bg-opacity-10 p-3 rounded">${comment}</div>` : '<div class="text-muted fst-italic">Giảng viên chưa nhận xét.</div>'}
-                    </div>
-                `,
-                width: '600px',
-                showCloseButton: true,
-                showConfirmButton: false
-            });
-        });
-    });
+</div>
+</div>
+</div>
+
+<div class="col-md-4">
+<div class="stats-card">
+<div class="d-flex justify-content-between align-items-center">
+
+<div>
+<div class="card-title-custom">Đã nộp</div>
+<div class="card-value-custom text-success">@submittedWeeks</div>
+</div>
+
+<span class="stats-icon-box bg-success-subtle text-success">
+<i class="fa fa-check-circle"></i>
+</span>
+
+</div>
+</div>
+</div>
+
+<div class="col-md-4">
+<div class="stats-card">
+<div class="d-flex justify-content-between align-items-center">
+
+<div>
+<div class="card-title-custom">Chưa nộp</div>
+<div class="card-value-custom text-danger">@pendingWeeks</div>
+</div>
+
+<span class="stats-icon-box bg-danger-subtle text-danger">
+<i class="fa fa-exclamation-circle"></i>
+</span>
+
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="card border-0 shadow-sm">
+
+<div class="card-header bg-white py-3">
+
+<h6 class="fw-bold mb-0">
+<i class="fa fa-book-open text-info me-2"></i>
+Danh sách nhật ký theo tuần
+</h6>
+
+</div>
+
+<div class="card-body p-0">
+
+<div class="table-responsive">
+
+<table class="table table-hover align-middle mb-0">
+
+<thead class="table-light">
+
+<tr>
+
+<th class="ps-4">Tuần</th>
+<th>Ngày ghi</th>
+<th>Nội dung công việc</th>
+<th class="text-center">Nhận xét GV</th>
+<th class="text-center">Trạng thái</th>
+<th class="text-center">Thao tác</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+@if (logbooks.Any())
+{
+foreach (var log in logbooks)
+{
+
+<tr>
+
+<td class="ps-4">
+<span class="badge bg-info text-white">
+Tuần @log.WeekNumber
+</span>
+</td>
+
+<td>
+@log.StartDate.ToString("dd/MM/yyyy")
+-
+@log.EndDate.ToString("dd/MM/yyyy")
+</td>
+
+<td class="text-truncate" style="max-width:280px;">
+@log.Content
+</td>
+
+<td class="text-center">
+
+@if (!string.IsNullOrEmpty(log.LecturerComment))
+{
+<span class="badge bg-primary-subtle text-primary">
+Đã nhận xét
+</span>
+}
+else
+{
+<span class="text-muted small">—</span>
+}
+
+</td>
+
+<td class="text-center">
+
+<span class="badge bg-success-subtle text-success">
+Đã nộp
+</span>
+
+</td>
+
+<td class="text-center">
+
+<button class="btn btn-sm btn-outline-info btn-view-log"
+
+data-week="@log.WeekNumber"
+data-start="@log.StartDate.ToString("dd/MM/yyyy")"
+data-end="@log.EndDate.ToString("dd/MM/yyyy")"
+data-content="@log.Content"
+data-comment="@(log.LecturerComment ?? "")">
+
+<i class="fa fa-eye"></i>
+
+</button>
+
+</td>
+
+</tr>
+
+}
+}
+
+@if (totalWeeks > 0 && registration?.Term != null)
+{
+
+var submittedWeekNumbers = logbooks.Select(l => l.WeekNumber).ToHashSet();
+var internshipStart = registration.Term.InternshipStart;
+var now = DateTime.Now;
+
+for (int w = 1; w <= totalWeeks; w++)
+{
+
+if (submittedWeekNumbers.Contains(w)) continue;
+
+var weekStart = internshipStart.AddDays((w - 1) * 7);
+var weekEnd = weekStart.AddDays(6);
+bool isFuture = weekStart > now;
+
+<tr>
+
+<td class="ps-4">
+
+<span class="badge @(isFuture ? "bg-secondary" : "bg-warning text-dark")">
+
+Tuần @w
+
+</span>
+
+</td>
+
+<td>
+
+@weekStart.ToString("dd/MM/yyyy")
+-
+@weekEnd.ToString("dd/MM/yyyy")
+
+</td>
+
+<td class="text-muted fst-italic">
+
+@(isFuture ? "Chưa đến hạn" : "Chưa có nội dung")
+
+</td>
+
+<td class="text-center">—</td>
+
+<td class="text-center">
+
+<span class="badge @(isFuture ? "bg-secondary-subtle text-secondary" : "bg-warning-subtle text-warning")">
+
+@(isFuture ? "Chưa mở" : "Chờ nộp")
+
+</span>
+
+</td>
+
+<td class="text-center">
+
+@if (!isFuture)
+{
+
+<button class="btn btn-sm btn-info text-white btn-write-log"
+
+data-bs-toggle="modal"
+data-bs-target="#addLogModal"
+data-week="@w"
+data-start="@weekStart.ToString("yyyy-MM-dd")"
+data-end="@weekEnd.ToString("yyyy-MM-dd")">
+
+<i class="fa fa-pen"></i>
+
+</button>
+
+}
+else
+{
+<span class="text-muted">—</span>
+}
+
+</td>
+
+</tr>
+
+}
+
+}
+
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+
+}
+
+<!-- Modal viết nhật ký -->
+
+<div class="modal fade" id="addLogModal">
+
+<div class="modal-dialog modal-lg">
+
+<div class="modal-content">
+
+<form method="post"
+asp-area="Student"
+asp-controller="Logbook"
+asp-action="CreateLogbook">
+
+@Html.AntiForgeryToken()
+
+<div class="modal-header">
+
+<h5 class="modal-title fw-bold">
+
+<i class="fa fa-book-open text-info me-2"></i>
+
+Viết nhật ký
+
+</h5>
+
+<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+</div>
+
+<div class="modal-body">
+
+<div class="row g-3">
+
+<div class="col-md-4">
+
+<label class="form-label fw-semibold">Tuần</label>
+
+<input name="WeekNumber"
+class="form-control"
+readonly>
+
+</div>
+
+<div class="col-md-4">
+
+<label class="form-label fw-semibold">Từ ngày</label>
+
+<input name="StartDate"
+type="date"
+class="form-control"
+readonly>
+
+</div>
+
+<div class="col-md-4">
+
+<label class="form-label fw-semibold">Đến ngày</label>
+
+<input name="EndDate"
+type="date"
+class="form-control"
+readonly>
+
+</div>
+
+<div class="col-12">
+
+<label class="form-label fw-semibold">
+
+Công việc đã thực hiện
+
+</label>
+
+<textarea name="Content"
+class="form-control"
+rows="4"
+required></textarea>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="modal-footer">
+
+<button type="button"
+class="btn btn-outline-secondary"
+data-bs-dismiss="modal">
+
+Hủy
+
+</button>
+
+<button type="submit"
+class="btn btn-info text-white">
+
+<i class="fa fa-save me-1"></i>
+
+Lưu nhật ký
+
+</button>
+
+</div>
+
+</form>
+
+</div>
+</div>
+</div>
+
+<!-- Modal xem logbook -->
+
+<div class="modal fade" id="viewLogModal">
+
+<div class="modal-dialog modal-lg">
+
+<div class="modal-content">
+
+<div class="modal-header">
+
+<h5 class="modal-title fw-bold">
+
+<i class="fa fa-eye text-info me-2"></i>
+
+Xem nhật ký
+
+</h5>
+
+<button type="button"
+class="btn-close"
+data-bs-dismiss="modal"></button>
+
+</div>
+
+<div class="modal-body">
+
+<div class="row g-3">
+
+<div class="col-md-4">
+<label class="form-label fw-semibold">Tuần</label>
+<input id="viewWeek" class="form-control" readonly>
+</div>
+
+<div class="col-md-4">
+<label class="form-label fw-semibold">Từ ngày</label>
+<input id="viewStart" class="form-control" readonly>
+</div>
+
+<div class="col-md-4">
+<label class="form-label fw-semibold">Đến ngày</label>
+<input id="viewEnd" class="form-control" readonly>
+</div>
+
+<div class="col-12">
+<label class="form-label fw-semibold">Nội dung</label>
+<textarea id="viewContent" class="form-control" rows="5" readonly></textarea>
+</div>
+
+<div class="col-12">
+<label class="form-label fw-semibold">Nhận xét GV</label>
+<textarea id="viewComment" class="form-control" rows="3" readonly></textarea>
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div>
+</div>
+
+@section Scripts{
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+document.querySelectorAll(".btn-write-log").forEach(btn => {
+
+btn.addEventListener("click", function () {
+
+document.querySelector("[name='WeekNumber']").value = this.dataset.week;
+document.querySelector("[name='StartDate']").value = this.dataset.start;
+document.querySelector("[name='EndDate']").value = this.dataset.end;
+
 });
 
-function submitLogbook() {
-    Swal.fire({
-        icon: 'success',
-        title: 'Đã lưu nhật ký!',
-        text: 'Nhật ký đã được ghi nhận thành công.',
-        confirmButtonColor: '#0ea5e9'
-    }).then(() => {
-        var modal = bootstrap.Modal.getInstance(document.getElementById('addLogModal'));
-        if (modal) modal.hide();
-    });
-}
+});
+
+document.querySelectorAll(".btn-view-log").forEach(btn => {
+
+btn.addEventListener("click", function () {
+
+document.getElementById("viewWeek").value = "Tuần " + this.dataset.week;
+document.getElementById("viewStart").value = this.dataset.start;
+document.getElementById("viewEnd").value = this.dataset.end;
+document.getElementById("viewContent").value = this.dataset.content;
+document.getElementById("viewComment").value = this.dataset.comment || "Chưa có nhận xét";
+
+var modal = new bootstrap.Modal(document.getElementById("viewLogModal"));
+
+modal.show();
+
+});
+
+});
+
+});
+
 </script>
+
 }
+```
