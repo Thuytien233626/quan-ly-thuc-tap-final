@@ -27,5 +27,7 @@ namespace DNC.InternshipSystem.Core.Entities
         public InternshipTerm? Term { get; set; }
         public Company? Company { get; set; }
         public Lecturer? Lecturer { get; set; }
+// Navigation property for submissions
+       public ICollection<Submission> Submissions { get; set; }
     }
 }

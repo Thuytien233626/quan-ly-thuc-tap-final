@@ -1,4 +1,5 @@
 @using DNC.InternshipSystem.Core.Entities
+
 @{
     Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
     ViewData["Title"] = "Nộp báo cáo";
@@ -7,201 +8,277 @@
     var registration = ViewBag.Registration as Registration;
     int logbookCount = ViewBag.LogbookCount ?? 0;
     int totalWeeks = ViewBag.TotalWeeks ?? 0;
-    int progressPercent = totalWeeks > 0 ? (int)Math.Round((double)logbookCount / totalWeeks * 100) : 0;
 
-    // Thong tin deadline
-    string reportDeadline = registration?.Term?.ReportDeadline.ToString("dd/MM/yyyy") ?? "Chưa xác định";
+    int progressPercent = totalWeeks > 0
+        ? (int)Math.Round((double)logbookCount / totalWeeks * 100)
+        : 0;
+
+    var submissions = ViewBag.Submissions as List<Submission>;
+
+    string reportDeadline = registration?.Term?.ReportDeadline
+        .ToString("dd/MM/yyyy") ?? "Chưa xác định";
 }
 
-<!-- Header -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">Nộp báo cáo thực tập</h4>
-        <p class="text-muted mb-0 small">Quản lý các file báo cáo và tài liệu thực tập của bạn.</p>
-    </div>
-</div>
+<div class="container-fluid py-4">
 
-@if (!hasRegistration)
-{
-    <div class="card border-0 shadow-sm">
-        <div class="card-body text-center py-5">
-            <i class="fa fa-info-circle fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">Bạn chưa có đơn đăng ký thực tập</h5>
-            <p class="text-muted">Vui lòng đăng ký thực tập trước khi nộp báo cáo.</p>
-            <a asp-area="Student" asp-controller="SRegister" asp-action="Index" class="btn btn-info text-white">
-                <i class="fa fa-file-signature me-1"></i> Đăng ký thực tập
-            </a>
-        </div>
-    </div>
-}
-else
-{
-    <div class="row g-4">
-        <!-- Cot trai: Upload bao cao -->
+    <div class="row">
+
         <div class="col-lg-8">
+
+            <!-- Upload report -->
             <div class="card border-0 shadow-sm mb-4">
+
                 <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold mb-0"><i class="fa fa-upload text-info me-2"></i>Gửi báo cáo mới</h6>
+                    <h6 class="fw-bold mb-0">
+                        <i class="fa fa-upload text-info me-2"></i>
+                        Gửi báo cáo mới
+                    </h6>
                 </div>
+
                 <div class="card-body">
-                    <form id="submissionForm">
+
+                    <form asp-action="SubmitReport" method="post" enctype="multipart/form-data">
+
                         <div class="row g-3">
+
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Loại báo cáo <span class="text-danger">*</span></label>
-                                <select class="form-select" required>
+                                <label class="form-label fw-semibold">Loại báo cáo</label>
+
+                                <select class="form-select" name="ReportType" required>
+
                                     <option value="">-- Chọn loại báo cáo --</option>
                                     <option>Báo cáo tuần</option>
                                     <option>Báo cáo giữa kỳ</option>
                                     <option>Báo cáo cuối kỳ</option>
                                     <option>Phiếu đánh giá DN</option>
+
                                 </select>
                             </div>
+
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Tiêu đề <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" placeholder="VD: Bao cao tuan 4" required>
+
+                                <label class="form-label fw-semibold">Tiêu đề</label>
+
+                                <input type="text"
+                                       class="form-control"
+                                       name="Title"
+                                       placeholder="VD: Báo cáo tuần 4"
+                                       required>
+
                             </div>
+
                             <div class="col-12">
-                                <label class="form-label fw-semibold">File đính kèm <span class="text-danger">*</span></label>
-                                <div class="border rounded-3 p-4 text-center border-dashed bg-light" id="dropZone"
-                                     style="cursor: pointer; transition: all 0.2s;">
-                                    <i class="fa fa-cloud-upload-alt text-info fa-2x mb-2"></i>
-                                    <p class="mb-1 fw-semibold">Kéo thả file vào đây hoặc <span class="text-info">chọn file</span></p>
-                                    <small class="text-muted">Chấp nhận: .pdf, .docx, .xlsx (Tối đa 10MB)</small>
-                                    <input type="file" class="d-none" id="fileInput" accept=".pdf,.docx,.xlsx">
-                                </div>
+
+                                <label class="form-label fw-semibold">File đính kèm</label>
+
+                                <input type="file"
+                                       class="form-control"
+                                       name="File"
+                                       accept=".pdf,.docx,.xlsx"
+                                       required>
+
                             </div>
+
                             <div class="col-12">
+
                                 <label class="form-label fw-semibold">Ghi chú</label>
-                                <textarea class="form-control" rows="2" placeholder="Ghi chú thêm cho giảng viên (nếu có)..."></textarea>
+
+                                <textarea class="form-control"
+                                          name="Note"
+                                          rows="3"
+                                          placeholder="Ghi chú thêm nếu cần"></textarea>
+
                             </div>
+
                         </div>
 
                         <hr class="my-4">
+
                         <div class="d-flex justify-content-end gap-2">
-                            <button type="reset" class="btn btn-outline-secondary">
-                                <i class="fa fa-redo me-1"></i> Đặt lại
+
+                            <button type="reset"
+                                    class="btn btn-outline-secondary">
+
+                                <i class="fa fa-redo me-1"></i>
+                                Đặt lại
+
                             </button>
-                            <button type="submit" class="btn btn-info text-white">
-                                <i class="fa fa-paper-plane me-1"></i> Gửi báo cáo
+
+                            <button type="submit"
+                                    class="btn btn-info text-white">
+
+                                <i class="fa fa-paper-plane me-1"></i>
+                                Gửi báo cáo
+
                             </button>
+
                         </div>
+
                     </form>
+
                 </div>
             </div>
 
-            <!-- Lich su nop - hien thi trang thai "chua co" neu khong co du lieu -->
+            <!-- History -->
             <div class="card border-0 shadow-sm">
+
                 <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold mb-0"><i class="fa fa-history text-secondary me-2"></i>Lịch sử nộp báo cáo</h6>
+
+                    <h6 class="fw-bold mb-0">
+                        <i class="fa fa-history text-secondary me-2"></i>
+                        Lịch sử nộp báo cáo
+                    </h6>
+
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
+
+                <div class="table-responsive">
+
+                    <table class="table align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th class="ps-4">#</th>
+                                <th>Tiêu đề</th>
+                                <th>Loại</th>
+                                <th>Ngày nộp</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center">File</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                        @if (submissions != null && submissions.Any())
+                        {
+                            int i = 1;
+
+                            foreach (var item in submissions)
+                            {
+
                                 <tr>
-                                    <th class="ps-4">#</th>
-                                    <th>Tiêu đề</th>
-                                    <th>Loại</th>
-                                    <th>Ngày nộp</th>
-                                    <th class="text-center">Trạng thái</th>
-                                    <th class="text-center">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">
-                                        <i class="fa fa-inbox me-1"></i> Chưa có báo cáo nào được nộp.
+
+                                    <td class="ps-4">@i</td>
+
+                                    <td>@item.Title</td>
+
+                                    <td>@item.Type</td>
+
+                                    <td>@item.SubmittedDate.ToString("dd/MM/yyyy")</td>
+
+                                    <td class="text-center">
+
+                                        @if (item.Status == "Approved")
+                                        {
+                                            <span class="badge bg-success">
+                                                Đã duyệt
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                Chờ duyệt
+                                            </span>
+                                        }
+
                                     </td>
+
+                                    <td class="text-center">
+
+                                        <a asp-action="Download"
+                                           asp-route-path="@item.FilePath"
+                                           target="_blank"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Tải file">
+
+                                            <i class="fa fa-download"></i>
+
+                                        </a>
+
+                                    </td>
+
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
+
+                                i++;
+                            }
+                        }
+                        else
+                        {
+
+                            <tr>
+
+                                <td colspan="6"
+                                    class="text-center text-muted py-4">
+
+                                    <i class="fa fa-inbox me-1"></i>
+                                    Chưa có báo cáo nào được nộp.
+
+                                </td>
+
+                            </tr>
+
+                        }
+
+                        </tbody>
+
+                    </table>
+
                 </div>
+
             </div>
+
         </div>
 
-        <!-- Cot phai: Thong tin -->
+        <!-- Right info panel -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold mb-0"><i class="fa fa-info-circle text-warning me-2"></i>Lưu ý</h6>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
-                        <li class="d-flex align-items-start gap-2 mb-3">
-                            <i class="fa fa-check-circle text-info mt-1"></i>
-                            <small>Báo cáo tuần phải nộp <strong>trước 23:59 Chủ nhật</strong> hàng tuần.</small>
-                        </li>
-                        <li class="d-flex align-items-start gap-2 mb-3">
-                            <i class="fa fa-check-circle text-info mt-1"></i>
-                            <small>Báo cáo cuối kỳ nộp <strong>trước @reportDeadline</strong>.</small>
-                        </li>
-                        <li class="d-flex align-items-start gap-2 mb-3">
-                            <i class="fa fa-check-circle text-info mt-1"></i>
-                            <small>File không quá <strong>10MB</strong>, định dạng PDF hoặc DOCX.</small>
-                        </li>
-                        <li class="d-flex align-items-start gap-2">
-                            <i class="fa fa-exclamation-triangle text-warning mt-1"></i>
-                            <small class="text-danger fw-semibold">Nộp trễ sẽ bị trừ điểm quá trình.</small>
-                        </li>
-                    </ul>
-                </div>
-            </div>
 
-            <!-- Tien do nop -->
             <div class="card border-0 shadow-sm">
+
                 <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold mb-0"><i class="fa fa-chart-pie text-success me-2"></i>Tiến độ nhật ký</h6>
+
+                    <h6 class="fw-bold mb-0">
+                        <i class="fa fa-info-circle text-primary me-2"></i>
+                        Thông tin báo cáo
+                    </h6>
+
                 </div>
-                <div class="card-body text-center">
-                    <div class="position-relative d-inline-block mb-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto border border-3 border-info"
-                             style="width: 100px; height: 100px;">
-                            <div>
-                                <div class="fw-bold text-info fs-4">@logbookCount/@totalWeeks</div>
-                                <small class="text-muted" style="font-size: 0.7rem;">tuần</small>
-                            </div>
+
+                <div class="card-body">
+
+                    <p class="mb-2">
+                        <strong>Hạn nộp:</strong>
+                        <span class="text-danger">
+                            @reportDeadline
+                        </span>
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Số tuần đã ghi logbook:</strong>
+                        @logbookCount / @totalWeeks
+                    </p>
+
+                    <div class="progress mb-3" style="height:8px">
+
+                        <div class="progress-bar bg-success"
+                             style="width:@progressPercent%">
+
                         </div>
+
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-info" style="width: @(progressPercent)%"></div>
-                    </div>
-                    <small class="text-muted mt-2 d-block">Đã hoàn thành @progressPercent% nhật ký thực tập</small>
+
+                    <small class="text-muted">
+                        Hoàn thành: @progressPercent%
+                    </small>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
-}
 
-@section Scripts {
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Drop zone click -> open file picker
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-
-    dropZone?.addEventListener('click', () => fileInput?.click());
-
-    fileInput?.addEventListener('change', function() {
-        if (this.files.length > 0) {
-            dropZone.innerHTML = `
-                <i class="fa fa-file-pdf text-danger fa-2x mb-2"></i>
-                <p class="mb-0 fw-semibold">${this.files[0].name}</p>
-                <small class="text-muted">${(this.files[0].size / 1024 / 1024).toFixed(2)} MB</small>
-            `;
-        }
-    });
-
-    // Submit
-    document.getElementById('submissionForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        Swal.fire({
-            icon: 'success',
-            title: 'Đã gửi báo cáo!',
-            text: 'Báo cáo của bạn đã được nộp thành công.',
-            confirmButtonColor: '#0ea5e9'
-        });
-    });
-});
-</script>
-}
+</div>

@@ -30,6 +30,7 @@ namespace DNC.InternshipSystem.Infrastructure.Data
         public DbSet<Registration> Registrations { get; set; }
         public DbSet<Logbook> Logbooks { get; set; }
         public DbSet<Grade> Grades { get; set; }
+        public DbSet<Submission> Submissions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

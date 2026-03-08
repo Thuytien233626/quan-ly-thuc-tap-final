@@ -4,6 +4,7 @@ using DNC.InternshipSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DNC.InternshipSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260308051339_AddSubmissionTable")]
+    partial class AddSubmissionTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -630,7 +633,10 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("RegistrationId")
+                    b.Property<int>("RegistrationId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("RegistrationId1")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
@@ -650,7 +656,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RegistrationId");
+                    b.HasIndex("RegistrationId1");
 
                     b.ToTable("Submissions");
                 });
@@ -942,7 +948,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
                 {
                     b.HasOne("DNC.InternshipSystem.Core.Entities.Registration", "Registration")
                         .WithMany("Submissions")
-                        .HasForeignKey("RegistrationId")
+                        .HasForeignKey("RegistrationId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
