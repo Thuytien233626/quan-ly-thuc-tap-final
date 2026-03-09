@@ -85,13 +85,7 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
                 .OrderByDescending(r => r.CreatedDate)
                 .FirstOrDefaultAsync();
 
-            // Tim diem (Grade)
-            Grade? grade = null;
-            if (registration != null)
-            {
-                grade = await _context.Grades
-                    .FirstOrDefaultAsync(g => g.RegistrationId == registration.Id);
-            }
+            
 
             // Dem so logbook
             int logbookCount = 0;
@@ -103,9 +97,10 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
                 totalWeeks = registration.Term?.DurationInWeeks ?? 0;
             }
             
-
+            ViewBag.CompanyScore = registration?.CompanyScore;
+            ViewBag.InstructorScore = registration?.InstructorScore;
+            ViewBag.FinalScore = registration?.FinalScore;
             ViewBag.Registration = registration;
-            ViewBag.Grade = grade;
             ViewBag.LogbookCount = logbookCount;
             ViewBag.TotalWeeks = totalWeeks;
             ViewBag.HasRegistration = registration != null;
@@ -113,73 +108,71 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
             return View();
         }
         // GET: /Student/Result/ExportTranscript
-        public async Task<IActionResult> ExportTranscript()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return NotFound();
+       public async Task<IActionResult> ExportTranscript()
+{
+    var user = await _userManager.GetUserAsync(User);
+    if (user == null) return NotFound();
 
-            var registration = await _context.Registrations
-                .Include(r => r.Company)
-                .Include(r => r.Lecturer)
-                    .ThenInclude(l => l!.User)
-                .Include(r => r.Term)
-                .FirstOrDefaultAsync(r => r.StudentId == user.Id);
+    var registration = await _context.Registrations
+        .Include(r => r.Company)
+        .Include(r => r.Lecturer)
+            .ThenInclude(l => l!.User)
+        .Include(r => r.Term)
+        .FirstOrDefaultAsync(r => r.StudentId == user.Id);
 
-            if (registration == null) return NotFound();
+    if (registration == null) return NotFound();
 
-            var grade = await _context.Grades
-                .FirstOrDefaultAsync(g => g.RegistrationId == registration.Id);
+    if (!registration.FinalScore.HasValue)
+        return BadRequest("Chưa có điểm.");
 
-            if (grade == null) return BadRequest("Chưa có điểm.");
+    double companyScore = registration.CompanyScore ?? 0;
+    double instructorScore = registration.InstructorScore ?? 0;
+    double finalScore = registration.FinalScore ?? 0;
 
-            double finalScore = grade.FinalScore ?? 0;
+    string verifyUrl = $"{Request.Scheme}://{Request.Host}/Student/Transcript/Verify/{registration.Id}";
 
-            // LINK VERIFY
-            string verifyUrl = $"{Request.Scheme}://{Request.Host}/Student/Transcript/Verify/{registration.Id}";
+    // QR CODE
+    QRCodeGenerator qrGenerator = new QRCodeGenerator();
+    QRCodeData qrCodeData = qrGenerator.CreateQrCode(verifyUrl, QRCodeGenerator.ECCLevel.Q);
+    PngByteQRCode qrCode = new PngByteQRCode(qrCodeData);
+    byte[] qrBytes = qrCode.GetGraphic(20);
 
-            // QR CODE
-            QRCodeGenerator qrGenerator = new QRCodeGenerator();
-            QRCodeData qrCodeData = qrGenerator.CreateQrCode(verifyUrl, QRCodeGenerator.ECCLevel.Q);
-            PngByteQRCode qrCode = new PngByteQRCode(qrCodeData);
-            byte[] qrBytes = qrCode.GetGraphic(20);
+    PdfFont font = GetUnicodeFont();
 
-            // LOAD FONT 
-            PdfFont font = GetUnicodeFont();
+    using var stream = new MemoryStream();
 
-            using var stream = new MemoryStream();
+    PdfWriter writer = new PdfWriter(stream);
+    PdfDocument pdf = new PdfDocument(writer);
+    Document doc = new Document(pdf);
 
-            PdfWriter writer = new PdfWriter(stream);
-            PdfDocument pdf = new PdfDocument(writer);
-            Document doc = new Document(pdf);
+    doc.SetFont(font);
 
-            doc.SetFont(font);
+    doc.Add(new Paragraph("PHIẾU ĐIỂM THỰC TẬP")
+        .SetFontSize(18)
+        .SetTextAlignment(TextAlignment.CENTER));
 
-            doc.Add(new Paragraph("PHIẾU ĐIỂM THỰC TẬP")
-                .SetFontSize(18)
-                .SetTextAlignment(TextAlignment.CENTER));
+    doc.Add(new Paragraph($"Sinh viên: {user.FullName}"));
+    doc.Add(new Paragraph($"MSSV: {user.UserName}"));
 
-            doc.Add(new Paragraph($"Sinh viên: {user.FullName}"));
-            doc.Add(new Paragraph($"MSSV: {user.UserName}"));
+    string companyName = registration.Company?.Name ?? registration.ExternalCompanyName ?? "N/A";
 
-            string companyName = registration.Company?.Name ?? registration.ExternalCompanyName ?? "N/A";
+    doc.Add(new Paragraph($"Doanh nghiệp: {companyName}"));
 
-            doc.Add(new Paragraph($"Doanh nghiệp: {companyName}"));
+    doc.Add(new Paragraph($"Điểm doanh nghiệp: {registration.CompanyScore:F1}"));
+    doc.Add(new Paragraph($"Điểm giảng viên: {registration.InstructorScore:F1}"));
+    doc.Add(new Paragraph($"Điểm tổng kết: {registration.FinalScore:F1}"));
 
-            doc.Add(new Paragraph($"Điểm doanh nghiệp: {grade.CompanyScore:F1}"));
-            doc.Add(new Paragraph($"Điểm giảng viên: {grade.InstructorScore:F1}"));
-            doc.Add(new Paragraph($"Điểm tổng kết: {finalScore:F1}"));
+    Image qrImage = new Image(ImageDataFactory.Create(qrBytes))
+        .SetWidth(120);
 
-            Image qrImage = new Image(ImageDataFactory.Create(qrBytes))
-                .SetWidth(120);
+    doc.Add(new Paragraph("Quét QR để xác thực phiếu điểm"));
+    doc.Add(qrImage);
 
-            doc.Add(new Paragraph("Quét QR để xác thực phiếu điểm"));
-            doc.Add(qrImage);
+    doc.Close();
 
-            doc.Close();
-
-            return File(stream.ToArray(),
-                "application/pdf",
-                $"PhieuDiem_{user.UserName}.pdf");
-        }
+    return File(stream.ToArray(),
+        "application/pdf",
+        $"PhieuDiem_{user.UserName}.pdf");
+}
     }
 }

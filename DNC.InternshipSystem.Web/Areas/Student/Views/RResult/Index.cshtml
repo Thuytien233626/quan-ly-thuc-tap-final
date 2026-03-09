@@ -1,26 +1,28 @@
 @using DNC.InternshipSystem.Core.Entities
+
 @{
     Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
     ViewData["Title"] = "Kết quả thực tập";
 
     bool hasRegistration = ViewBag.HasRegistration ?? false;
     var registration = ViewBag.Registration as Registration;
-    var grade = ViewBag.Grade as Grade;
+
     int logbookCount = ViewBag.LogbookCount ?? 0;
     int totalWeeks = ViewBag.TotalWeeks ?? 0;
 
-    // Diem so
-    double companyScore = grade?.CompanyScore ?? 0;
-    double instructorScore = grade?.InstructorScore ?? 0;
-    double finalScore = grade?.FinalScore ?? 0;
+    double companyScore = registration?.CompanyScore ?? 0;
+    double instructorScore = registration?.InstructorScore ?? 0;
+    double finalScore = registration?.FinalScore ?? 0;
+
     double companyPart = companyScore * 0.4;
     double instructorPart = instructorScore * 0.6;
-    bool hasGrade = grade != null && (grade.CompanyScore.HasValue || grade.InstructorScore.HasValue);
 
-    // Xep loai
+    bool hasGrade = registration?.FinalScore != null;
+
     string classification = "Chưa có";
     string classColor = "secondary";
-    if (hasGrade && finalScore > 0)
+
+    if (hasGrade)
     {
         if (finalScore >= 9) { classification = "Xuất sắc"; classColor = "primary"; }
         else if (finalScore >= 8) { classification = "Giỏi"; classColor = "success"; }
@@ -29,24 +31,29 @@
         else { classification = "Yếu"; classColor = "danger"; }
     }
 
-    // Thong tin thuc tap
     string companyName = registration?.Company?.Name ?? registration?.ExternalCompanyName ?? "Chưa xác định";
     string position = registration?.Position ?? "Chưa xác định";
+
     string lecturerName = "Chưa phân công";
     if (registration?.Lecturer?.User != null)
     {
-        string rank = !string.IsNullOrEmpty(registration.Lecturer.AcademicRank) ? registration.Lecturer.AcademicRank + ". " : "";
+        string rank = !string.IsNullOrEmpty(registration.Lecturer.AcademicRank)
+            ? registration.Lecturer.AcademicRank + ". "
+            : "";
+
         lecturerName = rank + registration.Lecturer.User.FullName;
     }
+
     string termPeriod = "N/A";
+
     if (registration?.Term != null)
     {
         termPeriod = $"{registration.Term.InternshipStart:dd/MM} - {registration.Term.EndDate:dd/MM/yyyy}";
     }
 
-    // Trang thai
     string statusText = "N/A";
     string statusClass = "secondary";
+
     if (registration != null)
     {
         switch (registration.Status)
@@ -59,11 +66,13 @@
     }
 }
 
-<!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
+
     <div>
         <h4 class="fw-bold mb-1">Kết quả thực tập</h4>
-        <p class="text-muted mb-0 small">Xem điểm số và đánh giá tổng kết thực tập.</p>
+        <p class="text-muted mb-0 small">
+            Xem điểm số và đánh giá tổng kết thực tập
+        </p>
     </div>
 
     @if (hasGrade)
@@ -73,184 +82,360 @@
             Xuất phiếu điểm PDF
         </a>
     }
+
 </div>
 
 @if (!hasRegistration)
 {
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center py-5">
+
             <i class="fa fa-info-circle fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">Bạn chưa có đơn đăng ký thực tập</h5>
-            <p class="text-muted">Kết quả sẽ hiển thị khi bạn hoàn thành đợt thực tập.</p>
-            <a asp-area="Student" asp-controller="SRegister" asp-action="Index" class="btn btn-info text-white">
-                <i class="fa fa-file-signature me-1"></i> Đăng ký thực tập
+
+            <h5 class="text-muted">
+                Bạn chưa có đơn đăng ký thực tập
+            </h5>
+
+            <p class="text-muted">
+                Kết quả sẽ hiển thị khi bạn hoàn thành đợt thực tập
+            </p>
+
+            <a asp-area="Student"
+               asp-controller="SRegister"
+               asp-action="Index"
+               class="btn btn-info text-white">
+
+                <i class="fa fa-file-signature me-1"></i>
+                Đăng ký thực tập
             </a>
+
         </div>
     </div>
 }
 else
 {
-    <div class="row g-4">
-        <!-- Diem tong ket lon -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm text-center h-100">
-                <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
-                    @if (hasGrade)
-                    {
-                        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 border border-4 border-@classColor"
-                             style="width: 120px; height: 120px;">
-                            <div>
-                                <div class="fw-bold text-@classColor" style="font-size: 2.5rem;">@finalScore.ToString("F1")</div>
-                                <small class="text-muted fw-semibold">/ 10</small>
-                            </div>
-                        </div>
-                        <h5 class="fw-bold mb-1">Điểm tổng kết</h5>
-                        <span class="badge bg-@(classColor)-subtle text-@classColor px-3 py-2 fs-6">Xếp loại: @classification</span>
-                        @if (registration?.Term != null)
-                        {
-                            <p class="text-muted small mt-3 mb-0">
-                                Đợt thực tập: <strong>HK@(registration.Term.Semester) - @registration.Term.AcademicYear</strong>
-                            </p>
-                        }
-                    }
-                    else
-                    {
-                        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 border border-4 border-secondary"
-                             style="width: 120px; height: 120px;">
-                            <div>
-                                <div class="fw-bold text-secondary" style="font-size: 1.5rem;">N/A</div>
-                                <small class="text-muted fw-semibold">/ 10</small>
-                            </div>
-                        </div>
-                        <h5 class="fw-bold mb-1">Chưa có điểm</h5>
-                        <span class="badge bg-secondary-subtle text-secondary px-3 py-2">Đang chờ chấm điểm</span>
-                    }
-                </div>
-            </div>
-        </div>
 
-        <!-- Chi tiet diem -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold mb-0"><i class="fa fa-chart-bar text-info me-2"></i>Chi tiết điểm số</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-4">Hạng mục</th>
-                                    <th class="text-center">Điểm</th>
-                                    <th class="text-center">Trọng số</th>
-                                    <th class="text-center">Thành phần</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="stats-icon-box bg-warning-subtle text-warning" style="width:36px;height:36px;font-size:0.9rem;">
-                                                <i class="fa fa-building"></i>
-                                            </span>
-                                            <div>
-                                                <div class="fw-semibold">Điểm Doanh nghiệp</div>
-                                                <small class="text-muted">Đánh giá từ công ty</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-center fw-bold text-warning fs-5">
-                                        @(hasGrade && grade!.CompanyScore.HasValue ? companyScore.ToString("F1") : "—")
-                                    </td>
-                                    <td class="text-center">40%</td>
-                                    <td class="text-center fw-semibold">
-                                        @(hasGrade && grade!.CompanyScore.HasValue ? companyPart.ToString("F1") : "—")
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="stats-icon-box bg-primary-subtle text-primary" style="width:36px;height:36px;font-size:0.9rem;">
-                                                <i class="fa fa-chalkboard-teacher"></i>
-                                            </span>
-                                            <div>
-                                                <div class="fw-semibold">Điểm Giảng viên</div>
-                                                <small class="text-muted">Đánh giá từ GVHD</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-center fw-bold text-primary fs-5">
-                                        @(hasGrade && grade!.InstructorScore.HasValue ? instructorScore.ToString("F1") : "—")
-                                    </td>
-                                    <td class="text-center">60%</td>
-                                    <td class="text-center fw-semibold">
-                                        @(hasGrade && grade!.InstructorScore.HasValue ? instructorPart.ToString("F1") : "—")
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr>
-                                    <td class="ps-4 fw-bold text-@classColor">Tổng kết</td>
-                                    <td class="text-center fw-bold text-@classColor fs-5">
-                                        @(hasGrade ? finalScore.ToString("F1") : "—")
-                                    </td>
-                                    <td class="text-center fw-bold">100%</td>
-                                    <td class="text-center fw-bold text-@classColor fs-5">
-                                        @(hasGrade ? finalScore.ToString("F1") : "—")
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<div class="row g-4">
 
-            <!-- Thong tin them -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold mb-0"><i class="fa fa-clipboard-check text-success me-2"></i>Thông tin thực tập</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-muted">Doanh nghiệp:</span>
-                                <span class="fw-semibold">@companyName</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-muted">Vị trí:</span>
-                                <span class="fw-semibold">@position</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-muted">Giảng viên HD:</span>
-                                <span class="fw-semibold">@lecturerName</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between py-2 border-bottom">
-                                <span class="text-muted">Thời gian:</span>
-                                <span class="fw-semibold">@termPeriod</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between py-2">
-                                <span class="text-muted">Số tuần nhật ký:</span>
-                                <span class="fw-semibold">@logbookCount/@totalWeeks tuần</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between py-2">
-                                <span class="text-muted">Trạng thái:</span>
-                                <span class="badge bg-@(statusClass)-subtle text-@statusClass">@statusText</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- SCORE CARD -->
+
+<div class="col-lg-4">
+
+<div class="card border-0 shadow-sm text-center h-100">
+
+<div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
+
+@if (hasGrade)
+{
+
+<div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 border border-4 border-@classColor"
+     style="width:120px;height:120px;">
+
+<div>
+
+<div class="fw-bold text-@classColor"
+     style="font-size:2.5rem;">
+
+@finalScore.ToString("F1")
+
+</div>
+
+<small class="text-muted fw-semibold">/ 10</small>
+
+</div>
+
+</div>
+
+<h5 class="fw-bold mb-1">Điểm tổng kết</h5>
+
+<span class="badge bg-@(classColor)-subtle text-@classColor px-3 py-2 fs-6">
+
+Xếp loại: @classification
+
+</span>
+
+@if (registration?.Term != null)
+{
+<p class="text-muted small mt-3 mb-0">
+
+Đợt thực tập:
+<strong>
+
+HK@(registration.Term.Semester) - @registration.Term.AcademicYear
+
+</strong>
+
+</p>
+}
+
+}
+else
+{
+
+<div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 border border-4 border-secondary"
+     style="width:120px;height:120px;">
+
+<div>
+
+<div class="fw-bold text-secondary"
+     style="font-size:1.5rem;">
+
+N/A
+
+</div>
+
+<small class="text-muted fw-semibold">/ 10</small>
+
+</div>
+
+</div>
+
+<h5 class="fw-bold mb-1">Chưa có điểm</h5>
+
+<span class="badge bg-secondary-subtle text-secondary px-3 py-2">
+
+Đang chờ chấm điểm
+
+</span>
+
+}
+
+</div>
+
+</div>
+
+</div>
+
+<!-- DETAIL TABLE -->
+
+<div class="col-lg-8">
+
+<div class="card border-0 shadow-sm mb-4">
+
+<div class="card-header bg-white py-3">
+
+<h6 class="fw-bold mb-0">
+
+<i class="fa fa-chart-bar text-info me-2"></i>
+Chi tiết điểm số
+
+</h6>
+
+</div>
+
+<div class="card-body">
+
+<div class="table-responsive">
+
+<table class="table align-middle mb-0">
+
+<thead class="table-light">
+
+<tr>
+
+<th class="ps-4">Hạng mục</th>
+
+<th class="text-center">Điểm</th>
+
+<th class="text-center">Trọng số</th>
+
+<th class="text-center">Thành phần</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td class="ps-4">
+
+<strong>Điểm Doanh nghiệp</strong>
+
+</td>
+
+<td class="text-center fw-bold text-warning fs-5">
+
+@(registration?.CompanyScore != null ? companyScore.ToString("F1") : "—")
+
+</td>
+
+<td class="text-center">40%</td>
+
+<td class="text-center fw-semibold">
+
+@(registration?.CompanyScore != null ? companyPart.ToString("F1") : "—")
+
+</td>
+
+</tr>
+
+<tr>
+
+<td class="ps-4">
+
+<strong>Điểm Giảng viên</strong>
+
+</td>
+
+<td class="text-center fw-bold text-primary fs-5">
+
+@(registration?.InstructorScore != null ? instructorScore.ToString("F1") : "—")
+
+</td>
+
+<td class="text-center">60%</td>
+
+<td class="text-center fw-semibold">
+
+@(registration?.InstructorScore != null ? instructorPart.ToString("F1") : "—")
+
+</td>
+
+</tr>
+
+</tbody>
+
+<tfoot class="table-light">
+
+<tr>
+
+<td class="ps-4 fw-bold text-@classColor">
+
+Tổng kết
+
+</td>
+
+<td class="text-center fw-bold text-@classColor fs-5">
+
+@(hasGrade ? finalScore.ToString("F1") : "—")
+
+</td>
+
+<td class="text-center fw-bold">100%</td>
+
+<td class="text-center fw-bold text-@classColor fs-5">
+
+@(hasGrade ? finalScore.ToString("F1") : "—")
+
+</td>
+
+</tr>
+
+</tfoot>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- INFO CARD -->
+
+<div class="card border-0 shadow-sm">
+
+<div class="card-header bg-white py-3">
+
+<h6 class="fw-bold mb-0">
+
+<i class="fa fa-clipboard-check text-success me-2"></i>
+Thông tin thực tập
+
+</h6>
+
+</div>
+
+<div class="card-body">
+
+<div class="row g-3">
+
+<div class="col-md-6">
+
+<div class="d-flex justify-content-between py-2 border-bottom">
+
+<span class="text-muted">Doanh nghiệp:</span>
+
+<span class="fw-semibold">@companyName</span>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="d-flex justify-content-between py-2 border-bottom">
+
+<span class="text-muted">Vị trí:</span>
+
+<span class="fw-semibold">@position</span>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="d-flex justify-content-between py-2 border-bottom">
+
+<span class="text-muted">Giảng viên HD:</span>
+
+<span class="fw-semibold">@lecturerName</span>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="d-flex justify-content-between py-2 border-bottom">
+
+<span class="text-muted">Thời gian:</span>
+
+<span class="fw-semibold">@termPeriod</span>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="d-flex justify-content-between py-2">
+
+<span class="text-muted">Số tuần nhật ký:</span>
+
+<span class="fw-semibold">@logbookCount/@totalWeeks tuần</span>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="d-flex justify-content-between py-2">
+
+<span class="text-muted">Trạng thái:</span>
+
+<span class="badge bg-@(statusClass)-subtle text-@statusClass">
+
+@statusText
+
+</span>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
 }
