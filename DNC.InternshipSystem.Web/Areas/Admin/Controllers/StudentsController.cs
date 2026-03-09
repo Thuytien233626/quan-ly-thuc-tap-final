@@ -183,6 +183,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                     
                     var dobString = "";
                     if (dobValue is DateTime dt) dobString = dt.ToString("dd/MM/yyyy");
+                    else if (dobValue is double dblDate) dobString = DateTime.FromOADate(dblDate).ToString("dd/MM/yyyy");
                     else if (dobValue != null) dobString = dobValue.ToString() ?? "";
                     
                     var item = new Models.StudentPreviewItem
@@ -336,6 +337,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                         var gender = genderText.ToLower().Contains("nữ") ? Gender.Female : Gender.Male;
                         DateTime? dob = null;
                         if (dobValue is DateTime dt) dob = dt;
+                        else if (dobValue is double dblDate) dob = DateTime.FromOADate(dblDate);
                         else if (dobValue != null && DateTime.TryParse(dobValue.ToString(), out DateTime parsed)) dob = parsed;
                         
                         string? validClassId = null;
@@ -771,7 +773,10 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                     var dob = colNgaySinh > 0 ? worksheet.Cells[row, colNgaySinh].Value : null;
                     var classCode = colLopHoc > 0 ? worksheet.Cells[row, colLopHoc].Value?.ToString()?.Trim() ?? "" : "";
 
-                    var dobStr = dob is DateTime dt ? dt.ToString("dd/MM/yyyy") : dob?.ToString() ?? "";
+                    string dobStr;
+                    if (dob is DateTime dt) dobStr = dt.ToString("dd/MM/yyyy");
+                    else if (dob is double dblDate) dobStr = DateTime.FromOADate(dblDate).ToString("dd/MM/yyyy");
+                    else dobStr = dob?.ToString() ?? "";
 
                     var item = new Models.StudentPreviewItem
                     {
@@ -860,7 +865,10 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                         { r.Status = "Bỏ qua"; r.Message = "MSSV đã tồn tại"; skip++; results.Add(r); continue; }
 
                         var gender = genderText.ToLower().Contains("nữ") ? Gender.Female : Gender.Male;
-                        DateTime? dob = dobVal is DateTime dt ? dt : (DateTime.TryParse(dobVal?.ToString(), out var p) ? p : null);
+                        DateTime? dob = null;
+                        if (dobVal is DateTime dt) dob = dt;
+                        else if (dobVal is double dblDate) dob = DateTime.FromOADate(dblDate);
+                        else if (dobVal != null && DateTime.TryParse(dobVal.ToString(), out var p)) dob = p;
                         string? validClass = !string.IsNullOrEmpty(classCode) && await _context.Classes.AnyAsync(c => c.Id == classCode) ? classCode : null;
 
                         var user = new AppUser
