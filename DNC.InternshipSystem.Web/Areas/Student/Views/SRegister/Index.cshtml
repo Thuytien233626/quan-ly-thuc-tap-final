@@ -17,6 +17,9 @@
 <div id="antiForgeryTokenContainer" style="display: none;">
     @Html.AntiForgeryToken()
 </div>
+<div id="antiForgeryTokenContainer" style="display: none;">
+    @Html.AntiForgeryToken()
+</div>
 <!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -401,7 +404,14 @@
 
 @section Scripts {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const tokenElement = document.querySelector('#antiForgeryTokenContainer input[name="__RequestVerificationToken"]');
+    const token = tokenElement ? tokenElement.value : '';
+
+    console.log('Page loaded. Token available:', !!token);
 document.addEventListener('DOMContentLoaded', function () {
 
     const tokenElement = document.querySelector('#antiForgeryTokenContainer input[name="__RequestVerificationToken"]');
@@ -410,7 +420,11 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('Page loaded. Token available:', !!token);
 
     // ===== ĐĂNG KÝ DOANH NGHIỆP ĐỐI TÁC =====
+    // ===== ĐĂNG KÝ DOANH NGHIỆP ĐỐI TÁC =====
     document.querySelectorAll('.btn-register-company').forEach(btn => {
+        btn.addEventListener('click', async function (e) {
+            e.preventDefault();
+
         btn.addEventListener('click', async function (e) {
             e.preventDefault();
 
@@ -429,11 +443,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            const companyName = this.dataset.name;
+            
+            console.log('Register button clicked. Company ID:', companyId, 'Name:', companyName);
+
+            if (!companyId) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Không tìm thấy thông tin doanh nghiệp.',
+                    confirmButtonColor: '#0ea5e9'
+                });
+                return;
+            }
+
             const { value: position } = await Swal.fire({
                 title: `<i class="fa fa-paper-plane text-info me-2"></i>Đăng ký tại`,
                 html: `
                     <p class="fw-bold text-info mb-3">${companyName}</p>
+                    <p class="fw-bold text-info mb-3">${companyName}</p>
                     <div class="text-start">
+                        <label class="form-label fw-semibold">
+                            Vị trí thực tập <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="swal-position" class="form-control"
+                               placeholder="VD: Thực tập sinh lập trình" autofocus>
                         <label class="form-label fw-semibold">
                             Vị trí thực tập <span class="text-danger">*</span>
                         </label>
@@ -443,13 +477,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 `,
                 showCancelButton: true,
                 confirmButtonText: '<i class="fa fa-paper-plane me-1"></i> Gửi đơn',
+                confirmButtonText: '<i class="fa fa-paper-plane me-1"></i> Gửi đơn',
                 cancelButtonText: 'Hủy',
                 confirmButtonColor: '#0ea5e9',
                 didOpen: () => {
                     document.getElementById('swal-position').focus();
                 },
+                didOpen: () => {
+                    document.getElementById('swal-position').focus();
+                },
                 preConfirm: () => {
                     const val = document.getElementById('swal-position').value.trim();
+                    if (!val) {
+                        Swal.showValidationMessage('Vui lòng nhập vị trí!');
+                        return false;
+                    }
                     if (!val) {
                         Swal.showValidationMessage('Vui lòng nhập vị trí!');
                         return false;
@@ -461,7 +503,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!position) {
                 console.log('User cancelled registration');
                 return;
+            if (!position) {
+                console.log('User cancelled registration');
+                return;
             }
+
+            console.log('Submitting registration:', { companyId, position });
+            submitRegistration(companyId, position, companyName);
 
             console.log('Submitting registration:', { companyId, position });
             submitRegistration(companyId, position, companyName);
@@ -682,6 +730,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-view-company').forEach(btn => {
         btn.addEventListener('click', function () {
             const name = this.dataset.name || '';
+        btn.addEventListener('click', function () {
+            const name = this.dataset.name || '';
             const address = this.dataset.address || 'Chưa cập nhật';
             const province = this.dataset.province || 'Chưa cập nhật';
             const phone = this.dataset.phone || 'Chưa cập nhật';
@@ -691,6 +741,27 @@ document.addEventListener('DOMContentLoaded', function () {
             Swal.fire({
                 title: `<i class="fa fa-building text-info me-2"></i>${name}`,
                 html: `
+                    <div class="text-start small">
+                        <div class="row mb-3">
+                            <div class="col-5 fw-semibold">Địa chỉ:</div>
+                            <div class="col-7 text-muted">${address}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 fw-semibold">Tỉnh/TP:</div>
+                            <div class="col-7 text-muted">${province}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 fw-semibold">SĐT:</div>
+                            <div class="col-7 text-muted">${phone}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 fw-semibold">Người liên hệ:</div>
+                            <div class="col-7 text-muted">${contact}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-5 fw-semibold">Email:</div>
+                            <div class="col-7 text-muted">${email}</div>
+                        </div>
                     <div class="text-start small">
                         <div class="row mb-3">
                             <div class="col-5 fw-semibold">Địa chỉ:</div>
