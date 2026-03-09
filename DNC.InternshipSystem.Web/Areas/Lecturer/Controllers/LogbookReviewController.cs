@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
 using DNC.InternshipSystem.Infrastructure.Data;
+using DNC.InternshipSystem.Web.Services;
 
 namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
 {
@@ -13,11 +14,15 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly AIMentorService _aiService;
+        private readonly ILogger<LogbookReviewController> _logger;
 
-        public LogbookReviewController(AppDbContext context, UserManager<AppUser> userManager)
+        public LogbookReviewController(AppDbContext context, UserManager<AppUser> userManager, AIMentorService aiService, ILogger<LogbookReviewController> logger)
         {
             _context = context;
             _userManager = userManager;
+            _aiService = aiService;
+            _logger = logger;
         }
 
         // GET: /Lecturer/LogbookReview?registrationId=xxx (hoac /Details/xxx)
@@ -92,9 +97,12 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             // Check quyen so huu (thong qua registration -> lecturer)
             var registration = await _context.Registrations.FindAsync(logbook.RegistrationId);
             var user = await _userManager.GetUserAsync(User);
-            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (user == null) return Unauthorized();
 
-            if (registration!.LecturerId != lecturer!.UserId)
+            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (lecturer == null) return NotFound();
+
+            if (registration?.LecturerId != lecturer.UserId)
             {
                 return Forbid();
             }
@@ -103,6 +111,56 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = "Đã lưu nhận xét." });
+        }
+
+        // POST: /Lecturer/LogbookReview/AnalyzeWithAI
+        [HttpPost]
+        public async Task<IActionResult> AnalyzeWithAI(Guid logbookId)
+        {
+            try
+            {
+                var logbook = await _context.Logbooks
+                    .Include(l => l.Registration)
+                    .FirstOrDefaultAsync(l => l.Id == logbookId);
+
+                if (logbook == null)
+                    return Json(new { success = false, message = "Logbook không tồn tại." });
+
+                // Verify lecturer owns this logbook
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                    return Json(new { success = false, message = "Bạn chưa đăng nhập." });
+
+                var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+                if (lecturer == null)
+                    return Json(new { success = false, message = "Không tìm thấy thông tin giảng viên." });
+
+                if (logbook.Registration?.LecturerId != lecturer.UserId)
+                    return Json(new { success = false, message = "Bạn không có quyền truy cập logbook này." });
+
+                _logger.LogInformation($"Analyzing logbook {logbookId} with AI");
+
+                // Call AI to analyze
+                var aiFeedback = await _aiService.AnalyzeLogbook(logbook.Content);
+
+                // Update logbook with AI summary
+                logbook.AISummary = aiFeedback;
+                await _context.SaveChangesAsync();
+
+                return Json(new { 
+                    success = true, 
+                    message = "Đã phân tích logbook với AI Mentor.",
+                    feedback = aiFeedback
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error analyzing logbook with AI");
+                return Json(new { 
+                    success = false, 
+                    message = "Lỗi khi phân tích với AI: " + ex.Message 
+                });
+            }
         }
     }
 }

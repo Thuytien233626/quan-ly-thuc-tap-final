@@ -14,6 +14,9 @@ namespace DNC.InternshipSystem.Core.Entities
         
         // Truong du lieu tu dong phan tich
         public string? AISummary { get; set; }
+        public string? AiSuggestions { get; set; }
+
+        public int? AiScore { get; set; }
         public bool AIWarning { get; set; } = false;
         public string? AIWarningDetails { get; set; }
         

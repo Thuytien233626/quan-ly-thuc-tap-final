@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
 using DNC.InternshipSystem.Infrastructure.Data;
+using DNC.InternshipSystem.Web.Services;
 
 namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
 {
@@ -13,11 +14,15 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly AIMentorService _aiService;
+        private readonly ILogger<LogbookController> _logger;
 
-        public LogbookController(AppDbContext context, UserManager<AppUser> userManager)
+        public LogbookController(AppDbContext context, UserManager<AppUser> userManager, AIMentorService aiService, ILogger<LogbookController> logger)
         {
             _context = context;
             _userManager = userManager;
+            _aiService = aiService;
+            _logger = logger;
         }
 
         // GET: /Student/Logbook
@@ -113,6 +118,21 @@ public async Task<IActionResult> CreateLogbook(int WeekNumber, DateTime StartDat
     _context.Logbooks.Add(logbook);
 
     await _context.SaveChangesAsync();
+
+    // Try to analyze with AI (non-blocking)
+    try
+    {
+        var aiResult = await _aiService.AnalyzeLogbook(logbook.Content);
+        logbook.AISummary = aiResult;
+        await _context.SaveChangesAsync();
+    }
+    catch (Exception ex)
+    {
+        // Log error but don't fail the logbook creation
+        _logger.LogError(ex, "Failed to analyze logbook with AI");
+        logbook.AISummary = "AI Mentor: Phân tích không khả dụng lúc này.";
+        await _context.SaveChangesAsync();
+    }
 
     TempData["Success"] = "Lưu nhật ký thành công!";
 

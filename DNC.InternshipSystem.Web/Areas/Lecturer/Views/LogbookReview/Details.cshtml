@@ -85,6 +85,43 @@
                                 </div>
                             </div>
                         </div>
+
+                        <hr class="my-3" />
+
+                        <!-- AI Mentor Section -->
+                        <div class="ai-mentor-section" id="ai-section-@log.Id">
+                            <h6 class="fw-bold text-dark mb-2">
+                                <i class="fa fa-brain text-info me-2"></i> AI Mentor Phân Tích
+                            </h6>
+                            @if (!string.IsNullOrEmpty(log.AISummary))
+                            {
+                                <div class="bg-info bg-opacity-10 p-3 rounded border border-info-subtle text-dark mb-3">
+                                    <div style="white-space: pre-wrap; font-size: 0.95rem;">@log.AISummary</div>
+                                </div>
+                                <button class="btn btn-sm btn-outline-info" onclick="analyzeWithAI('@log.Id')">
+                                    <i class="fa fa-sync me-1"></i> Phân tích lại
+                                </button>
+                            }
+                            else
+                            {
+                                <p class="text-muted mb-3">
+                                    <small>Chưa phân tích. Nhấn nút bên dưới để AI Mentor phân tích logbook này.</small>
+                                </p>
+                                <button class="btn btn-sm btn-info" id="btn-analyze-@log.Id" onclick="analyzeWithAI('@log.Id')">
+                                    <i class="fa fa-wand-magic-sparkles me-1"></i> Phân tích với AI Mentor
+                                </button>
+                                <div id="loading-@log.Id" class="mt-2 d-none">
+                                    <div class="spinner-border spinner-border-sm text-info me-2" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        Đang phân tích... (có thể mất vài giây)
+                                        <br>
+                                        <span id="retry-info-@log.Id" class="d-none">Đang thử lại...</span>
+                                    </small>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             }
@@ -150,6 +187,57 @@
             }
         }).fail(function() {
             Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
+        });
+    }
+
+    function analyzeWithAI(logId) {
+        const btn = document.getElementById(`btn-analyze-${logId}`);
+        const loading = document.getElementById(`loading-${logId}`);
+        const retryInfo = document.getElementById(`retry-info-${logId}`);
+        
+        if (btn) btn.disabled = true;
+        if (loading) loading.classList.remove('d-none');
+        if (retryInfo) retryInfo.classList.add('d-none');
+
+        $.ajax({
+            url: '@Url.Action("AnalyzeWithAI", "LogbookReview")',
+            type: 'POST',
+            data: { logbookId: logId },
+            timeout: 60000, // 60 second timeout
+            success: function(res) {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Phân tích thành công',
+                        text: res.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Không thể phân tích logbook', 'error');
+                    if (btn) btn.disabled = false;
+                    if (loading) loading.classList.add('d-none');
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = 'Lỗi kết nối server';
+                let icon = 'error';
+                
+                if (xhr.status === 0) {
+                    errorMsg = 'Kết nối bị mất. Vui lòng kiểm tra internet.';
+                } else if (xhr.status === 408 || xhr.statusText === 'timeout') {
+                    errorMsg = 'Thời gian chờ quá lâu. Vui lòng thử lại.';
+                    icon = 'warning';
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                } else if (xhr.status >= 500) {
+                    errorMsg = 'Lỗi server. Vui lòng thử lại sau.';
+                }
+                
+                Swal.fire('Lỗi', errorMsg, icon);
+                if (btn) btn.disabled = false;
+                if (loading) loading.classList.add('d-none');
+            }
         });
     }
 </script>

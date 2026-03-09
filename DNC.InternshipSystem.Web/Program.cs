@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using DNC.InternshipSystem.Web.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Them cac dich vu vao container.
@@ -12,7 +13,9 @@ OfficeOpenXml.ExcelPackage.License.SetNonCommercialPersonal("DNC-IMS");
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<DNC.InternshipSystem.Infrastructure.Data.AppDbContext>(options =>
     options.UseSqlServer(connectionString, sqlOptions => sqlOptions.UseCompatibilityLevel(120)));
-
+// Dang ky AIMentorService de su dung trong LogbookController
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<AIMentorService>();
 // Them Identity
 builder.Services.AddIdentity<DNC.InternshipSystem.Core.Entities.AppUser, Microsoft.AspNetCore.Identity.IdentityRole<Guid>>()
     .AddEntityFrameworkStores<DNC.InternshipSystem.Infrastructure.Data.AppDbContext>()
