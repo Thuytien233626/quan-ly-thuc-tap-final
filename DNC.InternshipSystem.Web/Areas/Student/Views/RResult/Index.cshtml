@@ -65,6 +65,14 @@
         <h4 class="fw-bold mb-1">Kết quả thực tập</h4>
         <p class="text-muted mb-0 small">Xem điểm số và đánh giá tổng kết thực tập.</p>
     </div>
+
+    @if (hasGrade)
+    {
+        <a asp-action="ExportTranscript" class="btn btn-danger">
+            <i class="fa fa-file-pdf me-1"></i>
+            Xuất phiếu điểm PDF
+        </a>
+    }
 </div>
 
 @if (!hasRegistration)

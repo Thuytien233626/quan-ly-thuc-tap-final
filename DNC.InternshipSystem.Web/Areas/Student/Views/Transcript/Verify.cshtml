@@ -1,0 +1,48 @@
+@model DNC.InternshipSystem.Core.Entities.Grade
+
+<div style="padding: 20px; font-family: Arial, sans-serif;">
+    <h2>Xác thực phiếu điểm</h2>
+    
+    @if (Model?.Registration?.Student?.User != null)
+    {
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Sinh viên:</strong></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">@Model.Registration.Student.User.FullName</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;"><strong>MSSV:</strong></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">@Model.Registration.Student.StudentCode</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Doanh nghiệp:</strong></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">@(Model.Registration.Company?.Name ?? Model.Registration.ExternalCompanyName ?? "N/A")</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Điểm DN:</strong></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">@Model.CompanyScore?.ToString("F1") ?? "N/A"</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Điểm GV:</strong></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">@Model.InstructorScore?.ToString("F1") ?? "N/A"</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Tổng điểm:</strong></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">@Model.FinalScore?.ToString("F1") ?? "N/A"</td>
+            </tr>
+        </table>
+
+        <p style="color:green; font-weight: bold; margin-top: 20px; font-size: 16px;">
+            ✓ Phiếu điểm hợp lệ từ hệ thống.
+        </p>
+    }
+    else
+    {
+        <div style="color: red; background: #ffe6e6; padding: 15px; border-radius: 5px;">
+            <strong>Lỗi:</strong> Không thể tải thông tin phiếu điểm.<br/>
+            Registration: @(Model?.Registration != null ? "OK" : "NULL")<br/>
+            Student: @(Model?.Registration?.Student != null ? "OK" : "NULL")<br/>
+            User: @(Model?.Registration?.Student?.User != null ? "OK" : "NULL")
+        </div>
+    }
+</div>
