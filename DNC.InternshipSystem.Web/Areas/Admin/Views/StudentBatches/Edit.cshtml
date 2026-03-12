@@ -46,11 +46,16 @@
                             <span asp-validation-for="EnrollmentYear" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="IsActive" class="form-label fw-semibold">Trạng thái</label>
-                            <div class="form-check form-switch mt-2">
-                                <input asp-for="IsActive" class="form-check-input" />
-                                <label class="form-check-label">Hoạt động</label>
-                            </div>
+                            <label asp-for="GraduationYear" class="form-label fw-semibold">Năm tốt nghiệp <span class="text-danger">*</span></label>
+                            <input asp-for="GraduationYear" type="number" class="form-control" />
+                            <span asp-validation-for="GraduationYear" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" />
+                            <label asp-for="IsActive" class="form-check-label">Hoạt động</label>
                         </div>
                     </div>
 

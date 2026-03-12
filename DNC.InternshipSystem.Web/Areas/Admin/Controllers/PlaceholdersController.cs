@@ -1,11 +1,2 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-
-namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
-{
-
-
-
-}
-
-
+// File nay khong con su dung, da tach logic sang cac controller cu the
+// (StudentsController, ClassesController, MajorsController)

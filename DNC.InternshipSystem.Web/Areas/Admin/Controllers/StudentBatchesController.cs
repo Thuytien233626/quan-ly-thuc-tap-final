@@ -37,6 +37,10 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(StudentBatch batch)
         {
+            // Xoa validation cho navigation properties (khong gui tu form)
+            ModelState.Remove("InternshipTerms");
+            ModelState.Remove("Majors");
+
             if (ModelState.IsValid)
             {
                 _context.StudentBatches.Add(batch);
@@ -64,6 +68,10 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
         public async Task<IActionResult> Edit(int id, StudentBatch batch)
         {
             if (id != batch.Id) return NotFound();
+
+            // Xoa validation cho navigation properties (khong gui tu form)
+            ModelState.Remove("InternshipTerms");
+            ModelState.Remove("Majors");
 
             if (ModelState.IsValid)
             {

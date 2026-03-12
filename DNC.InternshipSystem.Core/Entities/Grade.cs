@@ -8,14 +8,15 @@ namespace DNC.InternshipSystem.Core.Entities
         public Guid RegistrationId { get; set; }
         public double? CompanyScore { get; set; }
         public double? InstructorScore { get; set; }
-        
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        // Cot tinh toan: (CompanyScore * 0.4) + (InstructorScore * 0.6)
-        public double? FinalScore { get; private set; } // Cot tinh toan
-        
-        public string? Note { get; set; }
-        public DateTime GradedDate { get; set; } = DateTime.Now;
 
+        // Cot tinh toan: (CompanyScore * 0.4) + (InstructorScore * 0.6)
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public double? FinalScore { get; private set; }
+
+        public string? Note { get; set; }
+        public DateTime GradedDate { get; set; } = DateTime.UtcNow;
+
+        // Quan he navigation
         public Registration? Registration { get; set; }
     }
 }

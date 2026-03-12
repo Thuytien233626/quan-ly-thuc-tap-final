@@ -1,4 +1,6 @@
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
+using DNC.InternshipSystem.Core.Interfaces;
 using DNC.InternshipSystem.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,126 +13,112 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
     public class AllocationController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly IAllocationService _allocationService;
 
-        public AllocationController(AppDbContext context)
+        public AllocationController(AppDbContext context, IAllocationService allocationService)
         {
             _context = context;
+            _allocationService = allocationService;
         }
 
-        public async Task<IActionResult> Index(int? majorId = null, string? search = null)
+        // GET: /Admin/Allocation — Trang phan cong giang vien cho lop
+        public async Task<IActionResult> Index(string? filter = null)
         {
             ViewData["Title"] = "Phân công Giảng viên";
-            ViewBag.CurrentMajorId = majorId;
-            ViewBag.CurrentSearch = search;
+            ViewBag.CurrentFilter = filter;
 
-            // Lay danh sach nganh de loc
-            ViewBag.Majors = await _context.Registrations
-                .Where(r => r.Status == 1 && r.LecturerId == null)
-                .Select(r => r.Student!.Class!.Major)
-                .Where(m => m != null)
-                .GroupBy(m => m!.Name)
-                .Select(g => g!.First())
+            // Lay toan bo lop hoc kem thong tin lien quan
+            var classQuery = _context.Classes
+                .Include(c => c.Major).ThenInclude(m => m!.Batch)
+                .Include(c => c.Lecturer).ThenInclude(l => l!.User)
+                .Include(c => c.Students)
+                .AsQueryable();
+
+            // Loc theo trang thai phan cong
+            if (filter == "assigned")
+                classQuery = classQuery.Where(c => c.LecturerId != null);
+            else if (filter == "unassigned")
+                classQuery = classQuery.Where(c => c.LecturerId == null);
+
+            var classes = await classQuery
+                .OrderBy(c => c.LecturerId == null ? 0 : 1)
+                .ThenBy(c => c.Major != null ? c.Major.Name : "")
+                .ThenBy(c => c.Name)
                 .ToListAsync();
 
-            // Get approved students awaiting assignment
-            var studentQuery = _context.Registrations
+            // Dem so SV da dang ky va duoc duyet theo tung lop
+            var approvedCounts = await _context.Registrations
+                .Where(r => r.Status == RegistrationStatus.Approved)
                 .Include(r => r.Student)
-                    .ThenInclude(s => s!.User)
-                 .Include(r => r.Student)
-                    .ThenInclude(s => s!.Class)
-                        .ThenInclude(c => c!.Major)
-                .Include(r => r.Company)
-                .Where(r => r.Status == 1 && r.LecturerId == null); // Trang thai 1 = Da duyet
+                .GroupBy(r => r.Student!.ClassId)
+                .Select(g => new { ClassId = g.Key, Count = g.Count() })
+                .ToListAsync();
+            ViewBag.ApprovedCounts = approvedCounts.ToDictionary(x => x.ClassId ?? "", x => x.Count);
 
-            if (majorId.HasValue)
-            {
-                var selectedMajor = await _context.Majors.FindAsync(majorId);
-                if (selectedMajor != null)
-                {
-                    studentQuery = studentQuery.Where(r => r.Student!.Class!.Major!.Name == selectedMajor.Name);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(search))
-            {
-                studentQuery = studentQuery.Where(r => 
-                    (r.Student!.User!.FullName.Contains(search)) ||
-                    (r.Student.StudentCode.Contains(search))
-                );
-            }
-
-            var students = await studentQuery.ToListAsync();
-
-            // 2. Lay danh sach giang vien va tai hien tai
+            // Lay danh sach giang vien de hien thi dropdown chon
             var lecturers = await _context.Lecturers
                 .Include(l => l.User)
-                // Tam thoi dem tat ca cac dang ky dang thuc tap duoc phan cong
-                .Select(l => new LecturerAllocationViewModel
+                .Include(l => l.Department)
+                .Select(l => new LecturerOptionViewModel
                 {
                     Id = l.UserId,
                     Code = l.LecturerCode,
                     Name = l.User!.FullName,
+                    AcademicRank = l.AcademicRank ?? "",
                     DepartmentName = l.Department != null ? l.Department.Name : "",
-                    CurrentLoad = _context.Registrations.Count(r => r.LecturerId == l.UserId && r.Status == 1) // Da duyet & Duoc phan cong
+                    ClassCount = _context.Classes.Count(c => c.LecturerId == l.UserId)
                 })
+                .OrderBy(l => l.Name)
                 .ToListAsync();
 
-            var viewModel = new AllocationViewModel
-            {
-                Students = students,
-                Lecturers = lecturers
-            };
+            ViewBag.Lecturers = lecturers;
 
-            return View(viewModel);
+            // Thong ke tong quat
+            int totalClasses = await _context.Classes.CountAsync();
+            int assignedClasses = await _context.Classes.CountAsync(c => c.LecturerId != null);
+            ViewBag.TotalClasses = totalClasses;
+            ViewBag.AssignedClasses = assignedClasses;
+            ViewBag.UnassignedClasses = totalClasses - assignedClasses;
+
+            return View(classes);
         }
 
+        // POST: Phan cong GV cho 1 lop (AJAX)
         [HttpPost]
-        public async Task<IActionResult> AssignStudents(List<Guid> studentIds, Guid lecturerId)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignLecturerAjax(string classId, Guid? lecturerId)
         {
-            try
-            {
-                if (studentIds == null || !studentIds.Any())
-                {
-                    return Json(new { success = false, message = "Chưa chọn sinh viên nào!" });
-                }
+            var result = await _allocationService.AssignLecturer(classId, lecturerId);
+            return Json(new { success = result.Success, lecturerName = result.Data, message = result.Message });
+        }
 
-                var lecturer = await _context.Lecturers.FindAsync(lecturerId);
-                if (lecturer == null)
-                {
-                    return Json(new { success = false, message = "Giảng viên không tồn tại!" });
-                }
+        // POST: Phan cong GV cho nhieu lop cung luc (AJAX)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BulkAssignAjax(string[] classIds, Guid lecturerId)
+        {
+            var result = await _allocationService.BulkAssign(classIds, lecturerId);
+            return Json(new { success = result.Success, count = result.Data, message = result.Message });
+        }
 
-                int count = 0;
-                foreach (var id in studentIds)
-                {
-                    await _context.Database.ExecuteSqlRawAsync(
-                        "UPDATE Registrations SET LecturerId = {0}, UpdatedDate = {1} WHERE Id = {2}", 
-                        lecturerId, DateTime.Now, id);
-                    count++;
-                }
-
-                return Json(new { success = true, count = count, message = $"Đã phân công {count} sinh viên cho GV {lecturer.User?.FullName ?? lecturer.LecturerCode}" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+        // POST: Go phan cong GV khoi lop (AJAX)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveAssignmentAjax(string classId)
+        {
+            var result = await _allocationService.RemoveAssignment(classId);
+            return Json(new { success = result.Success, message = result.Message });
         }
     }
 
-    // View Models (Luu tru noi bo hoac chuyen sang file rieng)
-    public class AllocationViewModel
-    {
-        public List<Registration> Students { get; set; } = new();
-        public List<LecturerAllocationViewModel> Lecturers { get; set; } = new();
-    }
-
-    public class LecturerAllocationViewModel
+    // ViewModel hien thi thong tin GV trong dropdown chon
+    public class LecturerOptionViewModel
     {
         public Guid Id { get; set; }
-        public string Code { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string DepartmentName { get; set; } = string.Empty;
-        public int CurrentLoad { get; set; }
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string AcademicRank { get; set; } = "";
+        public string DepartmentName { get; set; } = "";
+        public int ClassCount { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
 using DNC.InternshipSystem.Infrastructure.Data;
 
 namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
@@ -28,18 +29,31 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
             if (lecturer == null) return View();
 
-            // 1. Tong so SV duoc phan cong
+            // 1. Lay danh sach lop GV phu trach
+            var classIds = await _context.Classes
+                .Where(c => c.LecturerId == lecturer.UserId)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            // Tong SV trong cac lop phu trach (bat ke da dang ky chua)
+            var totalStudentsInClasses = await _context.Students
+                .CountAsync(s => classIds.Contains(s.ClassId));
+
+            // 2. Tong so SV duoc phan cong (truc tiep hoac qua lop)
             var registrations = await _context.Registrations
                 .Include(r => r.Student).ThenInclude(s => s!.User)
                 .Include(r => r.Student).ThenInclude(s => s!.Class)
                 .Include(r => r.Company)
-                .Where(r => r.LecturerId == lecturer.UserId && r.Status == 1)
+                .Where(r => r.Status == RegistrationStatus.Approved &&
+                    (r.LecturerId == lecturer.UserId || classIds.Contains(r.Student!.ClassId)))
                 .ToListAsync();
+
+            // Lay student IDs de query grades va logbook
+            var regIds = registrations.Select(r => r.Id).ToList();
 
             // 2. Thong ke diem
             var grades = await _context.Grades
-                .Include(g => g.Registration)
-                .Where(g => g.Registration!.LecturerId == lecturer.UserId)
+                .Where(g => regIds.Contains(g.RegistrationId))
                 .ToListAsync();
 
             int totalStudents = registrations.Count;
@@ -60,12 +74,10 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
 
             // 4. Thong ke logbook
             var totalLogbooks = await _context.Logbooks
-                .Include(l => l.Registration)
-                .CountAsync(l => l.Registration!.LecturerId == lecturer.UserId);
+                .CountAsync(l => regIds.Contains(l.RegistrationId));
 
             var reviewedLogbooks = await _context.Logbooks
-                .Include(l => l.Registration)
-                .CountAsync(l => l.Registration!.LecturerId == lecturer.UserId && !string.IsNullOrEmpty(l.LecturerComment));
+                .CountAsync(l => regIds.Contains(l.RegistrationId) && !string.IsNullOrEmpty(l.LecturerComment));
 
             // 5. Phan bo SV theo cong ty
             var companyGroups = registrations
@@ -76,6 +88,7 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
                 .ToList();
 
             ViewBag.TotalStudents = totalStudents;
+            ViewBag.TotalStudentsInClasses = totalStudentsInClasses;
             ViewBag.GradedCount = gradedCount;
             ViewBag.PendingGrading = pendingGrading;
             ViewBag.ScoreDistribution = scoreDistribution;

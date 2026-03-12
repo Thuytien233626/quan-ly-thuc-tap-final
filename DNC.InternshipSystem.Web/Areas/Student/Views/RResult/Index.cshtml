@@ -1,4 +1,5 @@
 @using DNC.InternshipSystem.Core.Entities
+@using DNC.InternshipSystem.Core.Enums
 
 @{
     Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
@@ -58,10 +59,10 @@
     {
         switch (registration.Status)
         {
-            case 0: statusText = "Chờ duyệt"; statusClass = "warning"; break;
-            case 1: statusText = "Đang thực tập"; statusClass = "info"; break;
-            case 2: statusText = "Bị từ chối"; statusClass = "danger"; break;
-            case 3: statusText = "Hoàn thành"; statusClass = "success"; break;
+            case RegistrationStatus.Pending: statusText = "Chờ duyệt"; statusClass = "warning"; break;
+            case RegistrationStatus.Approved: statusText = "Đang thực tập"; statusClass = "info"; break;
+            case RegistrationStatus.Rejected: statusText = "Bị từ chối"; statusClass = "danger"; break;
+            case RegistrationStatus.Completed: statusText = "Hoàn thành"; statusClass = "success"; break;
         }
     }
 }

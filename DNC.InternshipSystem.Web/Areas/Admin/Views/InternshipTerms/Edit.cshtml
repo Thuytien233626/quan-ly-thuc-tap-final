@@ -24,7 +24,7 @@
             <div class="card-body">
                 <form asp-action="Edit" method="post">
                     <input type="hidden" asp-for="Id" />
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
 
                     <div class="mb-3">
                         <label asp-for="TermName" class="form-label fw-semibold">Tên đợt <span class="text-danger">*</span></label>

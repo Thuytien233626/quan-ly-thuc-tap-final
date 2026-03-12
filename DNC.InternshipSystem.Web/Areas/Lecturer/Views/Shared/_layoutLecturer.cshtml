@@ -132,8 +132,15 @@
 
         <div class="sidebar-footer">
             <div class="user-mini-profile mb-3 px-2 d-flex align-items-center gap-2">
-                <div class="rounded-circle bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center border border-info border-opacity-25" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                    <i class="fa fa-chalkboard-teacher"></i>
+                <div class="rounded-circle bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center border border-info border-opacity-25 overflow-hidden" style="width: 32px; height: 32px; font-size: 0.8rem; flex-shrink: 0;">
+                    @if (!string.IsNullOrEmpty(currentUser?.AvatarUrl))
+                    {
+                        <img src="@currentUser.AvatarUrl" alt="" class="w-100 h-100 object-fit-cover" />
+                    }
+                    else
+                    {
+                        <span class="fw-bold">@(displayName.Split(' ').LastOrDefault()?.Substring(0, 1) ?? "G")</span>
+                    }
                 </div>
                 <div class="overflow-hidden">
                     <div class="fw-bold small text-truncate">@displayName</div>
@@ -179,9 +186,16 @@
                         <small class="text-muted d-block" style="font-size: 0.75rem;">Xin chào,</small>
                         <span class="fw-bold text-dark user-name">@displayName</span>
                     </div>
-                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary border shadow-sm" 
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-primary border shadow-sm overflow-hidden" 
                          style="width: 40px; height: 40px;">
-                        <i class="fa fa-chalkboard-teacher"></i>
+                        @if (!string.IsNullOrEmpty(currentUser?.AvatarUrl))
+                        {
+                            <img src="@currentUser.AvatarUrl" alt="" class="w-100 h-100 object-fit-cover" />
+                        }
+                        else
+                        {
+                            <span class="fw-bold">@(displayName.Split(' ').LastOrDefault()?.Substring(0, 1) ?? "G")</span>
+                        }
                     </div>
                 </div>
             </div>

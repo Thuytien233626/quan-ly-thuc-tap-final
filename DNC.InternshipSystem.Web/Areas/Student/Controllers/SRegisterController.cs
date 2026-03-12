@@ -1,75 +1,101 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using DNC.InternshipSystem.Infrastructure.Data;
-using System.Security.Claims; 
+using DNC.InternshipSystem.Core.Interfaces;
+using System.Security.Claims;
+
 namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
 {
     [Area("Student")]
     [Authorize(Roles = "Student")]
     public class SRegisterController : Controller
     {
-        private readonly AppDbContext _context;
-        private const int PageSize = 6; // So DN moi trang
+        private readonly IRegistrationService _registrationService;
+        private readonly ICompanyService _companyService;
 
-        public SRegisterController(AppDbContext context)
+        public SRegisterController(
+            IRegistrationService registrationService,
+            ICompanyService companyService)
         {
-            _context = context;
+            _registrationService = registrationService;
+            _companyService = companyService;
         }
 
-        // GET: /Student/SRegister
+        // Lay ID nguoi dung hien tai tu Cookie xac thuc
+        private Guid GetCurrentUserId()
+        {
+            return Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        }
+
+        // GET: /Student/SRegister — Danh sach doanh nghiep doi tac
         public async Task<IActionResult> Index(int page = 1, string? search = null, string? province = null)
         {
-            // Query DN doi tac (Status = 1, IsExternal = false)
-            var query = _context.Companies
-                .Where(c => c.Status == 1 && !c.IsExternal)
-                .AsQueryable();
+            const int pageSize = 6;
 
-            // Loc theo ten
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                query = query.Where(c => c.Name.Contains(search));
-                ViewBag.Search = search;
-            }
+            // Goi Service lay danh sach doanh nghiep co phan trang
+            var result = await _companyService.GetApprovedCompanies(search, province, page, pageSize);
+            var provinces = await _companyService.GetProvinces();
 
-            // Loc theo tinh/thanh pho
-            if (!string.IsNullOrWhiteSpace(province))
-            {
-                query = query.Where(c => c.Province == province);
-                ViewBag.SelectedProvince = province;
-            }
-
-            // Dem tong so ban ghi (truoc phan trang)
-            var totalItems = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling((double)totalItems / PageSize);
-
-            // Dam bao page hop le
-            if (page < 1) page = 1;
-            if (page > totalPages && totalPages > 0) page = totalPages;
-
-            // Lay du lieu phan trang
-            var companies = await query
-                .OrderBy(c => c.Province)
-                .ThenBy(c => c.Name)
-                .Skip((page - 1) * PageSize)
-                .Take(PageSize)
-                .ToListAsync();
-
-            // Lay danh sach tinh/thanh pho (tu tat ca DN, khong phan trang)
-            var provinces = await _context.Companies
-                .Where(c => c.Status == 1 && !c.IsExternal && !string.IsNullOrEmpty(c.Province))
-                .Select(c => c.Province)
-                .Distinct()
-                .OrderBy(p => p)
-                .ToListAsync();
-
-            ViewBag.Companies = companies;
+            ViewBag.Companies = result.Items;
             ViewBag.Provinces = provinces;
-            ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
-            ViewBag.TotalItems = totalItems;
+            ViewBag.CurrentPage = result.CurrentPage;
+            ViewBag.TotalPages = result.TotalPages;
+            ViewBag.TotalItems = result.TotalItems;
+            ViewBag.Search = search;
+            ViewBag.SelectedProvince = province;
 
             return View();
+        }
+
+        // GET: /Student/SRegister/MyRegistration — Xem don dang ky cua toi
+        public async Task<IActionResult> MyRegistration()
+        {
+            var userId = GetCurrentUserId();
+            var registration = await _registrationService.GetMyRegistration(userId);
+            return View(registration);
+        }
+
+        // POST: /Student/SRegister/SubmitInternal — Dang ky tai doanh nghiep doi tac
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitInternal(int companyId, string position)
+        {
+            var userId = GetCurrentUserId();
+            var result = await _registrationService.RegisterInternal(userId, companyId, position);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
+        // POST: /Student/SRegister/SubmitExternal — Dang ky tai doanh nghiep tu tim
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitExternal(
+            string CompanyName, string Address, string? TaxCode,
+            string ContactPerson, string? PositionTitle, string Phone, string Email,
+            string Position, string? Note)
+        {
+            var userId = GetCurrentUserId();
+            var result = await _registrationService.RegisterExternal(
+                userId, CompanyName, Address, TaxCode,
+                ContactPerson, PositionTitle, Phone, Email, Position, Note);
+
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
+        // POST: /Student/SRegister/UpdateRegistration — Huy don dang ky
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateRegistration(Guid id)
+        {
+            var userId = GetCurrentUserId();
+            var result = await _registrationService.CancelRegistration(userId, id);
+
+            if (!result.Success)
+            {
+                TempData["Error"] = result.Message;
+                return RedirectToAction(nameof(MyRegistration));
+            }
+
+            TempData["Success"] = result.Message;
+            return RedirectToAction(nameof(Index));
         }
     }
 }

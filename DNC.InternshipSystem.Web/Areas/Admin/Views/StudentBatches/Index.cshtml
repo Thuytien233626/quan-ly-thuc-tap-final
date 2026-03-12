@@ -39,6 +39,7 @@
                     <th>Mã khóa</th>
                     <th>Mã lớp</th>
                     <th>Năm nhập học</th>
+                    <th>Năm tốt nghiệp</th>
                     <th class="text-center">Trạng thái</th>
                     <th class="text-end" style="width: 150px;">Thao tác</th>
                 </tr>
@@ -47,7 +48,7 @@
                 @if (!Model.Any())
                 {
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             <i class="fa fa-inbox fa-2x mb-2 d-block"></i>
                             Chưa có khóa học nào
                         </td>
@@ -61,6 +62,7 @@
                         <td><span class="badge bg-primary">@item.BatchCode</span></td>
                         <td><span class="badge bg-secondary">@item.ClassCode</span></td>
                         <td>@item.EnrollmentYear</td>
+                        <td>@item.GraduationYear</td>
                         <td class="text-center">
                             @if (item.IsActive)
                             {

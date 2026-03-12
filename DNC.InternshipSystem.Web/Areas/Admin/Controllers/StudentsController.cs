@@ -12,6 +12,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize(Roles = "Admin")]
+    [AutoValidateAntiforgeryToken]
     public class StudentsController : Controller
     {
         private readonly AppDbContext _context;
@@ -353,7 +354,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                             FullName = fullName,
                             EmailConfirmed = true,
                             IsActive = true,
-                            CreatedDate = DateTime.Now
+                            CreatedDate = DateTime.UtcNow
                         };
                         
                         var createResult = await _userManager.CreateAsync(user, $"Sv@{studentCode}");
@@ -878,7 +879,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                             FullName = r.FullName,
                             EmailConfirmed = true,
                             IsActive = true,
-                            CreatedDate = DateTime.Now
+                            CreatedDate = DateTime.UtcNow
                         };
 
                         var createRes = await _userManager.CreateAsync(user, $"Sv@{code}");

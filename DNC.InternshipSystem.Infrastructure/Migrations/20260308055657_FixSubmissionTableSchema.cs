@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -12,7 +12,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // Drop the old table and recreate with correct schema
-            migrationBuilder.Sql("DROP TABLE IF EXISTS [Submissions];");
+            migrationBuilder.Sql("IF OBJECT_ID('Submissions', 'U') IS NOT NULL DROP TABLE [Submissions];");
 
             // Recreate the table with correct RegistrationId type as Guid
             migrationBuilder.CreateTable(
@@ -50,7 +50,7 @@ namespace DNC.InternshipSystem.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             // Drop the corrected table and recreate the old bad schema
-            migrationBuilder.Sql("DROP TABLE IF EXISTS [Submissions];");
+            migrationBuilder.Sql("IF OBJECT_ID('Submissions', 'U') IS NOT NULL DROP TABLE [Submissions];");
 
             migrationBuilder.CreateTable(
                 name: "Submissions",

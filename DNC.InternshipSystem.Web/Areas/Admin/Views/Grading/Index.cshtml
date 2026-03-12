@@ -6,6 +6,10 @@
     var majors = ViewBag.Majors as List<DNC.InternshipSystem.Core.Entities.Major>;
 }
 
+<div id="antiForgeryTokenContainer" style="display: none;">
+    @Html.AntiForgeryToken()
+</div>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold text-primary mb-1">
@@ -51,8 +55,7 @@
                         <th>Sinh viên</th>
                         <th>Đơn vị thực tập</th>
                         <th class="text-center" style="width: 100px;">Điểm DN <br><small class="text-muted">(40%)</small></th>
-                        <th class="text-center" style="width: 100px;">Điểm GVHD <br><small class="text-muted">(0%)</small></th>
-
+                        <th class="text-center" style="width: 100px;">Điểm GVHD <br><small class="text-muted">(60%)</small></th>
                         <th class="text-center" style="width: 100px;">Tổng kết</th>
                         <th class="text-center" style="width: 80px;">Hành động</th>
                     </tr>
@@ -61,7 +64,7 @@
                     @if (Model.Count == 0)
                     {
                          <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="fa fa-clipboard-list fa-3x mb-3 text-secondary opacity-50"></i>
                                 <p>Chưa có sinh viên nào cần chấm điểm.</p>
                             </td>
@@ -87,7 +90,11 @@
                                            data-id="@item.Id" name="companyScore" min="0" max="10" step="0.1" 
                                            value="@item.CompanyScore" placeholder="-">
                                 </td>
-                                <td> @item.InstructorScore</td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-center score-input"
+                                           data-id="@item.Id" name="instructorScore" min="0" max="10" step="0.1"
+                                           value="@item.InstructorScore" placeholder="-">
+                                </td>
                                 <td class="text-center fw-bold fs-5 final-score @(item.FinalScore >= 5 ? "text-success" : (item.FinalScore < 5 && item.FinalScore != null ? "text-danger" : "text-muted"))">
                                     @(item.FinalScore.HasValue ? item.FinalScore.Value.ToString("0.0") : "-")
                                 </td>
@@ -106,57 +113,58 @@
 </div>
 
 @section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+
+        const tokenElement = document.querySelector('#antiForgeryTokenContainer input[name="__RequestVerificationToken"]');
+        const token = tokenElement ? tokenElement.value : '';
         
-        // Tu dong tinh toan khi thay doi diem
+        // Tu dong tinh diem tong ket khi thay doi input
         document.querySelectorAll('.score-input').forEach(input => {
             input.addEventListener('input', function() {
                 const row = this.closest('tr');
                 const c = parseFloat(row.querySelector('input[name="companyScore"]').value) || 0;
-                const r = parseFloat(row.querySelector('input[name="reportScore"]').value) || 0;
-                const v = parseFloat(row.querySelector('input[name="vivaScore"]').value) || 0;
+                const i = parseFloat(row.querySelector('input[name="instructorScore"]').value) || 0;
                 
                 const finalCell = row.querySelector('.final-score');
                 
-                // Chi tinh toan neu dau vao la so hop le (hoac 0)
-                if (!isNaN(c) && !isNaN(r) && !isNaN(v)) {
-                   const final = (c * 0.4) + (r * 0.3) + (v * 0.3);
-                   finalCell.textContent = final.toFixed(1);
-                   
-                   finalCell.className = "text-center fw-bold fs-5 final-score";
-                   if(final >= 5) finalCell.classList.add("text-success");
-                   else finalCell.classList.add("text-danger");
-                }
+                // Cong thuc: Diem DN * 40% + Diem GVHD * 60%
+                const final = (c * 0.4) + (i * 0.6);
+                finalCell.textContent = final.toFixed(1);
+                
+                finalCell.className = "text-center fw-bold fs-5 final-score";
+                if (final >= 5) finalCell.classList.add("text-success");
+                else finalCell.classList.add("text-danger");
             });
         });
 
-        // Xu ly nut Luu
+        // Xu ly nut Luu diem
         document.querySelectorAll('.btn-save').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const id = this.dataset.id;
                 const row = document.getElementById(`row-${id}`);
                 const companyScore = row.querySelector('input[name="companyScore"]').value;
-                const reportScore = row.querySelector('input[name="reportScore"]').value;
-                const vivaScore = row.querySelector('input[name="vivaScore"]').value;
+                const instructorScore = row.querySelector('input[name="instructorScore"]').value;
 
-                // Kiem tra hop le co ban
-                if (companyScore < 0 || companyScore > 10 || reportScore < 0 || reportScore > 10 || vivaScore < 0 || vivaScore > 10) {
+                // Kiem tra diem hop le (0-10)
+                if ((companyScore && (companyScore < 0 || companyScore > 10)) || 
+                    (instructorScore && (instructorScore < 0 || instructorScore > 10))) {
                     Swal.fire('Lỗi', 'Điểm số phải từ 0 đến 10', 'warning');
                     return;
                 }
 
-                // Hien thi trang thai dang tai
+                // Hien thi trang thai loading
                 const originalContent = this.innerHTML;
                 this.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
                 this.disabled = true;
 
                 try {
                     const fd = new FormData();
+                    fd.append('__RequestVerificationToken', token);
                     fd.append('id', id);
-                    if(companyScore) fd.append('companyScore', companyScore);
-                    if(reportScore) fd.append('reportScore', reportScore);
-                    if(vivaScore) fd.append('vivaScore', vivaScore);
+                    if (companyScore) fd.append('companyScore', companyScore);
+                    if (instructorScore) fd.append('instructorScore', instructorScore);
 
                     const res = await fetch('/Admin/Grading/UpdateScores', {
                         method: 'POST',
@@ -165,6 +173,15 @@
                     const data = await res.json();
 
                     if (data.success) {
+                        // Cap nhat diem tong ket tu server
+                        if (data.finalScore !== null && data.finalScore !== undefined) {
+                            const finalCell = row.querySelector('.final-score');
+                            finalCell.textContent = parseFloat(data.finalScore).toFixed(1);
+                            finalCell.className = "text-center fw-bold fs-5 final-score";
+                            if (data.finalScore >= 5) finalCell.classList.add("text-success");
+                            else finalCell.classList.add("text-danger");
+                        }
+
                         Swal.fire({
                             icon: 'success',
                             title: 'Đã lưu!',

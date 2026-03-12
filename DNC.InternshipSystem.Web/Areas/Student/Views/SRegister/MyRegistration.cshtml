@@ -1,8 +1,9 @@
 @model DNC.InternshipSystem.Core.Entities.Registration
+@using DNC.InternshipSystem.Core.Enums
 
 <div class="container mt-4">
 
-<h3 class="mb-4">📄 Đơn đăng ký thực tập của tôi</h3>
+<h3 class="mb-4"><i class="fa fa-file-alt text-primary me-2"></i>Đơn đăng ký thực tập của tôi</h3>
 
 @if (Model == null)
 {
@@ -17,7 +18,7 @@ else
 {
 
 <div class="card p-3 mb-3">
-    <h5>🏢 Doanh nghiệp</h5>
+    <h5><i class="fa fa-building text-info me-2"></i>Doanh nghiệp</h5>
 
     @if (Model.CompanyId != null)
     {
@@ -35,7 +36,7 @@ else
 
 <div class="card shadow-sm p-4 mb-3">
 
-<h5 class="mb-3">📅 Thông tin đợt thực tập</h5>
+<h5 class="mb-3"><i class="fa fa-calendar-alt text-info me-2"></i>Thông tin đợt thực tập</h5>
 
 <div class="row mb-3">
 
@@ -56,7 +57,7 @@ else
 
 <div class="card shadow-sm p-4 mb-3">
 
-<h5 class="mb-3">💼 Thông tin đăng ký</h5>
+<h5 class="mb-3"><i class="fa fa-briefcase text-info me-2"></i>Thông tin đăng ký</h5>
 
 <div class="row mb-3">
 
@@ -70,11 +71,11 @@ else
 
 <div>
 
-@if (Model.Status == 0)
+@if (Model.Status == RegistrationStatus.Pending)
 {
 <span class="badge bg-warning fs-6">Chờ duyệt</span>
 }
-else if (Model.Status == 1)
+else if (Model.Status == RegistrationStatus.Approved)
 {
 <span class="badge bg-success fs-6">Đã duyệt</span>
 }
@@ -94,7 +95,7 @@ else
 
 <div class="text-end">
 
-@if (Model.Status == 0)
+@if (Model.Status == RegistrationStatus.Pending)
 {
 <form asp-area="Student"
       asp-controller="SRegister"

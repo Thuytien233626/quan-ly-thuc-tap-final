@@ -1,4 +1,6 @@
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
+using DNC.InternshipSystem.Core.Interfaces;
 using DNC.InternshipSystem.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,39 +13,38 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
     public class RegistrationsController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly IRegistrationService _registrationService;
 
-        public RegistrationsController(AppDbContext context)
+        public RegistrationsController(AppDbContext context, IRegistrationService registrationService)
         {
             _context = context;
+            _registrationService = registrationService;
         }
 
+        // GET: /Admin/Registrations — Danh sach don dang ky thuc tap
         public async Task<IActionResult> Index(int status = 0, string? search = null)
         {
             ViewData["Title"] = "Quản lý Đơn đăng ký";
             ViewBag.CurrentStatus = status;
             ViewBag.CurrentSearch = search;
 
-            // Get counts for tabs
-            ViewBag.PendingCount = await _context.Registrations.CountAsync(r => r.Status == 0);
-            ViewBag.ApprovedCount = await _context.Registrations.CountAsync(r => r.Status == 1);
-            ViewBag.RejectedCount = await _context.Registrations.CountAsync(r => r.Status == 2);
-            ViewBag.CompletedCount = await _context.Registrations.CountAsync(r => r.Status == 3);
+            // Dem so luong don theo tung trang thai (hien thi tab)
+            ViewBag.PendingCount = await _context.Registrations.CountAsync(r => r.Status == RegistrationStatus.Pending);
+            ViewBag.ApprovedCount = await _context.Registrations.CountAsync(r => r.Status == RegistrationStatus.Approved);
+            ViewBag.RejectedCount = await _context.Registrations.CountAsync(r => r.Status == RegistrationStatus.Rejected);
+            ViewBag.CompletedCount = await _context.Registrations.CountAsync(r => r.Status == RegistrationStatus.Completed);
 
             var query = _context.Registrations
-                .Include(r => r.Student)
-                    .ThenInclude(s => s!.User)
-                .Include(r => r.Student)
-                    .ThenInclude(s => s!.Class)
-                        .ThenInclude(c => c!.Major)
+                .Include(r => r.Student).ThenInclude(s => s!.User)
+                .Include(r => r.Student).ThenInclude(s => s!.Class).ThenInclude(c => c!.Major)
                 .Include(r => r.Company)
                 .Include(r => r.Term)
-                .Include(r => r.Lecturer)
-                    .ThenInclude(l => l!.User)
-                .Where(r => r.Status == status);
+                .Include(r => r.Lecturer).ThenInclude(l => l!.User)
+                .Where(r => r.Status == (RegistrationStatus)status);
 
             if (!string.IsNullOrEmpty(search))
             {
-                query = query.Where(r => 
+                query = query.Where(r =>
                     (r.Student != null && r.Student.User != null && r.Student.User.FullName.Contains(search)) ||
                     (r.Student != null && r.Student.StudentCode.Contains(search)) ||
                     (r.Company != null && r.Company.Name.Contains(search)) ||
@@ -58,20 +59,16 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
             return View(registrations);
         }
 
+        // GET: Lay chi tiet don dang ky (AJAX)
         [HttpGet]
         public async Task<IActionResult> GetDetailsAjax(Guid id)
         {
             var r = await _context.Registrations
-                .Include(r => r.Student)
-                    .ThenInclude(s => s!.User)
-                .Include(r => r.Student)
-                    .ThenInclude(s => s!.Class)
-                        .ThenInclude(c => c!.Major)
-                            .ThenInclude(m => m!.Batch)
+                .Include(r => r.Student).ThenInclude(s => s!.User)
+                .Include(r => r.Student).ThenInclude(s => s!.Class).ThenInclude(c => c!.Major).ThenInclude(m => m!.Batch)
                 .Include(r => r.Company)
                 .Include(r => r.Term)
-                .Include(r => r.Lecturer)
-                    .ThenInclude(l => l!.User)
+                .Include(r => r.Lecturer).ThenInclude(l => l!.User)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (r == null) return Json(new { success = false });
@@ -103,67 +100,34 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
             });
         }
 
+        // POST: Duyet don dang ky (AJAX)
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveAjax(Guid id)
         {
-            try
-            {
-                var registration = await _context.Registrations.FindAsync(id);
-                if (registration == null) return Json(new { success = false, message = "Không tìm thấy đơn!" });
-
-                registration.Status = 1; // Approved
-                registration.UpdatedDate = DateTime.Now;
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+            var result = await _registrationService.ApproveRegistration(id);
+            return Json(new { success = result.Success, message = result.Message });
         }
 
+        // POST: Tu choi don dang ky (AJAX)
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectAjax(Guid id, string reason)
         {
-            try
-            {
-                var registration = await _context.Registrations.FindAsync(id);
-                if (registration == null) return Json(new { success = false, message = "Không tìm thấy đơn!" });
-
-                registration.Status = 2; // Rejected
-                registration.RejectionReason = reason;
-                registration.UpdatedDate = DateTime.Now;
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+            var result = await _registrationService.RejectRegistration(id, reason);
+            return Json(new { success = result.Success, message = result.Message });
         }
 
+        // POST: Gan GV huong dan cho don cu the (AJAX)
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignLecturerAjax(Guid id, Guid lecturerId)
         {
-            try
-            {
-                var registration = await _context.Registrations.FindAsync(id);
-                if (registration == null) return Json(new { success = false, message = "Không tìm thấy đơn!" });
-
-                registration.LecturerId = lecturerId;
-                registration.UpdatedDate = DateTime.Now;
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
+            var result = await _registrationService.AssignLecturer(id, lecturerId);
+            return Json(new { success = result.Success, message = result.Message });
         }
 
+        // GET: Lay danh sach GV de chon (AJAX)
         [HttpGet]
         public async Task<IActionResult> GetLecturersAjax()
         {

@@ -116,7 +116,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                     PhoneNumber = phone,
                     EmailConfirmed = true,
                     IsActive = true,
-                    CreatedDate = DateTime.Now
+                    CreatedDate = DateTime.UtcNow
                 };
 
                 var result = await _userManager.CreateAsync(user, "Giangvien@123");
@@ -376,7 +376,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                             PhoneNumber = phone,
                             EmailConfirmed = true,
                             IsActive = true,
-                            CreatedDate = DateTime.Now
+                            CreatedDate = DateTime.UtcNow
                         };
 
                         var createRes = await _userManager.CreateAsync(user, $"Gv@{code}");

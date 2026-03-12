@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
 using DNC.InternshipSystem.Infrastructure.Data;
 
 namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
@@ -28,11 +29,18 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
             if (lecturer == null) return View();
 
+            // Lay danh sach lop GV phu trach
+            var classIds = await _context.Classes
+                .Where(c => c.LecturerId == lecturer.UserId)
+                .Select(c => c.Id)
+                .ToListAsync();
+
             // Lay danh sach cong ty ma SV cua GV dang thuc tap
             var registrations = await _context.Registrations
                 .Include(r => r.Company)
                 .Include(r => r.Student).ThenInclude(s => s!.User)
-                .Where(r => r.LecturerId == lecturer.UserId && r.Status == 1)
+                .Where(r => r.Status == RegistrationStatus.Approved &&
+                    (r.LecturerId == lecturer.UserId || classIds.Contains(r.Student!.ClassId)))
                 .ToListAsync();
 
             // Group by company

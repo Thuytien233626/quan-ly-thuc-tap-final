@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
 using DNC.InternshipSystem.Infrastructure.Data;
 
 namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
@@ -21,84 +22,127 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
         }
 
         // GET: /Lecturer/MyStudents
-        public async Task<IActionResult> Index(string search = "", int page = 1)
+        public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
 
-            // 1. Tim GV hien tai
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
             if (lecturer == null) return View("Error");
 
-            // 2. Query sinh vien duoc phan cong (da duyet Status=1)
-            var query = _context.Registrations
-                .Include(r => r.Student).ThenInclude(s => s!.User)
-                .Include(r => r.Student).ThenInclude(s => s!.Class)
-                .Include(r => r.Company)
-                .Where(r => r.LecturerId == lecturer.UserId && r.Status == 1)
-                .AsQueryable();
+            // Lay danh sach lop GV phu trach + dem so SV bang query rieng
+            var myClasses = await _context.Classes
+                .Where(c => c.LecturerId == lecturer.UserId)
+                .Include(c => c.Major)
+                .OrderBy(c => c.Id)
+                .ToListAsync();
 
-            // 3. Tim kiem
-            if (!string.IsNullOrEmpty(search))
-            {
-                search = search.ToLower();
-                query = query.Where(r => 
-                    r.Student!.User!.FullName.ToLower().Contains(search) || 
-                    r.Student.StudentCode.Contains(search));
-            }
+            // Dem so SV cho tung lop
+            var classIds = myClasses.Select(c => c.Id).ToList();
+            var studentCounts = await _context.Students
+                .Where(s => s.ClassId != null && classIds.Contains(s.ClassId))
+                .GroupBy(s => s.ClassId)
+                .Select(g => new { ClassId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.ClassId!, x => x.Count);
 
-            // 4. Phan trang
-            int pageSize = 10;
-            var totalItems = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-            
+            ViewBag.MyClasses = myClasses;
+            ViewBag.StudentCounts = studentCounts;
+
+            return View();
+        }
+
+        // AJAX: Lay danh sach SV theo lop (co phan trang)
+        [HttpGet]
+        public async Task<IActionResult> GetStudentsByClass(string classId, int page = 1, int pageSize = 20)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (lecturer == null) return Unauthorized();
+
+            var cls = await _context.Classes.FirstOrDefaultAsync(c => c.Id == classId && c.LecturerId == lecturer.UserId);
+            if (cls == null) return Forbid();
+
+            var query = _context.Students
+                .Include(s => s.User)
+                .Where(s => s.ClassId == classId)
+                .OrderBy(s => s.OrderNumber)
+                .ThenBy(s => s.StudentCode);
+
+            int totalItems = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+            if (page < 1) page = 1;
+            if (page > totalPages && totalPages > 0) page = totalPages;
+
             var students = await query
-                .OrderBy(r => r.Student!.StudentCode)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
+            // Lay registration (neu co) cho tung SV
+            var studentIds = students.Select(s => s.UserId).ToList();
+            var registrations = await _context.Registrations
+                .Include(r => r.Company)
+                .Where(r => studentIds.Contains(r.StudentId))
+                .GroupBy(r => r.StudentId)
+                .Select(g => g.OrderByDescending(r => r.CreatedDate).First())
+                .ToListAsync();
+
+            ViewBag.Registrations = registrations.ToDictionary(r => r.StudentId);
+            ViewBag.ClassId = classId;
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = totalPages;
-            ViewBag.Search = search;
-            
-            return View(students);
+            ViewBag.TotalItems = totalItems;
+            ViewBag.PageSize = pageSize;
+            ViewBag.StartIndex = (page - 1) * pageSize;
+
+            return PartialView("_MyStudentListPartial", students);
         }
 
         // GET: /Lecturer/MyStudents/Details/{studentId}
         public async Task<IActionResult> Details(Guid id)
         {
-             var user = await _userManager.GetUserAsync(User);
+            var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
 
-            // Lay thong tin dang ky cua sinh vien do (phai thuoc GV nay)
+            var student = await _context.Students
+                .Include(s => s.User)
+                .Include(s => s.Class)
+                    .ThenInclude(c => c!.Major)
+                .FirstOrDefaultAsync(s => s.UserId == id &&
+                    s.Class != null && s.Class.LecturerId == lecturer!.UserId);
+
+            if (student == null) return NotFound();
+
             var registration = await _context.Registrations
-                .Include(r => r.Student).ThenInclude(s => s!.User)
-                .Include(r => r.Student).ThenInclude(s => s!.Class)
                 .Include(r => r.Company)
                 .Include(r => r.Term)
-                .FirstOrDefaultAsync(r => r.StudentId == id && r.LecturerId == lecturer!.UserId);
+                .Where(r => r.StudentId == id)
+                .OrderByDescending(r => r.CreatedDate)
+                .FirstOrDefaultAsync();
 
-            if (registration == null)
+            Grade? grade = null;
+            if (registration != null)
             {
-                return NotFound();
+                grade = await _context.Grades
+                    .FirstOrDefaultAsync(g => g.RegistrationId == registration.Id);
             }
 
-            // Lay diem
-            var grade = await _context.Grades
-                .FirstOrDefaultAsync(g => g.RegistrationId == registration.Id);
+            var logbooks = registration != null
+                ? await _context.Logbooks
+                    .Where(l => l.RegistrationId == registration.Id)
+                    .OrderBy(l => l.WeekNumber)
+                    .ToListAsync()
+                : new List<Logbook>();
 
-            // Lay logbook
-            var logbooks = await _context.Logbooks
-                .Where(l => l.RegistrationId == registration.Id)
-                .OrderBy(l => l.WeekNumber)
-                .ToListAsync();
-
+            ViewBag.Student = student;
+            ViewBag.Registration = registration;
             ViewBag.Grade = grade;
             ViewBag.Logbooks = logbooks;
 
-            return View(registration);
+            return View();
         }
     }
 }
