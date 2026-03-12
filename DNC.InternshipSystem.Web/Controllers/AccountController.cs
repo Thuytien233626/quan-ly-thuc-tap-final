@@ -1,4 +1,4 @@
-﻿using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Entities;
 using DNC.InternshipSystem.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -57,10 +57,17 @@ namespace DNC.InternshipSystem.Web.Controllers
             }
 
             if (user == null || user.UserName == null)
-{
-    ModelState.AddModelError("", "Tên đăng nhập hoặc mật khẩu không đúng.");
-    return View(model);
-}
+            {
+                ModelState.AddModelError("", "Tên đăng nhập hoặc mật khẩu không đúng.");
+                return View(model);
+            }
+
+            // Kiem tra tai khoan co bi khoa khong
+            if (!user.IsActive)
+            {
+                ModelState.AddModelError("", "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+                return View(model);
+            }
 
             var result = await _signInManager.PasswordSignInAsync(
                 user.UserName,

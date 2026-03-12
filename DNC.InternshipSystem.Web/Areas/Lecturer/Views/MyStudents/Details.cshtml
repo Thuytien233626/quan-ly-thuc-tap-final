@@ -1,12 +1,34 @@
 @using DNC.InternshipSystem.Core.Entities
-@model Registration
+@using DNC.InternshipSystem.Core.Enums
 @{
     Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
     ViewData["Title"] = "Chi tiết sinh viên";
     
-    var student = Model.Student;
+    var student = ViewBag.Student as Student;
+    var registration = ViewBag.Registration as Registration;
     var grade = ViewBag.Grade as Grade;
     var logbooks = ViewBag.Logbooks as List<Logbook> ?? new List<Logbook>();
+    
+    // Trang thai
+    string statusText = "Chưa đăng ký";
+    string statusColor = "secondary";
+    if (registration != null)
+    {
+        statusText = registration.Status switch {
+            RegistrationStatus.Pending => "Chờ duyệt",
+            RegistrationStatus.Approved => "Đang thực tập",
+            RegistrationStatus.Rejected => "Từ chối",
+            RegistrationStatus.Completed => "Hoàn thành",
+            _ => "Không rõ"
+        };
+        statusColor = registration.Status switch {
+            RegistrationStatus.Pending => "warning",
+            RegistrationStatus.Approved => "success",
+            RegistrationStatus.Rejected => "danger",
+            RegistrationStatus.Completed => "info",
+            _ => "secondary"
+        };
+    }
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -33,109 +55,126 @@
                 
                 <div class="d-flex justify-content-center gap-2 mb-3">
                     <span class="badge bg-light text-dark border px-3 py-2">
-                        <i class="fa fa-door-open me-1"></i> @(student?.Class?.Name ?? "N/A")
+                        <i class="fa fa-door-open me-1"></i> @(student?.Class?.Name ?? student?.ClassId ?? "N/A")
                     </span>
-                    @{
-                        string statusText = Model.Status switch {
-                            0 => "Chờ duyệt",
-                            1 => "Đang thực tập",
-                            2 => "Từ chối",
-                            3 => "Hoàn thành",
-                            _ => "Không rõ"
-                        };
-                        string statusClass = Model.Status switch {
-                            0 => "warning",
-                            1 => "success",
-                            2 => "danger",
-                            3 => "info",
-                            _ => "secondary"
-                        };
-                    }
-                    <span class="badge bg-@statusClass bg-opacity-10 text-@statusClass border border-@statusClass border-opacity-25 px-3 py-2">
+                    <span class="badge bg-@statusColor bg-opacity-10 text-@statusColor border border-@statusColor border-opacity-25 px-3 py-2">
                         @statusText
                     </span>
+                </div>
+                
+                <!-- Thong tin lien he -->
+                <div class="text-start mt-3 pt-3 border-top">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Email:</span>
+                        <span class="small">@(student?.User?.Email ?? "N/A")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Ngành:</span>
+                        <span class="small">@(student?.Class?.Major?.Name ?? "N/A")</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Giới tính:</span>
+                        <span class="small">@(student?.Gender == Gender.Female ? "Nữ" : "Nam")</span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Diem tong hop -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="fw-bold mb-0"><i class="fa fa-chart-bar text-primary me-2"></i>Bảng điểm</h6>
+        @if (registration != null)
+        {
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0"><i class="fa fa-chart-bar text-primary me-2"></i>Bảng điểm</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted">Điểm doanh nghiệp (40%)</span>
+                            <span class="fw-bold">@(registration.CompanyScore?.ToString("F1") ?? "--")</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-info" style="width: @((registration.CompanyScore ?? 0) * 10)%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted">Điểm GVHD (60%)</span>
+                            <span class="fw-bold text-primary">@(grade?.InstructorScore?.ToString("F1") ?? "--")</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-primary" style="width: @((grade?.InstructorScore ?? 0) * 10)%"></div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-bold">Tổng kết</span>
+                        <span class="fw-bold text-success fs-5">@(registration.FinalScore?.ToString("F1") ?? "--")</span>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="small text-muted">Điểm doanh nghiệp</span>
-                        <span class="fw-bold">@(Model.CompanyScore?.ToString("F1") ?? "--")</span>
-                    </div>
-                    <div class="progress" style="height: 6px;">
-                        <div class="progress-bar bg-info" style="width: @((Model.CompanyScore ?? 0) * 10)%"></div>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="small text-muted">Điểm GVHD</span>
-                        <span class="fw-bold text-primary">@(grade?.InstructorScore?.ToString("F1") ?? "--")</span>
-                    </div>
-                    <div class="progress" style="height: 6px;">
-                        <div class="progress-bar bg-primary" style="width: @((grade?.InstructorScore ?? 0) * 10)%"></div>
-                    </div>
-                </div>
-                <
-                <hr>
-                <div class="d-flex justify-content-between">
-                    <span class="fw-bold">Tổng kết</span>
-                    <span class="fw-bold text-success fs-5">@(Model.FinalScore?.ToString("F1") ?? "--")</span>
-                </div>
-            </div>
-        </div>
+        }
     </div>
 
     <!-- Thong tin chi tiet -->
     <div class="col-lg-8">
         <!-- Thong tin thuc tap -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="fw-bold mb-0"><i class="fa fa-briefcase text-success me-2"></i>Thông tin thực tập</h6>
-            </div>
-            <div class="card-body p-4">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Doanh nghiệp</label>
-                        <div class="form-control bg-light border-0">
-                            <i class="fa fa-building text-muted me-2"></i> @(Model.Company?.Name ?? Model.ExternalCompanyName ?? "N/A")
+        @if (registration != null)
+        {
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0"><i class="fa fa-briefcase text-success me-2"></i>Thông tin thực tập</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Doanh nghiệp</label>
+                            <div class="form-control bg-light border-0">
+                                <i class="fa fa-building text-muted me-2"></i> @(registration.Company?.Name ?? registration.ExternalCompanyName ?? "N/A")
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Vị trí</label>
-                        <div class="form-control bg-light border-0">
-                            <i class="fa fa-user-tie text-muted me-2"></i> @(Model.Position ?? "N/A")
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Vị trí</label>
+                            <div class="form-control bg-light border-0">
+                                <i class="fa fa-user-tie text-muted me-2"></i> @(registration.Position ?? "N/A")
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Đợt thực tập</label>
-                        <div class="form-control bg-light border-0">
-                            <i class="fa fa-calendar text-muted me-2"></i> @(Model.Term?.TermName ?? "N/A")
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Đợt thực tập</label>
+                            <div class="form-control bg-light border-0">
+                                <i class="fa fa-calendar text-muted me-2"></i> @(registration.Term?.TermName ?? "N/A")
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Ngày đăng ký</label>
-                        <div class="form-control bg-light border-0">
-                            <i class="fa fa-clock text-muted me-2"></i> @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Ngày đăng ký</label>
+                            <div class="form-control bg-light border-0">
+                                <i class="fa fa-clock text-muted me-2"></i> @registration.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center py-5 text-muted">
+                    <i class="fa fa-file-signature fa-3x mb-3 opacity-25"></i>
+                    <p class="mb-0">Sinh viên chưa đăng ký thực tập.</p>
+                </div>
+            </div>
+        }
 
         <!-- Logbook Summary -->
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h6 class="fw-bold mb-0"><i class="fa fa-book-open text-warning me-2"></i>Nhật ký thực tập (@logbooks.Count tuần)</h6>
-                <a asp-controller="LogbookReview" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary">
-                    <i class="fa fa-eye me-1"></i> Xem & Duyệt
-                </a>
+                @if (registration != null)
+                {
+                    <a asp-controller="LogbookReview" asp-action="Details" asp-route-id="@registration.Id" class="btn btn-sm btn-outline-primary">
+                        <i class="fa fa-eye me-1"></i> Xem & Duyệt
+                    </a>
+                }
             </div>
             <div class="card-body p-0">
                 @if (logbooks.Any())
@@ -194,13 +233,16 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="d-flex gap-2 mt-4">
-            <a asp-controller="LogbookReview" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary">
-                <i class="fa fa-book-reader me-1"></i> Duyệt nhật ký
-            </a>
-            <a asp-controller="Grading" asp-action="Grade" asp-route-id="@Model.Id" class="btn btn-outline-success">
-                <i class="fa fa-pen me-1"></i> Chấm điểm
-            </a>
-        </div>
+        @if (registration != null)
+        {
+            <div class="d-flex gap-2 mt-4">
+                <a asp-controller="LogbookReview" asp-action="Details" asp-route-id="@registration.Id" class="btn btn-primary">
+                    <i class="fa fa-book-reader me-1"></i> Duyệt nhật ký
+                </a>
+                <a asp-controller="Grading" asp-action="Grade" asp-route-id="@registration.Id" class="btn btn-outline-success">
+                    <i class="fa fa-pen me-1"></i> Chấm điểm
+                </a>
+            </div>
+        }
     </div>
 </div>

@@ -6,282 +6,213 @@
     ViewData["Title"] = "Hồ sơ sinh viên";
 }
 
-<div class="container py-4">
+<div class="row g-4">
 
-    <div class="row g-4">
+    <!-- LEFT PROFILE -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center p-5">
 
-        <!-- LEFT PROFILE -->
-        <div class="col-lg-4">
-
-            <div class="card shadow border-0 profile-card">
-
-                <div class="card-body text-center">
-
-                    <!-- AVATAR -->
-                    <div class="avatar-wrapper mb-3">
-
-                        <img id="avatarPreview"
-                             src="@(string.IsNullOrEmpty(Model.ProfileImage) ? "/images/default-avatar.png" : Model.ProfileImage)"
-                             class="avatar-img">
-
-                    </div>
-
-                    <!-- UPLOAD -->
-                    @if (string.IsNullOrEmpty(Model.ProfileImage))
+                <!-- AVATAR -->
+                <div class="position-relative d-inline-block mb-4">
+                    @if (!string.IsNullOrEmpty(Model.ProfileImage))
                     {
-                        <form method="post"
-                              asp-action="UploadImage"
-                              enctype="multipart/form-data">
-
-                            <input type="file"
-                                   name="image"
-                                   id="avatarInput"
-                                   class="form-control mb-2"
-                                   accept="image/*"
-                                   onchange="previewImage(event)" />
-
-                            <button type="submit"
-                                    class="btn btn-primary w-100">
-
-                                📷 Upload Avatar
-
-                            </button>
-
-                        </form>
+                        <img src="@Model.ProfileImage" alt="Avatar"
+                             class="rounded-circle border border-3 border-info border-opacity-25 object-fit-cover"
+                             style="width: 100px; height: 100px;" />
                     }
+                    else
+                    {
+                        <div class="rounded-circle bg-info bg-opacity-10 text-info mx-auto d-flex align-items-center justify-content-center border border-3 border-info border-opacity-25"
+                             style="width: 100px; height: 100px;">
+                            <span class="fw-bold" style="font-size: 2rem;">
+                                @(Model.User?.FullName?.Split(' ').LastOrDefault()?.Substring(0, 1) ?? "S")
+                            </span>
+                        </div>
+                    }
+                    <label for="avatarInput" class="position-absolute bottom-0 end-0 bg-info text-white rounded-circle d-flex align-items-center justify-content-center shadow"
+                           style="width: 32px; height: 32px; cursor: pointer; border: 2px solid white;">
+                        <i class="fa fa-camera" style="font-size: 0.75rem;"></i>
+                    </label>
+                </div>
 
-                    <hr>
+                <form method="post" asp-action="UploadImage" enctype="multipart/form-data" id="avatarForm" style="display:none;">
+                    @Html.AntiForgeryToken()
+                    <input type="file" id="avatarInput" name="image" accept=".jpg,.jpeg,.png,.webp"
+                           onchange="document.getElementById('avatarForm').submit();" />
+                </form>
 
-                    <!-- NAME -->
-                    <h5 class="fw-bold mb-1">
-                        @(Model?.User?.FullName ?? "Sinh viên")
-                    </h5>
+                <h4 class="fw-bold mb-1">@(Model.User?.FullName ?? "Sinh viên")</h4>
+                <p class="text-muted mb-3">@(Model.Class?.Name ?? "Chưa phân lớp")</p>
 
-                    
-                    <p class="text-muted mb-1">
-                        Email: @Model.User.Email
-                    </p>
-
-                    <p class="text-muted mb-1">
-                        MSSV: @Model.StudentCode
-                    </p>
-
-
-                    <span class="badge bg-primary">
-                        Sinh viên thực tập
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+                        <i class="fa fa-id-badge me-1"></i> @(Model.StudentCode ?? "N/A")
                     </span>
-
+                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                        <i class="fa fa-circle" style="font-size: 6px;"></i> Sinh viên
+                    </span>
                 </div>
 
             </div>
-
         </div>
+    </div>
 
 
-        <!-- RIGHT INFO -->
-        <div class="col-lg-8">
+    <!-- RIGHT INFO -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fa fa-user-circle text-info me-2"></i>Thông tin cá nhân</h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
 
-            <div class="card shadow border-0">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Họ tên</label>
+                        <div class="form-control bg-light border-0 fw-semibold">@(Model.User?.FullName ?? "Chưa cập nhật")</div>
+                    </div>
 
-                <div class="card-header bg-primary text-white">
-
-                    <h5 class="mb-0">
-                        Thông tin cá nhân
-                    </h5>
-
-                </div>
-
-                <div class="card-body">
-
-                    <div class="row g-4">
-
-                        <!-- NAME -->
-                        <div class="col-md-6">
-
-                            <label class="form-label fw-semibold">
-                                Họ tên
-                            </label>
-
-                            <input class="form-control"
-                                   value="@(Model?.User?.FullName ?? "Chưa cập nhật")"
-                                   readonly>
-
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Email</label>
+                        <div class="form-control bg-light border-0">
+                            <i class="fa fa-envelope text-muted me-2"></i>@(Model.User?.Email ?? "Chưa cập nhật")
                         </div>
+                    </div>
 
-                        <!-- EMAIL -->
-                        <div class="col-md-6">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Mã sinh viên</label>
+                        <div class="form-control bg-light border-0 fw-semibold">@Model.StudentCode</div>
+                    </div>
 
-                            <label class="form-label fw-semibold">
-                                Email
-                            </label>
-
-                            <input class="form-control"
-                                   value="@(Model?.User?.Email ?? "Chưa cập nhật")"
-                                   readonly>
-
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Lớp</label>
+                        <div class="form-control bg-light border-0">
+                            <i class="fa fa-chalkboard text-muted me-2"></i>@(Model.Class?.Name ?? "Chưa phân lớp")
                         </div>
+                    </div>
 
-                        <!-- MSSV -->
-                        <div class="col-md-6">
-
-                            <label class="form-label fw-semibold">
-                                Mã sinh viên
-                            </label>
-
-                            <input class="form-control"
-                                   value="@Model.StudentCode"
-                                   readonly>
-
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Giới tính</label>
+                        <div class="form-control bg-light border-0">
+                            <i class="fa fa-venus-mars text-muted me-2"></i>@(Model.Gender == Gender.Male ? "Nam" : "Nữ")
                         </div>
+                    </div>
 
-                        <!-- CLASS -->
-                        <div class="col-md-6">
-
-                            <label class="form-label fw-semibold">
-                                Lớp
-                            </label>
-
-                            <input class="form-control"
-                                   value="@Model.Class?.Name"
-                                   readonly>
-
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Ngày sinh</label>
+                        <div class="form-control bg-light border-0">
+                            <i class="fa fa-calendar text-muted me-2"></i>@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "N/A")
                         </div>
+                    </div>
 
-                        <!-- GENDER -->
-                        <div class="col-md-6">
-
-                            <label class="form-label fw-semibold">
-                                Giới tính
-                            </label>
-
-                            <input class="form-control"
-                                   value="@(Model.Gender == Gender.Male ? "Nam" : "Nữ")"
-                                   readonly>
-
+                    <div class="col-md-12">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Số điện thoại</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="fa fa-phone text-muted"></i></span>
+                            <input type="text" class="form-control bg-light border-0" value="@Model.Phone" id="phone" placeholder="Nhập số điện thoại...">
+                            <button class="btn btn-info text-white" onclick="updatePhone()">
+                                <i class="fa fa-save me-1"></i> Lưu
+                            </button>
                         </div>
-
-                        <!-- DOB -->
-                        <div class="col-md-6">
-
-                            <label class="form-label fw-semibold">
-                                Ngày sinh
-                            </label>
-
-                            <input class="form-control"
-                                   value="@(Model.DateOfBirth?.ToString("dd/MM/yyyy"))"
-                                   readonly>
-
-                        </div>
-
-                        <!-- PHONE -->
-                        <div class="col-md-12">
-
-                            <label class="form-label fw-semibold">
-                                Số điện thoại
-                            </label>
-
-                            <div class="input-group">
-
-                                <input type="text"
-                                       class="form-control"
-                                       value="@Model.Phone"
-                                       id="phone">
-
-                                <button class="btn btn-success"
-                                        onclick="updatePhone()">
-
-                                    Lưu
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
                     </div>
 
                 </div>
-
             </div>
-
         </div>
 
+        <!-- DOI MAT KHAU -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fa fa-lock text-warning me-2"></i>Đổi mật khẩu</h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Mật khẩu hiện tại</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="fa fa-key text-muted"></i></span>
+                            <input type="password" class="form-control bg-light border-0" id="currentPassword" placeholder="Nhập mật khẩu hiện tại">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Mật khẩu mới</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="fa fa-lock text-muted"></i></span>
+                            <input type="password" class="form-control bg-light border-0" id="newPassword" placeholder="Nhập mật khẩu mới">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">Xác nhận mật khẩu mới</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="fa fa-lock text-muted"></i></span>
+                            <input type="password" class="form-control bg-light border-0" id="confirmPassword" placeholder="Nhập lại mật khẩu mới">
+                        </div>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-warning" onclick="changePassword()">
+                            <i class="fa fa-key me-1"></i> Đổi mật khẩu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>
 
-
-
 @section Scripts{
-
 <script>
-
-function previewImage(event){
-
-    const reader = new FileReader();
-
-    reader.onload = function(){
-
-        document.getElementById("avatarPreview").src = reader.result;
-
-    }
-
-    reader.readAsDataURL(event.target.files[0]);
-
-}
-
-
 function updatePhone(){
-
     const phone = document.getElementById("phone").value;
-
     fetch('/Student/Profile/UpdatePhone',{
         method:'POST',
-        headers:{
-            'Content-Type':'application/x-www-form-urlencoded'
-        },
+        headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
         body:'phone='+encodeURIComponent(phone)
     })
     .then(()=>{
-        alert("Cập nhật thành công");
-        location.reload();
+        Swal.fire({ icon:'success', title:'Thành công', text:'Cập nhật số điện thoại thành công!', timer:1500, showConfirmButton:false });
+        setTimeout(()=> location.reload(), 1500);
     })
-
 }
 
+function changePassword(){
+    const current = document.getElementById('currentPassword').value;
+    const newPw = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+
+    if (!current || !newPw || !confirm) {
+        Swal.fire({ icon:'warning', title:'Thiếu thông tin', text:'Vui lòng nhập đầy đủ các trường.' });
+        return;
+    }
+    if (newPw.length < 6) {
+        Swal.fire({ icon:'warning', title:'Mật khẩu quá ngắn', text:'Mật khẩu mới phải có ít nhất 6 ký tự.' });
+        return;
+    }
+    if (newPw !== confirm) {
+        Swal.fire({ icon:'error', title:'Không khớp', text:'Mật khẩu xác nhận không khớp.' });
+        return;
+    }
+
+    fetch('/Student/Profile/ChangePassword', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `currentPassword=${encodeURIComponent(current)}&newPassword=${encodeURIComponent(newPw)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({ icon:'success', title:'Thành công', text: data.message, timer:2000, showConfirmButton:false });
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        } else {
+            Swal.fire({ icon:'error', title:'Lỗi', text: data.message });
+        }
+    })
+    .catch(() => {
+        Swal.fire({ icon:'error', title:'Lỗi', text:'Không thể kết nối đến server.' });
+    });
+}
 </script>
-
-
-<style>
-
-.profile-card{
-padding-top:20px;
-}
-
-.avatar-wrapper{
-display:flex;
-justify-content:center;
-}
-
-.avatar-img{
-width:150px;
-height:150px;
-border-radius:50%;
-object-fit:cover;
-border:5px solid #f1f1f1;
-box-shadow:0 5px 20px rgba(0,0,0,0.15);
-}
-
-.card{
-border-radius:12px;
-transition:all .3s;
-}
-
-.card:hover{
-transform:translateY(-4px);
-box-shadow:0 20px 40px rgba(0,0,0,0.12);
-}
-
-</style>
-
 }

@@ -167,9 +167,19 @@
     </div>
 </div>
 
+@Html.AntiForgeryToken()
+
 @section Scripts {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Token chong gia mao CSRF - tu dong gui kem moi request POST
+    const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+    
+    // Ham tien ich: gui POST co CSRF token
+    async function postWithToken(url, formData) {
+        if (csrfToken) formData.append('__RequestVerificationToken', csrfToken);
+        return fetch(url, { method: 'POST', body: formData });
+    }
     
     // ========== HO TRO: Thong bao Toast ==========
     const Toast = Swal.mixin({
@@ -210,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const result = await Swal.fire({
             title: '<i class="fa fa-exclamation-triangle text-danger me-2"></i>Xác nhận xóa?',
-            html: `Bạn có chắc chắn muốn xóa <strong>TẤT CẢ ${count} sinh viên</strong> trong lớp <strong>${classId}</strong>?<br><br><small class="text-danger">⚠️ Hành động này không thể hoàn tác! Tài khoản sinh viên cũng sẽ bị xóa.</small>`,
+            html: `Bạn có chắc chắn muốn xóa <strong>TẤT CẢ ${count} sinh viên</strong> trong lớp <strong>${classId}</strong>?<br><br><small class="text-danger"><i class="fa fa-exclamation-triangle"></i> Hành động này không thể hoàn tác! Tài khoản sinh viên cũng sẽ bị xóa.</small>`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
@@ -232,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const fd = new FormData();
             fd.append('classId', classId);
             
-            const res = await fetch('/Admin/Students/DeleteAllStudentsInClassAjax', { method: 'POST', body: fd });
+            const res = await postWithToken('/Admin/Students/DeleteAllStudentsInClassAjax', fd);
             const data = await res.json();
             
             if (data.success) {
@@ -344,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fd.append('classId', classId);
                 if(selectedLecturerId) fd.append('lecturerId', selectedLecturerId);
                 
-                const assignRes = await fetch('/Admin/Students/AssignLecturerAjax', { method: 'POST', body: fd });
+                const assignRes = await postWithToken('/Admin/Students/AssignLecturerAjax', fd);
                 const assignData = await assignRes.json();
                 
                 if (assignData.success) {
@@ -412,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fd.append('classId', formValues.classId);
                 fd.append('className', formValues.className);
                 
-                const res = await fetch('/Admin/Students/CreateClassAjax', { method: 'POST', body: fd });
+                const res = await postWithToken('/Admin/Students/CreateClassAjax', fd);
                 const data = await res.json();
                 
                 if (data.success) {
@@ -464,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fd.append('classId', classId);
                 fd.append('name', newName);
                 
-                const res = await fetch('/Admin/Students/EditClassAjax', { method: 'POST', body: fd });
+                const res = await postWithToken('/Admin/Students/EditClassAjax', fd);
                 const data = await res.json();
                 
                 if (data.success) {
@@ -509,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fd = new FormData();
                 fd.append('classId', classId);
                 
-                const res = await fetch('/Admin/Students/DeleteClassAjax', { method: 'POST', body: fd });
+                const res = await postWithToken('/Admin/Students/DeleteClassAjax', fd);
                 const data = await res.json();
                 
                 if (data.success) {
@@ -567,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fd.append('code', formValues.code);
                 fd.append('name', formValues.name);
                 
-                const res = await fetch('/Admin/Students/CreateMajorAjax', { method: 'POST', body: fd });
+                const res = await postWithToken('/Admin/Students/CreateMajorAjax', fd);
                 const data = await res.json();
                 
                 if (data.success) {
@@ -612,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fd = new FormData();
         fd.append('excelFile', file);
         
-        const previewRes = await fetch('/Admin/Students/ImportPreviewAjax', { method: 'POST', body: fd });
+        const previewRes = await postWithToken('/Admin/Students/ImportPreviewAjax', fd);
         const previewHtml = await previewRes.text();
         
         const previewResult = await Swal.fire({
@@ -640,7 +650,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const confirmFd = new FormData();
         confirmFd.append('tempFilePath', tempFilePath);
         
-        const resultRes = await fetch('/Admin/Students/ConfirmImportAjax', { method: 'POST', body: confirmFd });
+        const resultRes = await postWithToken('/Admin/Students/ConfirmImportAjax', confirmFd);
         const resultHtml = await resultRes.text();
         
         await Swal.fire({

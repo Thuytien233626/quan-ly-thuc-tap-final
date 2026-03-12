@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
 using DNC.InternshipSystem.Infrastructure.Data;
 
 namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
@@ -25,7 +26,6 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
 
-            // 1. Tim giang vien hien tai
             var lecturer = await _context.Lecturers
                 .Include(l => l.User)
                 .FirstOrDefaultAsync(l => l.UserId == user.Id);
@@ -36,39 +36,52 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
                 return View();
             }
 
-            // 2. Lay cac thong ke cho Dashboard
-            // a. So luong sinh vien dang huong dan (Registration co LecturerId = lecturer.UserId va Status = 1 (Da duyet))
-            var assignedStudentsCount = await _context.Registrations
-                .CountAsync(r => r.LecturerId == lecturer.UserId && r.Status == 1);
+            // 1. Lay danh sach lop GV phu trach
+            var myClasses = await _context.Classes
+                .Where(c => c.LecturerId == lecturer.UserId && c.IsActive)
+                .Include(c => c.Students)
+                .Include(c => c.Major)
+                .ToListAsync();
 
-            // b. So luong logbook cho duyet (Logbook thuoc Registration cua GV nay, chua co Comment)
-            // Luu y: Logbook linked to Registration, Registration linked to Lecturer
+            var classIds = myClasses.Select(c => c.Id).ToList();
+
+            // 2. Tong so sinh vien trong cac lop phu trach
+            var totalStudents = myClasses.Sum(c => c.Students?.Count ?? 0);
+
+            // 3. So sinh vien da dang ky thuc tap (co Registration)
+            var registeredStudentsCount = await _context.Registrations
+                .Include(r => r.Student)
+                .CountAsync(r => r.Student != null && classIds.Contains(r.Student.ClassId!));
+
+            // 4. So luong logbook cho duyet
             var pendingLogbooksCount = await _context.Logbooks
-                .Include(l => l.Registration)
-                .CountAsync(l => l.Registration!.LecturerId == lecturer.UserId 
-                              && string.IsNullOrEmpty(l.LecturerComment));
+                .Include(l => l.Registration).ThenInclude(r => r!.Student)
+                .CountAsync(l => string.IsNullOrEmpty(l.LecturerComment) &&
+                    l.Registration!.Student != null && classIds.Contains(l.Registration.Student.ClassId!));
 
-            // c. So luong sinh vien da cham diem (Co Grade record)
+            // 5. So luong sinh vien da cham diem
             var gradedStudentsCount = await _context.Grades
-                .Include(g => g.Registration)
-                .CountAsync(g => g.Registration!.LecturerId == lecturer.UserId 
-                              && (g.InstructorScore.HasValue || g.FinalScore.HasValue));
+                .Include(g => g.Registration).ThenInclude(r => r!.Student)
+                .CountAsync(g => (g.InstructorScore.HasValue || g.FinalScore.HasValue) &&
+                    g.Registration!.Student != null && classIds.Contains(g.Registration.Student.ClassId!));
 
-            // d. Lay danh sach sinh vien moi nhat (top 5)
-            var recentStudents = await _context.Registrations
+            // 6. Lay SV moi dang ky gan day (top 5)
+            var recentRegistrations = await _context.Registrations
                 .Include(r => r.Student).ThenInclude(s => s!.User)
                 .Include(r => r.Student).ThenInclude(s => s!.Class)
                 .Include(r => r.Company)
-                .Where(r => r.LecturerId == lecturer.UserId && r.Status == 1)
-                .OrderByDescending(r => r.UpdatedDate) // Hien thi nhung nguoi moi dc update trang thai
+                .Where(r => r.Student != null && classIds.Contains(r.Student.ClassId!))
+                .OrderByDescending(r => r.CreatedDate)
                 .Take(5)
                 .ToListAsync();
 
             ViewBag.Lecturer = lecturer;
-            ViewBag.AssignedStudentsCount = assignedStudentsCount;
+            ViewBag.MyClasses = myClasses;
+            ViewBag.TotalStudents = totalStudents;
+            ViewBag.RegisteredStudentsCount = registeredStudentsCount;
             ViewBag.PendingLogbooksCount = pendingLogbooksCount;
             ViewBag.GradedStudentsCount = gradedStudentsCount;
-            ViewBag.RecentStudents = recentStudents;
+            ViewBag.RecentRegistrations = recentRegistrations;
 
             return View();
         }

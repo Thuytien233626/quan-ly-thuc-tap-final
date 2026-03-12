@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
+using DNC.InternshipSystem.Core.Interfaces;
 using DNC.InternshipSystem.Infrastructure.Data;
-using DNC.InternshipSystem.Web.Services;
 
 namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
 {
@@ -12,65 +13,69 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
     [Authorize(Roles = "Student")]
     public class LogbookController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly ILogbookService _logbookService;
         private readonly UserManager<AppUser> _userManager;
-        private readonly AIMentorService _aiService;
-        private readonly ILogger<LogbookController> _logger;
+        private readonly AppDbContext _context;
 
-        public LogbookController(AppDbContext context, UserManager<AppUser> userManager, AIMentorService aiService, ILogger<LogbookController> logger)
+        public LogbookController(
+            ILogbookService logbookService,
+            UserManager<AppUser> userManager,
+            AppDbContext context)
         {
-            _context = context;
+            _logbookService = logbookService;
             _userManager = userManager;
-            _aiService = aiService;
-            _logger = logger;
+            _context = context;
         }
 
-        // GET: /Student/Logbook
+        // GET: /Student/Logbook — Trang tong quan nhat ky thuc tap
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
 
-            // Tim registration cua sinh vien (moi nhat, da duyet)
-            var registration = await _context.Registrations
-                .Include(r => r.Term)
-                .Where(r => r.StudentId == user.Id)
-                .OrderByDescending(r => r.CreatedDate)
-                .FirstOrDefaultAsync();
+            // Lay don dang ky moi nhat cua sinh vien
+            var registration = await _logbookService.GetActiveRegistration(user.Id);
 
             if (registration != null)
             {
-                // Lay danh sach logbook
-                var logbooks = await _context.Logbooks
-                    .Where(l => l.RegistrationId == registration.Id)
-                    .OrderBy(l => l.WeekNumber)
-                    .ToListAsync();
-                
+                bool isApproved = registration.Status == RegistrationStatus.Approved;
+                ViewBag.IsApproved = isApproved;
+                ViewBag.RegistrationStatus = registration.Status;
 
-                int totalWeeks = registration.Term?.DurationInWeeks ?? 0;
-                int submittedWeeks = logbooks.Count;
-                var currentWeek = 0;
+                if (isApproved)
+                {
+                    var logbooks = await _logbookService.GetLogbooks(registration.Id);
+                    int totalWeeks = registration.Term?.DurationInWeeks ?? 0;
+                    int submittedWeeks = logbooks.Count;
 
-if (registration != null && registration.Term != null)
-{
-    var start = registration.Term.InternshipStart;
+                    int currentWeek = 0;
+                    if (registration.Term != null)
+                    {
+                        var start = registration.Term.InternshipStart;
+                        var diffDays = (DateTime.UtcNow - start).Days;
+                        if (diffDays >= 0)
+                            currentWeek = diffDays / 7 + 1;
+                    }
 
-    var diffDays = (DateTime.Now - start).Days;
+                    ViewBag.CurrentWeek = currentWeek;
+                    ViewBag.Registration = registration;
+                    ViewBag.Logbooks = logbooks;
+                    ViewBag.TotalWeeks = totalWeeks;
+                    ViewBag.SubmittedWeeks = submittedWeeks;
+                }
+                else
+                {
+                    ViewBag.Logbooks = new List<Logbook>();
+                    ViewBag.TotalWeeks = 0;
+                    ViewBag.SubmittedWeeks = 0;
+                }
 
-    if (diffDays >= 0)
-        currentWeek = diffDays / 7 + 1;
-}
-
-ViewBag.CurrentWeek = currentWeek;
-                ViewBag.Registration = registration;
-                ViewBag.Logbooks = logbooks;
-                ViewBag.TotalWeeks = totalWeeks;
-                ViewBag.SubmittedWeeks = submittedWeeks;
                 ViewBag.HasRegistration = true;
             }
             else
             {
                 ViewBag.HasRegistration = false;
+                ViewBag.IsApproved = false;
                 ViewBag.Logbooks = new List<Logbook>();
                 ViewBag.TotalWeeks = 0;
                 ViewBag.SubmittedWeeks = 0;
@@ -78,65 +83,24 @@ ViewBag.CurrentWeek = currentWeek;
 
             return View();
         }
+
+        // POST: /Student/Logbook/CreateLogbook — Tao nhat ky tuan moi
         [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> CreateLogbook(int WeekNumber, DateTime StartDate, DateTime EndDate, string Content)
-{
-    var user = await _userManager.GetUserAsync(User);
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateLogbook(int WeekNumber, DateTime StartDate, DateTime EndDate, string Content)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return RedirectToAction("Login", "Account", new { area = "" });
 
-    if (user == null)
-        return RedirectToAction("Login", "Account", new { area = "" });
+            var result = await _logbookService.CreateLogbook(user.Id, WeekNumber, StartDate, EndDate, Content);
 
-    var registration = await _context.Registrations
-        .Where(r => r.StudentId == user.Id)
-        .OrderByDescending(r => r.CreatedDate)
-        .FirstOrDefaultAsync();
+            if (result.Success)
+                TempData["Success"] = result.Message;
+            else
+                TempData["Error"] = result.Message;
 
-    if (registration == null)
-        return RedirectToAction("Index");
-
-    // kiểm tra tuần đã tồn tại chưa
-    var existed = await _context.Logbooks
-        .AnyAsync(l => l.RegistrationId == registration.Id && l.WeekNumber == WeekNumber);
-
-    if (existed)
-    {
-        TempData["Error"] = "Tuần này đã có nhật ký.";
-        return RedirectToAction("Index");
-    }
-
-    var logbook = new Logbook
-    {
-        RegistrationId = registration.Id,
-        WeekNumber = WeekNumber,
-        StartDate = StartDate,
-        EndDate = EndDate,
-        Content = Content,
-        SubmittedDate = DateTime.Now
-    };
-
-    _context.Logbooks.Add(logbook);
-
-    await _context.SaveChangesAsync();
-
-    // Try to analyze with AI (non-blocking)
-    try
-    {
-        var aiResult = await _aiService.AnalyzeLogbook(logbook.Content);
-        logbook.AISummary = aiResult;
-        await _context.SaveChangesAsync();
-    }
-    catch (Exception ex)
-    {
-        // Log error but don't fail the logbook creation
-        _logger.LogError(ex, "Failed to analyze logbook with AI");
-        logbook.AISummary = "AI Mentor: Phân tích không khả dụng lúc này.";
-        await _context.SaveChangesAsync();
-    }
-
-    TempData["Success"] = "Lưu nhật ký thành công!";
-
-    return RedirectToAction("Index");
-}
+            return RedirectToAction("Index");
+        }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
 using DNC.InternshipSystem.Infrastructure.Data;
 
 namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
@@ -38,16 +39,29 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
 
             if (lecturer != null)
             {
-                assignedStudents = await _context.Registrations
-                    .CountAsync(r => r.LecturerId == lecturer.UserId && r.Status == 1);
+                // Lay danh sach lop GV phu trach
+                var classIds = await _context.Classes
+                    .Where(c => c.LecturerId == lecturer.UserId)
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                // Tong SV trong cac lop phu trach
+                assignedStudents = await _context.Students
+                    .CountAsync(s => classIds.Contains(s.ClassId));
+
+                // Lay registration IDs (approved) de query logbook/grade
+                var regIds = await _context.Registrations
+                    .Include(r => r.Student)
+                    .Where(r => r.Status == RegistrationStatus.Approved &&
+                        (r.LecturerId == lecturer.UserId || classIds.Contains(r.Student!.ClassId)))
+                    .Select(r => r.Id)
+                    .ToListAsync();
 
                 totalLogbooks = await _context.Logbooks
-                    .Include(l => l.Registration)
-                    .CountAsync(l => l.Registration!.LecturerId == lecturer.UserId);
+                    .CountAsync(l => regIds.Contains(l.RegistrationId));
 
                 gradedStudents = await _context.Grades
-                    .Include(g => g.Registration)
-                    .CountAsync(g => g.Registration!.LecturerId == lecturer.UserId && g.InstructorScore.HasValue);
+                    .CountAsync(g => g.InstructorScore.HasValue && regIds.Contains(g.RegistrationId));
             }
 
             ViewBag.Lecturer = lecturer;
@@ -56,6 +70,60 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             ViewBag.GradedStudents = gradedStudents;
 
             return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadAvatar(IFormFile avatar)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            if (avatar == null || avatar.Length == 0)
+            {
+                TempData["Error"] = "Vui lòng chọn ảnh.";
+                return RedirectToAction("Index");
+            }
+
+            if (avatar.Length > 2 * 1024 * 1024)
+            {
+                TempData["Error"] = "Ảnh không được vượt quá 2MB.";
+                return RedirectToAction("Index");
+            }
+
+            var allowedTypes = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var ext = Path.GetExtension(avatar.FileName).ToLower();
+            if (!allowedTypes.Contains(ext))
+            {
+                TempData["Error"] = "Chỉ hỗ trợ ảnh JPG, PNG, WEBP.";
+                return RedirectToAction("Index");
+            }
+
+            var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
+            if (!Directory.Exists(uploadDir))
+                Directory.CreateDirectory(uploadDir);
+
+            // Xoa avatar cu neu co
+            if (!string.IsNullOrEmpty(user.AvatarUrl))
+            {
+                var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", user.AvatarUrl.TrimStart('/'));
+                if (System.IO.File.Exists(oldPath))
+                    System.IO.File.Delete(oldPath);
+            }
+
+            var fileName = $"avatar_{user.Id}{ext}";
+            var filePath = Path.Combine(uploadDir, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await avatar.CopyToAsync(stream);
+            }
+
+            user.AvatarUrl = $"/uploads/avatars/{fileName}";
+            await _userManager.UpdateAsync(user);
+
+            TempData["Success"] = "Cập nhật ảnh đại diện thành công!";
+            return RedirectToAction("Index");
         }
     }
 }

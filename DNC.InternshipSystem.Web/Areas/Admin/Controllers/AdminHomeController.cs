@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using DNC.InternshipSystem.Core.Enums;
 using DNC.InternshipSystem.Web.Areas.Admin.Models;
 
 namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
@@ -26,22 +27,22 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
 
             // SV dang thuc tap (co Registration approved & co GVHD)
             var activeStudents = await _context.Registrations
-                .CountAsync(r => r.Status == 1 && r.LecturerId != null);
+                .CountAsync(r => r.Status == RegistrationStatus.Approved && r.LecturerId != null);
             
             // GV dang huong dan (distinct lecturers assigned)
             var activeLecturers = await _context.Registrations
-                .Where(r => r.Status == 1 && r.LecturerId != null)
+                .Where(r => r.Status == RegistrationStatus.Approved && r.LecturerId != null)
                 .Select(r => r.LecturerId)
                 .Distinct()
                 .CountAsync();
             
             // Don cho duyet
             var pendingRegistrations = await _context.Registrations
-                .CountAsync(r => r.Status == 0);
+                .CountAsync(r => r.Status == RegistrationStatus.Pending);
 
             // Thong ke diem so
             var gradedRegistrations = await _context.Registrations
-                .Where(r => r.Status == 1 && r.LecturerId != null)
+                .Where(r => r.Status == RegistrationStatus.Approved && r.LecturerId != null)
                 .Select(r => r.FinalScore)
                 .ToListAsync();
 
@@ -75,7 +76,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                     CompanyName = r.Company != null ? r.Company.Name : (r.ExternalCompanyName ?? ""),
                     MajorName = r.Student.Class != null && r.Student.Class.Major != null ? r.Student.Class.Major.Name : "",
                     CreatedDate = r.CreatedDate,
-                    Status = r.Status
+                    Status = (int)r.Status
                 })
                 .ToListAsync();
 

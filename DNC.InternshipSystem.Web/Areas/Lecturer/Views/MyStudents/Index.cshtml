@@ -1,156 +1,159 @@
-@model IEnumerable<DNC.InternshipSystem.Core.Entities.Registration>
+@using DNC.InternshipSystem.Core.Entities
 @{
     Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
     ViewData["Title"] = "Danh sách sinh viên";
-    
-    int currentPage = ViewBag.CurrentPage;
-    int totalPages = ViewBag.TotalPages;
-    string search = ViewBag.Search;
+
+    var myClasses = ViewBag.MyClasses as List<Class> ?? new List<Class>();
+    var studentCounts = ViewBag.StudentCounts as Dictionary<string, int> ?? new Dictionary<string, int>();
+    int totalStudents = studentCounts.Values.Sum();
 }
 
-<!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-1">Sinh viên hướng dẫn</h4>
-        <p class="text-muted mb-0 small">Danh sách sinh viên thực tập do bạn phụ trách.</p>
+        <p class="text-muted mb-0 small">Chọn lớp để xem danh sách sinh viên.</p>
     </div>
+    <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 px-3 py-2 fs-6">
+        @totalStudents sinh viên
+    </span>
 </div>
 
-<!-- Search & Filter -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-6">
-                <div class="input-group">
+@if (!myClasses.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="fa fa-chalkboard fa-3x mb-3 opacity-25"></i>
+            <h5 class="mb-2">Chưa được phân công lớp nào</h5>
+            <p class="mb-0 small">Vui lòng liên hệ admin để được phân công lớp hướng dẫn.</p>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Lop phu trach -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <span class="text-muted me-2">
+                    <i class="fa fa-chalkboard me-1"></i> Lớp phụ trách:
+                </span>
+                @foreach (var cls in myClasses)
+                {
+                    var count = studentCounts.ContainsKey(cls.Id) ? studentCounts[cls.Id] : 0;
+                    <button class="btn btn-outline-info btn-sm class-tab px-3 py-1 rounded-pill fw-semibold"
+                            data-class-id="@cls.Id" data-class-name="@cls.Name"
+                            onclick="loadClassStudents('@cls.Id', '@cls.Name', @count)">
+                        @cls.Id
+                        <span class="badge bg-info text-white ms-1">@count SV</span>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Placeholder khi chua chon lop -->
+    <div id="noClassSelected" class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="fa fa-hand-pointer fa-3x mb-3 opacity-25"></i>
+            <h5 class="mb-2">Chọn một lớp để xem danh sách</h5>
+            <p class="mb-0 small">Bấm vào tên lớp phía trên để hiển thị sinh viên trong lớp đó.</p>
+        </div>
+    </div>
+
+    <!-- Danh sach sinh vien (AJAX load) -->
+    <div id="studentListContainer" class="card border-0 shadow-sm" style="display:none;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0">
+                <i class="fa fa-users text-primary me-2"></i>
+                <span id="selectedClassName">—</span>
+                <span id="selectedClassCount" class="badge bg-light text-dark border ms-2"></span>
+            </h6>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="input-group input-group-sm" style="width: 260px;">
                     <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted"></i></span>
-                    <input type="text" name="search" class="form-control border-start-0 ps-0" 
-                           placeholder="Tìm theo tên hoặc MSSV..." value="@search">
+                    <input type="text" id="searchInput" class="form-control border-start-0"
+                           placeholder="Tìm theo tên hoặc MSSV..." oninput="filterStudents()">
                 </div>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
-            </div>
-            @if (!string.IsNullOrEmpty(search))
-            {
-                <div class="col-md-2">
-                    <a asp-action="Index" class="btn btn-outline-secondary w-100">Xóa lọc</a>
-                </div>
-            }
-        </form>
+        </div>
+        <div id="studentListBody" class="card-body p-0">
+            <!-- AJAX content loaded here -->
+        </div>
     </div>
-</div>
+}
 
-<!-- Student List -->
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4">Sinh viên</th>
-                        <th>Lớp</th>
-                        <th>Đơn vị thực tập</th>
-                        <th>Vị trí</th>
-                        <th class="text-center">Trạng thái</th>
-                        <th class="text-center">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
-                                             style="width: 40px; height: 40px;">
-                                            <span class="fw-bold">
-                                                @(item.Student?.User?.FullName?.Substring(0, 1) ?? "S")
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold text-dark">@item.Student?.User?.FullName</div>
-                                            <small class="text-muted">@item.Student?.StudentCode</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-light text-dark border">@item.Student?.Class?.Name</span></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-building text-muted me-2"></i>
-                                        <span class="text-truncate" style="max-width: 200px;" title="@(item.Company?.Name ?? item.ExternalCompanyName)">
-                                            @(item.Company?.Name ?? item.ExternalCompanyName ?? "N/A")
-                                        </span>
-                                    </div>
-                                </td>
-                                <td><small class="text-muted">@item.Position</small></td>
-                                <td class="text-center">
-                                    <span class="badge bg-success-subtle text-success">Đang thực tập</span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-light border" type="button" data-bs-toggle="dropdown">
-                                            <i class="fa fa-ellipsis-v text-muted"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="MyStudents" asp-action="Details" asp-route-id="@item.StudentId">
-                                                    <i class="fa fa-eye text-primary me-2"></i> Xem hồ sơ
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="LogbookReview" asp-action="Details" asp-route-id="@item.Id">
-                                                    <i class="fa fa-book-reader text-warning me-2"></i> Xem nhật ký
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item" asp-controller="Grading" asp-action="Grade" asp-route-id="@item.Id">
-                                                    <i class="fa fa-clipboard-check text-success me-2"></i> Chấm điểm
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
-                                <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-state-2130362-1800926.png" 
-                                     alt="Empty" style="width: 120px; opacity: 0.5;" class="mb-3">
-                                <p class="mb-0">Không tìm thấy sinh viên nào.</p>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    <!-- Pagination -->
-    @if (totalPages > 1)
-    {
-        <div class="card-footer bg-white py-3">
-            <nav aria-label="Page navigation">
-                <ul class="pagination pagination-sm justify-content-center mb-0">
-                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)" asp-route-search="@search">Trước</a>
-                    </li>
-                    @for (int i = 1; i <= totalPages; i++)
-                    {
-                        <li class="page-item @(currentPage == i ? "active" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-search="@search">@i</a>
-                        </li>
-                    }
-                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-search="@search">Sau</a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
+@section Scripts {
+<script>
+    let currentClassId = null;
+    let currentClassName = null;
+    let currentCount = 0;
+
+    async function loadClassStudents(classId, className, count, page) {
+        page = page || 1;
+
+        // Highlight active tab
+        document.querySelectorAll('.class-tab').forEach(t => {
+            t.classList.remove('btn-info', 'text-white');
+            t.classList.add('btn-outline-info');
+        });
+        const activeBtn = document.querySelector(`.class-tab[data-class-id="${classId}"]`);
+        if (activeBtn) {
+            activeBtn.classList.remove('btn-outline-info');
+            activeBtn.classList.add('btn-info', 'text-white');
+        }
+
+        currentClassId = classId;
+        currentClassName = className;
+        currentCount = count;
+
+        // Update header
+        document.getElementById('selectedClassName').textContent = 'Lớp ' + classId;
+        document.getElementById('selectedClassCount').textContent = count + ' sinh viên';
+        document.getElementById('searchInput').value = '';
+
+        // Show container, hide placeholder
+        document.getElementById('noClassSelected').style.display = 'none';
+        document.getElementById('studentListContainer').style.display = 'block';
+
+        // Loading state
+        document.getElementById('studentListBody').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted mt-2 small">Đang tải danh sách...</p>
+            </div>`;
+
+        try {
+            const res = await fetch(`/Lecturer/MyStudents/GetStudentsByClass?classId=${encodeURIComponent(classId)}&page=${page}`);
+            if (res.ok) {
+                document.getElementById('studentListBody').innerHTML = await res.text();
+            } else {
+                document.getElementById('studentListBody').innerHTML = `
+                    <div class="text-center py-5 text-danger">
+                        <i class="fa fa-exclamation-circle fa-2x mb-2"></i>
+                        <p>Không thể tải danh sách sinh viên.</p>
+                    </div>`;
+            }
+        } catch (e) {
+            document.getElementById('studentListBody').innerHTML = `
+                <div class="text-center py-5 text-danger">
+                    <i class="fa fa-exclamation-circle fa-2x mb-2"></i>
+                    <p>Lỗi kết nối: ${e.message}</p>
+                </div>`;
+        }
     }
-</div>
+
+    function goToPage(page) {
+        if (currentClassId) {
+            loadClassStudents(currentClassId, currentClassName, currentCount, page);
+        }
+    }
+
+    function filterStudents() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('#studentListBody tbody tr').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(q) ? '' : 'none';
+        });
+    }
+</script>
+}

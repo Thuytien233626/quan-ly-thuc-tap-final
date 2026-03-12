@@ -1,4 +1,5 @@
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
 using DNC.InternshipSystem.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -49,12 +50,13 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
             // Thong ke so luong
             ViewBag.PartnerCount = await _context.Companies.CountAsync(c => !c.IsExternal);
             ViewBag.ExternalCount = await _context.Companies.CountAsync(c => c.IsExternal);
-            ViewBag.PendingCount = await _context.Companies.CountAsync(c => c.IsExternal && c.Status == 0);
+            ViewBag.PendingCount = await _context.Companies.CountAsync(c => c.IsExternal && c.Status == CompanyStatus.WaitingApproval);
             
             return View(companies);
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateAjax(string name, string address, string province, string? phone, string? email, string? contactPerson, bool isExternal = false)
         {
             try
@@ -68,7 +70,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                     ContactEmail = email,
                     ContactPerson = contactPerson,
                     IsExternal = isExternal,
-                    Status = 1 // Da xac nhan boi Admin
+                    Status = CompanyStatus.Approved
                 };
                 _context.Companies.Add(company);
                 await _context.SaveChangesAsync();
@@ -81,6 +83,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateAjax(int id, string name, string address, string province, string? phone, string? email, string? contactPerson)
         {
             try
@@ -105,6 +108,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveAjax(int id)
         {
             try
@@ -112,7 +116,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                 var company = await _context.Companies.FindAsync(id);
                 if (company == null) return Json(new { success = false, message = "Không tìm thấy doanh nghiệp!" });
 
-                company.Status = 1; // Duyet
+                company.Status = CompanyStatus.Approved; // Duyet
                 await _context.SaveChangesAsync();
                 return Json(new { success = true });
             }
@@ -123,6 +127,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAjax(int id)
         {
             try

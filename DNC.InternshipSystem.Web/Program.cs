@@ -13,9 +13,14 @@ OfficeOpenXml.ExcelPackage.License.SetNonCommercialPersonal("DNC-IMS");
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<DNC.InternshipSystem.Infrastructure.Data.AppDbContext>(options =>
     options.UseSqlServer(connectionString, sqlOptions => sqlOptions.UseCompatibilityLevel(120)));
-// Dang ky AIMentorService de su dung trong LogbookController
+// Dang ky cac dich vu nghiep vu (Service Layer)
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<AIMentorService>();
+builder.Services.AddScoped<DNC.InternshipSystem.Core.Interfaces.IRegistrationService, DNC.InternshipSystem.Web.Services.RegistrationService>();
+builder.Services.AddScoped<DNC.InternshipSystem.Core.Interfaces.IGradingService, DNC.InternshipSystem.Web.Services.GradingService>();
+builder.Services.AddScoped<DNC.InternshipSystem.Core.Interfaces.ILogbookService, DNC.InternshipSystem.Web.Services.LogbookService>();
+builder.Services.AddScoped<DNC.InternshipSystem.Core.Interfaces.IAllocationService, DNC.InternshipSystem.Web.Services.AllocationService>();
+builder.Services.AddScoped<DNC.InternshipSystem.Core.Interfaces.ICompanyService, DNC.InternshipSystem.Web.Services.CompanyService>();
 // Them Identity
 builder.Services.AddIdentity<DNC.InternshipSystem.Core.Entities.AppUser, Microsoft.AspNetCore.Identity.IdentityRole<Guid>>()
     .AddEntityFrameworkStores<DNC.InternshipSystem.Infrastructure.Data.AppDbContext>()

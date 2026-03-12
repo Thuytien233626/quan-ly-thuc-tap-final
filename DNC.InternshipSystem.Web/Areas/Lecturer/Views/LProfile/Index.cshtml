@@ -16,10 +16,33 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center p-5">
                 <!-- Avatar -->
-                <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto d-flex align-items-center justify-content-center mb-4 border border-3 border-primary border-opacity-25" 
-                     style="width: 100px; height: 100px;">
-                    <i class="fa fa-chalkboard-teacher fa-2x"></i>
+                <div class="position-relative d-inline-block mb-4">
+                    @if (!string.IsNullOrEmpty(user?.AvatarUrl))
+                    {
+                        <img src="@user.AvatarUrl" alt="Avatar" 
+                             class="rounded-circle border border-3 border-primary border-opacity-25 object-fit-cover"
+                             style="width: 100px; height: 100px;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto d-flex align-items-center justify-content-center border border-3 border-primary border-opacity-25" 
+                             style="width: 100px; height: 100px;">
+                            <span class="fw-bold" style="font-size: 2rem;">
+                                @(user?.FullName?.Split(' ').LastOrDefault()?.Substring(0, 1) ?? "G")
+                            </span>
+                        </div>
+                    }
+                    <label for="avatarInput" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow"
+                           style="width: 32px; height: 32px; cursor: pointer; border: 2px solid white;">
+                        <i class="fa fa-camera" style="font-size: 0.75rem;"></i>
+                    </label>
                 </div>
+
+                <form asp-action="UploadAvatar" method="post" enctype="multipart/form-data" id="avatarForm" style="display:none;">
+                    @Html.AntiForgeryToken()
+                    <input type="file" id="avatarInput" name="avatar" accept=".jpg,.jpeg,.png,.webp"
+                           onchange="document.getElementById('avatarForm').submit();" />
+                </form>
                 
                 <h4 class="fw-bold mb-1">@(user?.FullName ?? "Giảng viên")</h4>
                 <p class="text-muted mb-3">@(lecturer?.AcademicRank ?? "Giảng viên")</p>

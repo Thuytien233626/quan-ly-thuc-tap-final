@@ -1,0 +1,149 @@
+@using DNC.InternshipSystem.Core.Entities
+@using DNC.InternshipSystem.Core.Enums
+@model List<Student>
+@{
+    var registrations = ViewBag.Registrations as Dictionary<Guid, Registration> ?? new Dictionary<Guid, Registration>();
+    var classId = ViewBag.ClassId as string ?? "";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalItems = ViewBag.TotalItems ?? 0;
+    int startIndex = ViewBag.StartIndex ?? 0;
+}
+
+@if (totalItems == 0)
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fa fa-users fa-3x mb-3 opacity-25"></i>
+        <p class="mb-0">Lớp @classId chưa có sinh viên nào.</p>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4" style="width:50px">STT</th>
+                    <th>Sinh viên</th>
+                    <th>Đơn vị thực tập</th>
+                    <th>Vị trí</th>
+                    <th class="text-center">Trạng thái</th>
+                    <th class="text-center" style="width:80px">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int stt = startIndex + 1; }
+                @foreach (var sv in Model)
+                {
+                    registrations.TryGetValue(sv.UserId, out var reg);
+
+                    string statusText = "Chưa đăng ký";
+                    string statusColor = "secondary";
+                    if (reg != null)
+                    {
+                        statusText = reg.Status switch
+                        {
+                            RegistrationStatus.Pending => "Chờ duyệt",
+                            RegistrationStatus.Approved => "Đang thực tập",
+                            RegistrationStatus.Rejected => "Từ chối",
+                            RegistrationStatus.Completed => "Hoàn thành",
+                            _ => "Không rõ"
+                        };
+                        statusColor = reg.Status switch
+                        {
+                            RegistrationStatus.Pending => "warning",
+                            RegistrationStatus.Approved => "success",
+                            RegistrationStatus.Rejected => "danger",
+                            RegistrationStatus.Completed => "info",
+                            _ => "secondary"
+                        };
+                    }
+
+                    <tr>
+                        <td class="ps-4 text-muted">@stt</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
+                                     style="width: 36px; height: 36px; flex-shrink: 0;">
+                                    <span class="fw-bold" style="font-size: 0.8rem;">
+                                        @(sv.User?.FullName?.Split(' ').LastOrDefault()?.Substring(0, 1) ?? "S")
+                                    </span>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold text-dark">@(sv.User?.FullName ?? "N/A")</div>
+                                    <small class="text-muted">@(sv.StudentCode ?? "N/A")</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            @if (reg?.Company != null)
+                            {
+                                <span><i class="fa fa-building text-muted me-1"></i> @reg.Company.Name</span>
+                            }
+                            else if (!string.IsNullOrEmpty(reg?.ExternalCompanyName))
+                            {
+                                <span><i class="fa fa-building text-muted me-1"></i> @reg.ExternalCompanyName</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(reg?.Position))
+                            {
+                                <span>@reg.Position</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-@statusColor-subtle text-@statusColor border border-@statusColor border-opacity-25 px-2 py-1">
+                                @statusText
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a asp-action="Details" asp-route-id="@sv.UserId"
+                               class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    stt++;
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* Phan trang *@
+    @if (totalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top">
+            <small class="text-muted">
+                Hiển thị @(startIndex + 1)–@(startIndex + Model.Count) / @totalItems sinh viên
+            </small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                        <a class="page-link" href="javascript:void(0)" onclick="goToPage(@(currentPage - 1))">
+                            <i class="fa fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int p = 1; p <= totalPages; p++)
+                    {
+                        <li class="page-item @(p == currentPage ? "active" : "")">
+                            <a class="page-link" href="javascript:void(0)" onclick="goToPage(@p)">@p</a>
+                        </li>
+                    }
+                    <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                        <a class="page-link" href="javascript:void(0)" onclick="goToPage(@(currentPage + 1))">
+                            <i class="fa fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+}

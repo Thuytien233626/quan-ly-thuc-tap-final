@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
+using DNC.InternshipSystem.Core.Interfaces;
 using DNC.InternshipSystem.Infrastructure.Data;
 
 namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
@@ -13,46 +15,44 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IGradingService _gradingService;
 
-        public GradingController(AppDbContext context, UserManager<AppUser> userManager)
+        public GradingController(
+            AppDbContext context,
+            UserManager<AppUser> userManager,
+            IGradingService gradingService)
         {
             _context = context;
             _userManager = userManager;
+            _gradingService = gradingService;
         }
 
-        /// <summary>
-        /// Tính điểm tổng = (Điểm DN * 0.4) + (Điểm GVHD * 0.6)
-        /// </summary>
-        /// <remarks>
-        /// Công thức: (CompanyScore * 0.4) + (InstructorScore * 0.6)
-        /// Trả về null nếu thiếu bất kỳ điểm nào
-        /// </remarks>
-        private double? CalculateFinalScore(double? companyScore, double? instructorScore)
-        {
-            if (companyScore.HasValue && instructorScore.HasValue)
-            {
-                return Math.Round(
-                    (companyScore.Value * 0.4) + 
-                    (instructorScore.Value * 0.6), 2);
-            }
-
-            return null;
-        }
-
-        // GET: /Lecturer/Grading
+        // GET: /Lecturer/Grading — Danh sach SV can cham diem
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
 
-            // Simple query - NO Include to avoid WITH/CTE SQL generation
-            var registrations = await _context.Registrations
-                .AsNoTracking()
-                .Where(r => r.LecturerId == lecturer!.UserId && r.Status == 1)
+            // Lay danh sach lop ma GV phu trach
+            var lecturerClassIds = await _context.Classes
+                .Where(c => c.LecturerId == lecturer!.UserId)
+                .Select(c => c.Id)
                 .ToListAsync();
 
-            // Load related data separately with simple queries
+            // Lay SV phan cong truc tiep va SV thuoc lop GV phu trach
+            var allStudentIdsInClasses = lecturerClassIds.Any()
+                ? await _context.Students.Where(s => lecturerClassIds.Contains(s.ClassId))
+                    .Select(s => s.UserId).ToListAsync()
+                : new List<Guid>();
+
+            var registrations = await _context.Registrations
+                .AsNoTracking()
+                .Where(r => r.Status == RegistrationStatus.Approved &&
+                    (r.LecturerId == lecturer!.UserId || allStudentIdsInClasses.Contains(r.StudentId)))
+                .ToListAsync();
+
+            // Tai du lieu lien quan rieng biet (tranh phuc tap SQL)
             var studentIds = registrations.Select(r => r.StudentId).Distinct().ToList();
             var students = await _context.Students.AsNoTracking()
                 .Where(s => studentIds.Contains(s.UserId)).ToListAsync();
@@ -73,7 +73,7 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             var grades = await _context.Grades.AsNoTracking()
                 .Where(g => regIds.Contains(g.RegistrationId)).ToListAsync();
 
-            // Stitch data together in memory
+            // Ghep du lieu trong bo nho (thay vi dung Include phuc tap)
             var studentDict = students.ToDictionary(s => s.UserId);
             var userDict = users.ToDictionary(u => u.Id);
             var classDict = classes.ToDictionary(c => c.Id);
@@ -94,88 +94,61 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             return View(registrations);
         }
 
-        // GET: /Lecturer/Grading/Grade/{registrationId}
-        public async Task<IActionResult> Grade(Guid id) // id la RegistrationId
+        // GET: /Lecturer/Grading/Grade/{id} — Form cham diem cho 1 SV
+        public async Task<IActionResult> Grade(Guid id)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
 
+            // Kiem tra quyen: GV phu trach truc tiep hoac qua lop
+            var gradeClassIds = await _context.Classes
+                .Where(c => c.LecturerId == lecturer!.UserId)
+                .Select(c => c.Id)
+                .ToListAsync();
+
             var registration = await _context.Registrations
                 .Include(r => r.Student).ThenInclude(s => s!.User)
                 .Include(r => r.Student).ThenInclude(s => s!.Class)
-                .FirstOrDefaultAsync(r => r.Id == id && r.LecturerId == lecturer!.UserId);
+                .FirstOrDefaultAsync(r => r.Id == id &&
+                    (r.LecturerId == lecturer!.UserId || gradeClassIds.Contains(r.Student!.ClassId)));
 
             if (registration == null) return NotFound();
 
             var grade = await _context.Grades.FirstOrDefaultAsync(g => g.RegistrationId == id);
-            
+
             if (grade == null)
-            {
-                // Tao moi neu chua co
                 grade = new Grade { RegistrationId = id };
-            }
 
             ViewBag.Registration = registration;
             return View(grade);
         }
 
+        // POST: /Lecturer/Grading/Grade — Luu diem GV cham
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Grade(Grade gradeModel)
         {
-            // Xác thực người dùng
             var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return RedirectToAction("Login", "Account", new { area = "" });
+            if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
 
-            // Lấy thông tin giảng viên
-            var lecturer = await _context.Lecturers
-                .FirstOrDefaultAsync(l => l.UserId == user.Id);
+            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (lecturer == null) return Forbid();
 
-            if (lecturer == null)
-                return Forbid();
+            // Goi Service de luu diem (kiem tra quyen + dong bo Grade + Registration)
+            var result = await _gradingService.UpdateScoresFromLecturer(
+                gradeModel.RegistrationId,
+                lecturer.UserId,
+                gradeModel.InstructorScore,
+                gradeModel.Note);
 
-            // Lấy thông tin đăng ký thực tập
-            var registration = await _context.Registrations
-                .FirstOrDefaultAsync(r => r.Id == gradeModel.RegistrationId);
-
-            if (registration == null || registration.LecturerId != lecturer.UserId)
-                return Forbid();
-
-            // Lấy hoặc tạo bản ghi điểm chấm công
-            var existingGrade = await _context.Grades
-                .FirstOrDefaultAsync(g => g.RegistrationId == gradeModel.RegistrationId);
-
-            if (existingGrade == null)
+            if (!result.Success)
             {
-                // Tạo bản ghi mới
-                existingGrade = new Grade
-                {
-                    RegistrationId = gradeModel.RegistrationId,
-                    InstructorScore = gradeModel.InstructorScore,
-                    Note = gradeModel.Note,
-                    GradedDate = DateTime.Now
-                };
-
-                _context.Grades.Add(existingGrade);
-            }
-            else
-            {
-                // Cập nhật bản ghi hiện tại
-                existingGrade.InstructorScore = gradeModel.InstructorScore;
-                existingGrade.Note = gradeModel.Note;
-                existingGrade.GradedDate = DateTime.Now;
+                TempData["ErrorMessage"] = result.Message;
+                return RedirectToAction("Grade", new { id = gradeModel.RegistrationId });
             }
 
-            // **FIX: Cập nhật điểm tổng trên Registration**
-            registration.InstructorScore = gradeModel.InstructorScore;
-            registration.FinalScore = CalculateFinalScore(registration.CompanyScore, gradeModel.InstructorScore);
-            registration.UpdatedDate = DateTime.Now;  // ← QUAN TRỌNG: Ghi dấu thời gian cập nhật
-
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Đã lưu điểm thành công.";
+            TempData["SuccessMessage"] = result.Message;
             return RedirectToAction("Index");
         }
     }

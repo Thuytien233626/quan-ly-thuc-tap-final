@@ -41,16 +41,19 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(InternshipTerm term)
         {
+            // Xoa validation cho navigation property (khong gui tu form)
+            ModelState.Remove("Batch");
+
             if (ModelState.IsValid)
             {
-                // Validate dates
+                // Kiem tra logic ngay thang
                 if (!ValidateDates(term)) 
                 {
                     await LoadDropdownsAsync();
                     return View(term);
                 }
 
-                // Auto-calculate EndDate from InternshipStart + Duration
+                // Tu dong tinh ngay ket thuc = ngay bat dau + so tuan
                 term.EndDate = term.InternshipStart.AddDays(term.DurationInWeeks * 7);
 
                 _context.Add(term);
@@ -81,6 +84,9 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
         {
             if (id != term.Id) return NotFound();
 
+            // Xoa validation cho navigation property (khong gui tu form)
+            ModelState.Remove("Batch");
+
             if (ModelState.IsValid)
             {
                 if (!ValidateDates(term))
@@ -91,6 +97,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
 
                 try
                 {
+                    // Tu dong tinh ngay ket thuc = ngay bat dau + so tuan
                     term.EndDate = term.InternshipStart.AddDays(term.DurationInWeeks * 7);
                     _context.Update(term);
                     await _context.SaveChangesAsync();
@@ -103,6 +110,13 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
+
+            // Hien thi loi validation de user thay
+            foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+            {
+                TempData["Error"] = error.ErrorMessage;
+            }
+
             await LoadDropdownsAsync();
             return View(term);
         }

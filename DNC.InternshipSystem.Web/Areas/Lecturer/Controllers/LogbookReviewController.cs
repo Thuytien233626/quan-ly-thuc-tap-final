@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Interfaces;
 using DNC.InternshipSystem.Infrastructure.Data;
-using DNC.InternshipSystem.Web.Services;
 
 namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
 {
@@ -14,59 +14,61 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
     {
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
-        private readonly AIMentorService _aiService;
-        private readonly ILogger<LogbookReviewController> _logger;
+        private readonly ILogbookService _logbookService;
 
-        public LogbookReviewController(AppDbContext context, UserManager<AppUser> userManager, AIMentorService aiService, ILogger<LogbookReviewController> logger)
+        public LogbookReviewController(
+            AppDbContext context,
+            UserManager<AppUser> userManager,
+            ILogbookService logbookService)
         {
             _context = context;
             _userManager = userManager;
-            _aiService = aiService;
-            _logger = logger;
+            _logbookService = logbookService;
         }
 
-        // GET: /Lecturer/LogbookReview?registrationId=xxx (hoac /Details/xxx)
-        // O day minh dung id la RegistrationId
+        // GET: /Lecturer/LogbookReview/Details/{id} — Xem chi tiet logbook cua 1 SV
         public async Task<IActionResult> Details(Guid id)
         {
-             var user = await _userManager.GetUserAsync(User);
+            var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
 
-            // Lay thong tin dang ky va logbook
+            // Lay danh sach lop GV phu trach
+            var lecClassIds = await _context.Classes
+                .Where(c => c.LecturerId == lecturer!.UserId)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            // Lay thong tin don dang ky (phan cong truc tiep hoac qua lop)
             var registration = await _context.Registrations
                 .Include(r => r.Student).ThenInclude(s => s!.User)
+                .Include(r => r.Student).ThenInclude(s => s!.Class)
                 .Include(r => r.Term)
-                .FirstOrDefaultAsync(r => r.Id == id && r.LecturerId == lecturer!.UserId);
+                .FirstOrDefaultAsync(r => r.Id == id &&
+                    (r.LecturerId == lecturer!.UserId || lecClassIds.Contains(r.Student!.ClassId)));
 
             if (registration == null)
             {
-                // Neu khong tim thay theo ID truc tiep, thu tim sinh vien nao do co logbook can duyet
                 if (id == Guid.Empty)
-                {
-                    return RedirectToAction("Index"); // Redirect ve danh sach chung
-                }
+                    return RedirectToAction("Index");
                 return NotFound();
             }
 
-            var logbooks = await _context.Logbooks
-                .Where(l => l.RegistrationId == registration.Id)
-                .OrderBy(l => l.WeekNumber)
-                .ToListAsync();
+            // Lay danh sach logbook cua SV
+            var logbooks = await _logbookService.GetLogbooks(registration.Id);
 
             ViewBag.Registration = registration;
             return View(logbooks);
         }
 
-        // GET: /Lecturer/LogbookReview
-        // Hien thi danh sach cac sinh vien co logbook can duyet (hoac tat ca)
+        // GET: /Lecturer/LogbookReview — Danh sach logbook chua nhan xet
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
 
-            // Lay danh sach sinh vien co logbook chua duyet
+            // Lay logbook chua co nhan xet cua GV
             var pendingLogbooks = await _context.Logbooks
                 .Include(l => l.Registration).ThenInclude(r => r!.Student).ThenInclude(s => s!.User)
                 .Include(l => l.Registration).ThenInclude(r => r!.Student).ThenInclude(s => s!.Class)
@@ -74,10 +76,10 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
                 .OrderByDescending(l => l.SubmittedDate)
                 .ToListAsync();
 
-            // Group by Student/Registration de hien thi gon
+            // Nhom theo SV de hien thi gon
             var grouped = pendingLogbooks
                 .GroupBy(l => l.Registration)
-                .Select(g => new 
+                .Select(g => new
                 {
                     Registration = g.Key,
                     PendingCount = g.Count(),
@@ -88,79 +90,34 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             return View(grouped);
         }
 
+        // POST: Them nhan xet vao logbook (AJAX)
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(Guid logbookId, string comment)
         {
-            var logbook = await _context.Logbooks.FindAsync(logbookId);
-            if (logbook == null) return NotFound();
-
-            // Check quyen so huu (thong qua registration -> lecturer)
-            var registration = await _context.Registrations.FindAsync(logbook.RegistrationId);
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
             if (lecturer == null) return NotFound();
 
-            if (registration?.LecturerId != lecturer.UserId)
-            {
-                return Forbid();
-            }
-
-            logbook.LecturerComment = comment;
-            await _context.SaveChangesAsync();
-
-            return Json(new { success = true, message = "Đã lưu nhận xét." });
+            var result = await _logbookService.AddComment(logbookId, lecturer.UserId, comment);
+            return Json(new { success = result.Success, message = result.Message });
         }
 
-        // POST: /Lecturer/LogbookReview/AnalyzeWithAI
+        // POST: Phan tich logbook voi AI Mentor (AJAX)
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AnalyzeWithAI(Guid logbookId)
         {
-            try
-            {
-                var logbook = await _context.Logbooks
-                    .Include(l => l.Registration)
-                    .FirstOrDefaultAsync(l => l.Id == logbookId);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Json(new { success = false, message = "Bạn chưa đăng nhập." });
 
-                if (logbook == null)
-                    return Json(new { success = false, message = "Logbook không tồn tại." });
+            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (lecturer == null) return Json(new { success = false, message = "Không tìm thấy thông tin giảng viên." });
 
-                // Verify lecturer owns this logbook
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null)
-                    return Json(new { success = false, message = "Bạn chưa đăng nhập." });
-
-                var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
-                if (lecturer == null)
-                    return Json(new { success = false, message = "Không tìm thấy thông tin giảng viên." });
-
-                if (logbook.Registration?.LecturerId != lecturer.UserId)
-                    return Json(new { success = false, message = "Bạn không có quyền truy cập logbook này." });
-
-                _logger.LogInformation($"Analyzing logbook {logbookId} with AI");
-
-                // Call AI to analyze
-                var aiFeedback = await _aiService.AnalyzeLogbook(logbook.Content);
-
-                // Update logbook with AI summary
-                logbook.AISummary = aiFeedback;
-                await _context.SaveChangesAsync();
-
-                return Json(new { 
-                    success = true, 
-                    message = "Đã phân tích logbook với AI Mentor.",
-                    feedback = aiFeedback
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error analyzing logbook with AI");
-                return Json(new { 
-                    success = false, 
-                    message = "Lỗi khi phân tích với AI: " + ex.Message 
-                });
-            }
+            var result = await _logbookService.AnalyzeWithAI(logbookId, lecturer.UserId);
+            return Json(new { success = result.Success, message = result.Message, feedback = result.Data });
         }
     }
 }

@@ -1,4 +1,5 @@
 @using DNC.InternshipSystem.Core.Entities
+@using DNC.InternshipSystem.Core.Enums
 @{
     Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
     ViewData["Title"] = "Dashboard";
@@ -16,10 +17,10 @@
     {
         switch (registration.Status)
         {
-            case 0: regStatusText = "Chờ duyệt"; regStatusClass = "status-pending"; break;
-            case 1: regStatusText = "Đã duyệt"; regStatusClass = "status-approved"; break;
-            case 2: regStatusText = "Bị từ chối"; regStatusClass = "status-rejected"; break;
-            case 3: regStatusText = "Hoàn thành"; regStatusClass = "status-completed"; break;
+            case RegistrationStatus.Pending: regStatusText = "Chờ duyệt"; regStatusClass = "status-pending"; break;
+            case RegistrationStatus.Approved: regStatusText = "Đã duyệt"; regStatusClass = "status-approved"; break;
+            case RegistrationStatus.Rejected: regStatusText = "Bị từ chối"; regStatusClass = "status-rejected"; break;
+            case RegistrationStatus.Completed: regStatusText = "Hoàn thành"; regStatusClass = "status-completed"; break;
         }
     }
 
@@ -30,14 +31,24 @@
         termInfo = $"HK{currentTerm.Semester} - {currentTerm.AcademicYear}";
     }
 
-    // GVHD
+    // GVHD - Uu tien lay tu lop (admin phan cong), sau do moi lay tu don dang ky
     string lecturerName = "Chưa phân công";
-    if (registration?.Lecturer?.User != null)
+    bool hasLecturer = false;
+    if (student?.Class?.Lecturer?.User != null)
+    {
+        string rank = !string.IsNullOrEmpty(student.Class.Lecturer.AcademicRank)
+            ? student.Class.Lecturer.AcademicRank + ". "
+            : "";
+        lecturerName = rank + student.Class.Lecturer.User.FullName;
+        hasLecturer = true;
+    }
+    else if (registration?.Lecturer?.User != null)
     {
         string rank = !string.IsNullOrEmpty(registration.Lecturer.AcademicRank)
             ? registration.Lecturer.AcademicRank + ". "
             : "";
         lecturerName = rank + registration.Lecturer.User.FullName;
+        hasLecturer = true;
     }
 
     // Noi thuc tap
@@ -108,7 +119,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
                     <div class="card-title-custom">Giảng viên hướng dẫn</div>
-                    <h6 class="mb-0 fw-bold @(registration?.Lecturer != null ? "" : "text-muted")">@lecturerName</h6>
+                    <h6 class="mb-0 fw-bold @(hasLecturer ? "" : "text-muted")">@lecturerName</h6>
                 </div>
                 <span class="stats-icon-box bg-primary-subtle text-primary">
                     <i class="fa fa-chalkboard-teacher"></i>

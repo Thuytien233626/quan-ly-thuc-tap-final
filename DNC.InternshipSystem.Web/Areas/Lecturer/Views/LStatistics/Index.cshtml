@@ -2,6 +2,7 @@
     Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
     ViewData["Title"] = "Thống kê & Báo cáo";
 
+    int totalStudentsInClasses = ViewBag.TotalStudentsInClasses ?? 0;
     int totalStudents = ViewBag.TotalStudents ?? 0;
     int gradedCount = ViewBag.GradedCount ?? 0;
     int pendingGrading = ViewBag.PendingGrading ?? 0;
@@ -30,7 +31,7 @@
                 <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px;">
                     <i class="fa fa-users fs-4"></i>
                 </div>
-                <h3 class="fw-bold mb-1">@totalStudents</h3>
+                <h3 class="fw-bold mb-1">@totalStudentsInClasses</h3>
                 <small class="text-muted">Sinh viên phụ trách</small>
             </div>
         </div>

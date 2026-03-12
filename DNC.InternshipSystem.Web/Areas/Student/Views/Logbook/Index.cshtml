@@ -1,10 +1,12 @@
-```razor
 @using DNC.InternshipSystem.Core.Entities
+@using DNC.InternshipSystem.Core.Enums
 @{
     Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
     ViewData["Title"] = "Nhật ký thực tập";
 
     bool hasRegistration = ViewBag.HasRegistration ?? false;
+    bool isApproved = ViewBag.IsApproved ?? false;
+    var registrationStatus = ViewBag.RegistrationStatus as RegistrationStatus?;
     var logbooks = ViewBag.Logbooks as List<Logbook> ?? new List<Logbook>();
     int totalWeeks = ViewBag.TotalWeeks ?? 0;
     int submittedWeeks = ViewBag.SubmittedWeeks ?? 0;
@@ -24,9 +26,9 @@
 {
 <div class="card border-0 shadow-sm">
 <div class="card-body text-center py-5">
-<i class="fa fa-info-circle fa-3x text-muted mb-3"></i>
-<h5 class="text-muted">Bạn chưa có đơn đăng ký thực tập</h5>
-<p class="text-muted">Vui lòng đăng ký thực tập trước khi viết nhật ký.</p>
+<i class="fa fa-file-signature fa-3x text-muted mb-3 d-block opacity-50"></i>
+<h5 class="text-muted mb-2">Bạn chưa đăng ký thực tập</h5>
+<p class="text-muted mb-3">Vui lòng đăng ký thực tập trước khi viết nhật ký.</p>
 
 <a asp-area="Student"
    asp-controller="SRegister"
@@ -37,6 +39,32 @@
 Đăng ký thực tập
 
 </a>
+</div>
+</div>
+}
+else if (!isApproved)
+{
+<div class="card border-0 shadow-sm">
+<div class="card-body text-center py-5">
+    <i class="fa fa-clock fa-3x mb-3 d-block" style="color: #f59e0b; opacity: 0.6;"></i>
+    @if (registrationStatus == RegistrationStatus.Pending)
+    {
+        <h5 class="text-muted mb-2">Đơn đăng ký đang chờ duyệt</h5>
+        <p class="text-muted mb-0">Bạn có thể viết nhật ký sau khi đơn đăng ký được admin phê duyệt.</p>
+    }
+    else if (registrationStatus == RegistrationStatus.Rejected)
+    {
+        <h5 class="text-danger mb-2">Đơn đăng ký bị từ chối</h5>
+        <p class="text-muted mb-3">Vui lòng liên hệ admin hoặc đăng ký lại.</p>
+        <a asp-area="Student" asp-controller="SRegister" asp-action="Index" class="btn btn-outline-info">
+            <i class="fa fa-redo me-2"></i>Đăng ký lại
+        </a>
+    }
+    else
+    {
+        <h5 class="text-muted mb-2">Chưa thể viết nhật ký</h5>
+        <p class="text-muted mb-0">Đơn đăng ký cần được phê duyệt trước.</p>
+    }
 </div>
 </div>
 }
@@ -293,7 +321,7 @@ else
 
 }
 
-<!-- Modal viết nhật ký -->
+<!-- Modal viet nhat ky -->
 
 <div class="modal fade" id="addLogModal">
 
@@ -506,4 +534,3 @@ modal.show();
 </script>
 
 }
-```

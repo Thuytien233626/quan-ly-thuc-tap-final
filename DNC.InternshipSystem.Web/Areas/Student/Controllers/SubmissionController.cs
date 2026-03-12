@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using DNC.InternshipSystem.Core.Entities;
+using DNC.InternshipSystem.Core.Enums;
 using DNC.InternshipSystem.Infrastructure.Data;
 
 namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
@@ -61,6 +62,8 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
 
             ViewBag.Registration = registration;
             ViewBag.HasRegistration = registration != null;
+            ViewBag.IsApproved = registration?.Status == RegistrationStatus.Approved;
+            ViewBag.RegistrationStatus = registration?.Status;
             ViewBag.LogbookCount = logbookCount;
             ViewBag.TotalWeeks = totalWeeks;
             ViewBag.Submissions = submissions;
@@ -86,9 +89,9 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
                 .OrderByDescending(r => r.CreatedDate)
                 .FirstOrDefaultAsync();
 
-            if (registration == null)
+            if (registration == null || registration.Status != RegistrationStatus.Approved)
             {
-                TempData["Error"] = "Bạn chưa đăng ký thực tập.";
+                TempData["Error"] = "Bạn chưa đăng ký thực tập hoặc đơn chưa được duyệt.";
                 return RedirectToAction("Index");
             }
 
@@ -139,7 +142,7 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
                 Type = ReportType,
                 FilePath = "/uploads/reports/" + fileName,
                 Note = Note ?? "",
-                SubmittedDate = DateTime.Now,
+                SubmittedDate = DateTime.UtcNow,
                 Status = "Pending"
             };
 
@@ -161,13 +164,17 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
             if (string.IsNullOrEmpty(path))
                 return NotFound();
 
-            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", path.TrimStart('/'));
+            // Chan tan cong Path Traversal: chi cho download trong thu muc uploads
+            var uploadsRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"));
+            var fullPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", path.TrimStart('/')));
+
+            if (!fullPath.StartsWith(uploadsRoot))
+                return Forbid();
 
             if (!System.IO.File.Exists(fullPath))
                 return NotFound();
 
             var contentType = "application/octet-stream";
-
             return PhysicalFile(fullPath, contentType, Path.GetFileName(fullPath));
         }
     }

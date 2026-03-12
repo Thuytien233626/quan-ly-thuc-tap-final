@@ -11,18 +11,19 @@ namespace DNC.InternshipSystem.Core.Entities
         public DateTime EndDate { get; set; }
         public string Content { get; set; } = string.Empty;
         public string? EvidenceImageUrl { get; set; }
-        
-        // Truong du lieu tu dong phan tich
+
+        // Ket qua phan tich tu dong
         public string? AISummary { get; set; }
         public string? AiSuggestions { get; set; }
-
         public int? AiScore { get; set; }
         public bool AIWarning { get; set; } = false;
         public string? AIWarningDetails { get; set; }
-        
-        public string? LecturerComment { get; set; }
-        public DateTime SubmittedDate { get; set; } = DateTime.Now;
 
+        // Nhan xet cua giang vien
+        public string? LecturerComment { get; set; }
+        public DateTime SubmittedDate { get; set; } = DateTime.UtcNow;
+
+        // Quan he navigation
         public Registration? Registration { get; set; }
     }
 }

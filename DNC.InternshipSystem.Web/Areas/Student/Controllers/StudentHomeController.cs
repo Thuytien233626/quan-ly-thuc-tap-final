@@ -29,6 +29,9 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
             var student = await _context.Students
                 .Include(s => s.Class)
                     .ThenInclude(c => c!.Major)
+                .Include(s => s.Class)
+                    .ThenInclude(c => c!.Lecturer)
+                        .ThenInclude(l => l.User)
                 .Include(s => s.User)
                 .FirstOrDefaultAsync(s => s.UserId == user.Id);
 

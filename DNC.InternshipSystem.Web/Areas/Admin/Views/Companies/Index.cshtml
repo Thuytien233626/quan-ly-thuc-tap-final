@@ -1,4 +1,5 @@
 @model List<DNC.InternshipSystem.Core.Entities.Company>
+@using DNC.InternshipSystem.Core.Enums
 @{
     ViewData["Title"] = "Quản lý Doanh nghiệp";
     var provinces = ViewBag.Provinces as List<string> ?? new List<string>();
@@ -101,7 +102,7 @@ document.getElementById('provinceSelect').addEventListener('change', function() 
     <div class="col-md-3">
         <div class="card border-0 shadow-sm bg-success text-white">
             <div class="card-body text-center">
-                <h3 class="mb-0">@Model.Count(c => c.Status == 1)</h3>
+                <h3 class="mb-0">@Model.Count(c => c.Status == CompanyStatus.Approved)</h3>
                 <small>Đã duyệt</small>
             </div>
         </div>
@@ -109,7 +110,7 @@ document.getElementById('provinceSelect').addEventListener('change', function() 
     <div class="col-md-3">
         <div class="card border-0 shadow-sm bg-warning text-dark">
             <div class="card-body text-center">
-                <h3 class="mb-0">@Model.Count(c => c.Status == 0)</h3>
+                <h3 class="mb-0">@Model.Count(c => c.Status == CompanyStatus.WaitingApproval)</h3>
                 <small>Chờ duyệt</small>
             </div>
         </div>
@@ -197,7 +198,7 @@ document.getElementById('provinceSelect').addEventListener('change', function() 
                                     }
                                 </td>
                                 <td>
-                                    @if (c.Status == 1)
+                                    @if (c.Status == CompanyStatus.Approved)
                                     {
                                         <span class="badge bg-success"><i class="fa fa-check me-1"></i>Đã duyệt</span>
                                     }
@@ -208,7 +209,7 @@ document.getElementById('provinceSelect').addEventListener('change', function() 
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        @if (c.Status == 0)
+                                        @if (c.Status == CompanyStatus.WaitingApproval)
                                         {
                                             <button class="btn btn-outline-success btn-approve" data-id="@c.Id" title="Duyệt">
                                                 <i class="fa fa-check"></i>

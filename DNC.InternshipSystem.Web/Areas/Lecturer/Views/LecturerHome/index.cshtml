@@ -4,13 +4,15 @@
     ViewData["Title"] = "Dashboard";
 
     var lecturer = ViewBag.Lecturer as Lecturer;
-    var assignedCount = ViewBag.AssignedStudentsCount ?? 0;
+    var myClasses = ViewBag.MyClasses as List<Class> ?? new List<Class>();
+    int totalStudents = ViewBag.TotalStudents ?? 0;
+    int registeredCount = ViewBag.RegisteredStudentsCount ?? 0;
     var pendingLogbooks = ViewBag.PendingLogbooksCount ?? 0;
     var gradedCount = ViewBag.GradedStudentsCount ?? 0;
-    var recentStudents = ViewBag.RecentStudents as List<Registration> ?? new List<Registration>();
+    var recentStudents = ViewBag.RecentRegistrations as List<Registration> ?? new List<Registration>();
     
     // Tinh ti le hoan thanh cham diem
-    int total = assignedCount > 0 ? assignedCount : 1;
+    int total = totalStudents > 0 ? totalStudents : 1;
     int gradedPercent = (int)Math.Round((double)gradedCount / total * 100);
 }
 
@@ -46,7 +48,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <h6 class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Sinh viên phụ trách</h6>
-                        <h2 class="mb-0 fw-bold text-dark">@assignedCount</h2>
+                        <h2 class="mb-0 fw-bold text-dark">@totalStudents <span class="text-muted fs-6 fw-normal">(@myClasses.Count lớp)</span></h2>
                     </div>
                     <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center text-primary" 
                          style="width: 48px; height: 48px;">
@@ -99,7 +101,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <h6 class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Đã chấm điểm</h6>
-                        <h2 class="mb-0 fw-bold text-info">@gradedCount <span class="text-muted fs-6 fw-normal">/ @assignedCount</span></h2>
+                        <h2 class="mb-0 fw-bold text-info">@gradedCount <span class="text-muted fs-6 fw-normal">/ @totalStudents</span></h2>
                     </div>
                     <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center text-info" 
                          style="width: 48px; height: 48px;">

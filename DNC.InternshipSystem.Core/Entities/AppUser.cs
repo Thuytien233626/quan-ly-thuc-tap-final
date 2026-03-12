@@ -8,9 +8,9 @@ namespace DNC.InternshipSystem.Core.Entities
         public string FullName { get; set; } = string.Empty;
         public string? AvatarUrl { get; set; }
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
-        // Navigation property
+        // Quan he navigation
         public Student? Student { get; set; }
         public Lecturer? Lecturer { get; set; }
     }
