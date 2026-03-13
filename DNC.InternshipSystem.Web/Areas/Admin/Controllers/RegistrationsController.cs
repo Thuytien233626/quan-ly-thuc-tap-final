@@ -37,6 +37,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
             var query = _context.Registrations
                 .Include(r => r.Student).ThenInclude(s => s!.User)
                 .Include(r => r.Student).ThenInclude(s => s!.Class).ThenInclude(c => c!.Major)
+                .Include(r => r.Student).ThenInclude(s => s!.Class).ThenInclude(c => c!.Lecturer).ThenInclude(l => l!.User)
                 .Include(r => r.Company)
                 .Include(r => r.Term)
                 .Include(r => r.Lecturer).ThenInclude(l => l!.User)
@@ -66,6 +67,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
             var r = await _context.Registrations
                 .Include(r => r.Student).ThenInclude(s => s!.User)
                 .Include(r => r.Student).ThenInclude(s => s!.Class).ThenInclude(c => c!.Major).ThenInclude(m => m!.Batch)
+                .Include(r => r.Student).ThenInclude(s => s!.Class).ThenInclude(c => c!.Lecturer).ThenInclude(l => l!.User)
                 .Include(r => r.Company)
                 .Include(r => r.Term)
                 .Include(r => r.Lecturer).ThenInclude(l => l!.User)
@@ -92,7 +94,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                 isExternal = r.Company == null,
                 position = r.Position,
                 termName = r.Term?.TermName ?? "",
-                lecturerName = r.Lecturer?.User?.FullName ?? "Chưa phân công",
+                lecturerName = r.Lecturer?.User?.FullName ?? r.Student?.Class?.Lecturer?.User?.FullName ?? "Chưa phân công",
                 status = r.Status,
                 rejectionReason = r.RejectionReason ?? "",
                 createdDate = r.CreatedDate.ToString("dd/MM/yyyy HH:mm"),

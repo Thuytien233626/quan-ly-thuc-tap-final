@@ -1,125 +1,285 @@
 @model DNC.InternshipSystem.Core.Entities.Registration
 @using DNC.InternshipSystem.Core.Enums
-
-<div class="container mt-4">
-
-<h3 class="mb-4"><i class="fa fa-file-alt text-primary me-2"></i>Đơn đăng ký thực tập của tôi</h3>
+@{
+    Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
+    ViewData["Title"] = "Đơn đăng ký thực tập";
+}
 
 @if (Model == null)
 {
-    <div class="alert alert-warning">
-        Bạn chưa đăng ký thực tập.
+    <div class="d-flex flex-column align-items-center justify-content-center py-5">
+        <i class="fa fa-file-circle-xmark fa-4x text-muted mb-3"></i>
+        <h5 class="text-muted mb-3">Bạn chưa có đơn đăng ký thực tập</h5>
+        <a asp-action="Index" class="btn btn-primary">
+            <i class="fa fa-plus-circle me-1"></i>Đăng ký ngay
+        </a>
     </div>
-    <a asp-action="Index" class="btn btn-secondary">
-        Đăng ký ngay
-</a>
 }
 else
 {
+    // Thong tin hien thi
+    var companyName = Model.CompanyId != null ? Model.Company?.Name : Model.ExternalCompanyName;
+    var companyAddress = Model.CompanyId != null ? Model.Company?.Address : Model.ExternalCompanyAddress;
+    var companyProvince = Model.CompanyId != null ? Model.Company?.Province : "";
+    var companyPhone = Model.CompanyId != null ? Model.Company?.PhoneNumber : "";
+    var companyContact = Model.CompanyId != null ? Model.Company?.ContactPerson : "";
+    var isExternal = Model.CompanyId == null;
+    var lecturerName = Model.Lecturer?.User?.FullName ?? Model.Student?.Class?.Lecturer?.User?.FullName ?? "";
 
-<div class="card p-3 mb-3">
-    <h5><i class="fa fa-building text-info me-2"></i>Doanh nghiệp</h5>
-
-    @if (Model.CompanyId != null)
+    // Status config
+    var statusClass = Model.Status switch
     {
-        <p><b>Tên:</b> @Model.Company?.Name</p>
-        <p><b>Tỉnh:</b> @Model.Company?.Province</p>
-    }
-    else
+        RegistrationStatus.Pending => "warning",
+        RegistrationStatus.Approved => "success",
+        RegistrationStatus.Rejected => "danger",
+        RegistrationStatus.Completed => "primary",
+        _ => "secondary"
+    };
+    var statusText = Model.Status switch
     {
-        <p><b>Tên:</b> @Model.ExternalCompanyName</p>
-        <p><b>Địa chỉ:</b> @Model.ExternalCompanyAddress</p>
+        RegistrationStatus.Pending => "Chờ duyệt",
+        RegistrationStatus.Approved => "Đã duyệt",
+        RegistrationStatus.Rejected => "Từ chối",
+        RegistrationStatus.Completed => "Hoàn thành",
+        _ => "Không rõ"
+    };
+    var statusIcon = Model.Status switch
+    {
+        RegistrationStatus.Pending => "fa-clock",
+        RegistrationStatus.Approved => "fa-check-circle",
+        RegistrationStatus.Rejected => "fa-times-circle",
+        RegistrationStatus.Completed => "fa-flag-checkered",
+        _ => "fa-question-circle"
+    };
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Đơn đăng ký thực tập</h4>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item"><a href="/Student/StudentHome">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Đơn đăng ký</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="alert alert-@statusClass border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+        <i class="fa @statusIcon fa-2x me-3"></i>
+        <div class="flex-grow-1">
+            <h6 class="alert-heading mb-1 fw-bold">Trạng thái: @statusText</h6>
+            @if (Model.Status == RegistrationStatus.Pending)
+            {
+                <small>Đơn đăng ký đang chờ Admin xét duyệt. Bạn sẽ nhận được thông báo khi có kết quả.</small>
+            }
+            else if (Model.Status == RegistrationStatus.Approved)
+            {
+                <small>Đơn đăng ký đã được duyệt. Bạn có thể bắt đầu thực tập theo thông tin bên dưới.</small>
+            }
+            else if (Model.Status == RegistrationStatus.Rejected)
+            {
+                <small>Đơn đăng ký bị từ chối. Lý do: <strong>@(Model.RejectionReason ?? "Không có lý do cụ thể")</strong></small>
+            }
+            else if (Model.Status == RegistrationStatus.Completed)
+            {
+                <small>Quá trình thực tập đã hoàn thành.</small>
+            }
+        </div>
+        <span class="badge bg-@statusClass fs-6 ms-3">@statusText</span>
+    </div>
+
+    <div class="row g-4">
+        <!-- Cot trai: Thong tin DN -->
+        <div class="col-lg-7">
+            <!-- Card Doanh nghiep -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fa fa-building text-primary me-2"></i>Thông tin Doanh nghiệp
+                        @if (isExternal)
+                        {
+                            <span class="badge bg-secondary ms-2">Tự liên hệ</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success ms-2">Đối tác</span>
+                        }
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; min-width: 48px;">
+                                    <i class="fa fa-building fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">@companyName</h5>
+                                    @if (!string.IsNullOrEmpty(companyProvince))
+                                    {
+                                        <small class="text-muted"><i class="fa fa-map-marker-alt me-1"></i>@companyProvince</small>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(companyAddress))
+                        {
+                            <div class="col-12">
+                                <label class="form-label small text-muted fw-semibold mb-1">Địa chỉ</label>
+                                <p class="mb-0">@companyAddress</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(companyPhone))
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted fw-semibold mb-1">Số điện thoại</label>
+                                <p class="mb-0"><i class="fa fa-phone me-1 text-muted"></i>@companyPhone</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(companyContact))
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted fw-semibold mb-1">Người liên hệ</label>
+                                <p class="mb-0"><i class="fa fa-user me-1 text-muted"></i>@companyContact</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Vi tri & Ghi chu -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-bold"><i class="fa fa-briefcase text-info me-2"></i>Thông tin đăng ký</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-semibold mb-1">Vị trí thực tập</label>
+                            <p class="mb-0 fw-semibold">@Model.Position</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-semibold mb-1">Ngày đăng ký</label>
+                            <p class="mb-0">@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                        @if (Model.UpdatedDate.HasValue)
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted fw-semibold mb-1">Ngày cập nhật</label>
+                                <p class="mb-0">@Model.UpdatedDate.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cot phai: Dot thuc tap + GVHD + Actions -->
+        <div class="col-lg-5">
+            <!-- Card Dot thuc tap -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-bold"><i class="fa fa-calendar-alt text-success me-2"></i>Đợt thực tập</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.Term != null)
+                    {
+                        <div class="mb-2">
+                            <label class="form-label small text-muted fw-semibold mb-1">Tên đợt</label>
+                            <p class="mb-0 fw-semibold">@Model.Term.TermName</p>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small text-muted fw-semibold mb-1">Thời gian</label>
+                            <p class="mb-0">
+                                @Model.Term.InternshipStart.ToString("dd/MM/yyyy") — @Model.Term.EndDate.ToString("dd/MM/yyyy")
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Chưa có thông tin đợt thực tập</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Card GVHD -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-bold"><i class="fa fa-chalkboard-teacher text-warning me-2"></i>Giảng viên hướng dẫn</h6>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(lecturerName))
+                    {
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <i class="fa fa-user-tie"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-semibold">@lecturerName</p>
+                                <small class="text-muted">Giảng viên hướng dẫn</small>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0"><i class="fa fa-hourglass-half me-1"></i>Chưa phân công giảng viên</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Card Hanh dong -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    @if (Model.Status == RegistrationStatus.Pending)
+                    {
+                        <form asp-area="Student" asp-controller="SRegister" asp-action="UpdateRegistration" method="post"
+                              id="cancelForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="button" class="btn btn-outline-danger w-100 mb-2" id="btnCancelRegistration">
+                                <i class="fa fa-times-circle me-1"></i>Hủy đăng ký
+                            </button>
+                        </form>
+                        <small class="text-muted d-block text-center">
+                            <i class="fa fa-info-circle me-1"></i>Hủy đơn để đăng ký doanh nghiệp khác
+                        </small>
+                    }
+                    else if (Model.Status == RegistrationStatus.Rejected)
+                    {
+                        <a asp-action="Index" class="btn btn-primary w-100">
+                            <i class="fa fa-redo me-1"></i>Đăng ký lại
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const cancelBtn = document.getElementById('btnCancelRegistration');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', async function () {
+            const result = await Swal.fire({
+                title: '<i class="fa fa-exclamation-triangle text-warning me-2"></i>Hủy đăng ký?',
+                html: 'Bạn có chắc chắn muốn hủy đơn đăng ký?<br><small class="text-muted">Sau khi hủy, bạn có thể đăng ký lại tại doanh nghiệp khác.</small>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fa fa-times-circle me-1"></i>Hủy đăng ký',
+                cancelButtonText: 'Không, giữ lại'
+            });
+
+            if (result.isConfirmed) {
+                document.getElementById('cancelForm').submit();
+            }
+        });
     }
-
-</div>
-
-
-<div class="card shadow-sm p-4 mb-3">
-
-<h5 class="mb-3"><i class="fa fa-calendar-alt text-info me-2"></i>Thông tin đợt thực tập</h5>
-
-<div class="row mb-3">
-
-<div class="col-md-6">
-<label class="form-label">Tên đợt</label>
-<input class="form-control" value="@Model.Term?.TermName" readonly />
-</div>
-
-<div class="col-md-6">
-<label class="form-label">Ngày đăng ký</label>
-<input class="form-control" value="@Model.CreatedDate.ToShortDateString()" readonly />
-</div>
-
-</div>
-
-</div>
-
-
-<div class="card shadow-sm p-4 mb-3">
-
-<h5 class="mb-3"><i class="fa fa-briefcase text-info me-2"></i>Thông tin đăng ký</h5>
-
-<div class="row mb-3">
-
-<div class="col-md-6">
-<label class="form-label">Vị trí thực tập</label>
-<input class="form-control" value="@Model.Position" readonly />
-</div>
-
-<div class="col-md-6">
-<label class="form-label">Trạng thái</label>
-
-<div>
-
-@if (Model.Status == RegistrationStatus.Pending)
-{
-<span class="badge bg-warning fs-6">Chờ duyệt</span>
+});
+</script>
 }
-else if (Model.Status == RegistrationStatus.Approved)
-{
-<span class="badge bg-success fs-6">Đã duyệt</span>
-}
-else
-{
-<span class="badge bg-danger fs-6">Từ chối</span>
-}
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-
-<div class="text-end">
-
-@if (Model.Status == RegistrationStatus.Pending)
-{
-<form asp-area="Student"
-      asp-controller="SRegister"
-      asp-action="UpdateRegistration"
-      method="post">
-
-    @Html.AntiForgeryToken()
-
-    <input type="hidden" name="id" value="@Model.Id" />
-
-   <button type="submit" class="btn btn-warning">
-    <i class="fa fa-refresh"></i> Đăng ký lại
-</button>
-
-<a asp-action="Index" class="btn btn-outline-secondary">
-    <i class="fa fa-arrow-left"></i> Quay lại
-</a>
-
-</form>
-}
-
-
-</div>
-
-}
-
-</div>

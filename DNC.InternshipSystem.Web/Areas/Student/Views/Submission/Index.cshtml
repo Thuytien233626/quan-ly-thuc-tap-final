@@ -3,7 +3,7 @@
 
 @{
     Layout = "~/Areas/Student/Views/Shared/_LayoutStudent.cshtml";
-    ViewData["Title"] = "Nộp báo cáo";
+    ViewData["Title"] = "Nộp báo cáo thực tập";
 
     bool hasRegistration = ViewBag.HasRegistration ?? false;
     bool isApproved = ViewBag.IsApproved ?? false;
@@ -16,7 +16,9 @@
         ? (int)Math.Round((double)logbookCount / totalWeeks * 100)
         : 0;
 
-    var submissions = ViewBag.Submissions as List<Submission>;
+    var submissions = ViewBag.Submissions as List<Submission> ?? new List<Submission>();
+    var existingReport = submissions.FirstOrDefault(s => s.Type == "Báo cáo thực tập");
+    bool hasSubmitted = existingReport != null;
 
     string reportDeadline = registration?.Term?.ReportDeadline
         .ToString("dd/MM/yyyy") ?? "Chưa xác định";
@@ -64,75 +66,180 @@ else if (!isApproved)
 else
 {
 
-<div class="container-fluid py-4">
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Nộp báo cáo thực tập</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Student/StudentHome">Dashboard</a></li>
+                <li class="breadcrumb-item active">Nộp báo cáo</li>
+            </ol>
+        </nav>
+    </div>
+</div>
 
-    <div class="row">
 
-        <div class="col-lg-8">
 
-            <!-- Upload report -->
+<div class="row g-4">
+
+    <!-- Cot trai: Form nop / Trang thai -->
+    <div class="col-lg-8">
+
+        @if (hasSubmitted)
+        {
+            <!-- Da nop roi - Hien trang thai -->
             <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="fa fa-check-circle text-success me-2"></i>
+                        Báo cáo đã nộp
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success bg-success bg-opacity-10 border-0 mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-file-pdf fa-2x text-success me-3"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 fw-bold">@existingReport!.Title</h6>
+                                <small class="text-muted">
+                                    Nộp lúc: @existingReport.SubmittedDate.ToString("dd/MM/yyyy HH:mm")
+                                </small>
+                            </div>
+                            <div>
+                                @if (existingReport.Status == "Approved")
+                                {
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fa fa-check me-1"></i>Đã duyệt
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark fs-6">
+                                        <i class="fa fa-clock me-1"></i>Chờ duyệt
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
 
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-semibold mb-1">File đã nộp</label>
+                            <div>
+                                <a asp-action="Download" asp-route-path="@existingReport.FilePath"
+                                   class="btn btn-outline-primary btn-sm" target="_blank">
+                                    <i class="fa fa-download me-1"></i>Tải file báo cáo
+                                </a>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(existingReport.Note))
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted fw-semibold mb-1">Ghi chú</label>
+                                <p class="mb-0">@existingReport.Note</p>
+                            </div>
+                        }
+                    </div>
+
+                    @if (existingReport.Status == "Pending")
+                    {
+                        <hr class="my-3">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="collapse" data-bs-target="#editReportForm">
+                                <i class="fa fa-edit me-1"></i>Chỉnh sửa
+                            </button>
+                            <form asp-action="DeleteReport" method="post" id="deleteReportForm" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@existingReport.Id" />
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="btnDeleteReport">
+                                    <i class="fa fa-trash me-1"></i>Hủy báo cáo
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Form chinh sua (an/hien) -->
+                        <div class="collapse mt-3" id="editReportForm">
+                            <div class="card card-body bg-light border">
+                                <form asp-action="UpdateReport" method="post" enctype="multipart/form-data">
+                                    <input type="hidden" name="id" value="@existingReport.Id" />
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold small">Tiêu đề</label>
+                                            <input type="text" class="form-control form-control-sm" name="Title" value="@existingReport.Title" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold small">Thay file mới <span class="text-muted">(tùy chọn)</span></label>
+                                            <input type="file" class="form-control form-control-sm" name="File" accept=".pdf,.docx,.xlsx">
+                                            <small class="text-muted">Để trống nếu không muốn thay file</small>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold small">Ghi chú</label>
+                                            <textarea class="form-control form-control-sm" name="Note" rows="2">@existingReport.Note</textarea>
+                                        </div>
+                                        <div class="col-12 text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#editReportForm">Hủy</button>
+                                            <button type="submit" class="btn btn-sm btn-warning">
+                                                <i class="fa fa-save me-1"></i>Lưu thay đổi
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Chua nop - Hien form -->
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3">
                     <h6 class="fw-bold mb-0">
                         <i class="fa fa-upload text-info me-2"></i>
-                        Gửi báo cáo mới
+                        Nộp báo cáo thực tập
                     </h6>
                 </div>
-
                 <div class="card-body">
+                    <div class="alert alert-info bg-info bg-opacity-10 border-0 mb-4">
+                        <i class="fa fa-info-circle me-2"></i>
+                        <small>Nộp file báo cáo thực tập cuối kỳ (PDF, DOCX, XLSX). Tối đa 10MB. Chỉ được nộp <strong>1 lần</strong>.</small>
+                    </div>
 
                     <form asp-action="SubmitReport" method="post" enctype="multipart/form-data">
 
                         <div class="row g-3">
 
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Loại báo cáo</label>
-
-                                <select class="form-select" name="ReportType" required>
-
-                                    <option value="">-- Chọn loại báo cáo --</option>
-                                    <option>Báo cáo tuần</option>
-                                    <option>Báo cáo giữa kỳ</option>
-                                    <option>Báo cáo cuối kỳ</option>
-                                    <option>Phiếu đánh giá DN</option>
-
-                                </select>
-                            </div>
-
-                            <div class="col-md-6">
-
-                                <label class="form-label fw-semibold">Tiêu đề</label>
-
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    Tiêu đề báo cáo <span class="text-danger">*</span>
+                                </label>
                                 <input type="text"
                                        class="form-control"
                                        name="Title"
-                                       placeholder="VD: Báo cáo tuần 4"
+                                       placeholder="VD: Báo cáo thực tập tại Công ty ABC"
                                        required>
-
                             </div>
 
                             <div class="col-12">
-
-                                <label class="form-label fw-semibold">File đính kèm</label>
-
+                                <label class="form-label fw-semibold">
+                                    File báo cáo <span class="text-danger">*</span>
+                                </label>
                                 <input type="file"
                                        class="form-control"
                                        name="File"
                                        accept=".pdf,.docx,.xlsx"
                                        required>
-
+                                <small class="text-muted">Chấp nhận: PDF, DOCX, XLSX (tối đa 10MB)</small>
                             </div>
 
                             <div class="col-12">
-
                                 <label class="form-label fw-semibold">Ghi chú</label>
-
                                 <textarea class="form-control"
                                           name="Note"
                                           rows="3"
-                                          placeholder="Ghi chú thêm nếu cần"></textarea>
-
+                                          placeholder="Ghi chú thêm nếu cần (tùy chọn)"></textarea>
                             </div>
 
                         </div>
@@ -140,191 +247,120 @@ else
                         <hr class="my-4">
 
                         <div class="d-flex justify-content-end gap-2">
-
-                            <button type="reset"
-                                    class="btn btn-outline-secondary">
-
-                                <i class="fa fa-redo me-1"></i>
-                                Đặt lại
-
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="fa fa-redo me-1"></i>Đặt lại
                             </button>
-
-                            <button type="submit"
-                                    class="btn btn-info text-white">
-
-                                <i class="fa fa-paper-plane me-1"></i>
-                                Gửi báo cáo
-
+                            <button type="submit" class="btn btn-info text-white">
+                                <i class="fa fa-paper-plane me-1"></i>Gửi báo cáo
                             </button>
-
                         </div>
 
                     </form>
-
                 </div>
             </div>
+        }
 
-            <!-- History -->
-            <div class="card border-0 shadow-sm">
+    </div>
 
-                <div class="card-header bg-white py-3">
+    <!-- Cot phai: Thong tin -->
+    <div class="col-lg-4">
 
-                    <h6 class="fw-bold mb-0">
-                        <i class="fa fa-history text-secondary me-2"></i>
-                        Lịch sử nộp báo cáo
-                    </h6>
-
-                </div>
-
-                <div class="table-responsive">
-
-                    <table class="table align-middle mb-0">
-
-                        <thead class="table-light">
-
-                            <tr>
-
-                                <th class="ps-4">#</th>
-                                <th>Tiêu đề</th>
-                                <th>Loại</th>
-                                <th>Ngày nộp</th>
-                                <th class="text-center">Trạng thái</th>
-                                <th class="text-center">File</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                        @if (submissions != null && submissions.Any())
-                        {
-                            int i = 1;
-
-                            foreach (var item in submissions)
-                            {
-
-                                <tr>
-
-                                    <td class="ps-4">@i</td>
-
-                                    <td>@item.Title</td>
-
-                                    <td>@item.Type</td>
-
-                                    <td>@item.SubmittedDate.ToString("dd/MM/yyyy")</td>
-
-                                    <td class="text-center">
-
-                                        @if (item.Status == "Approved")
-                                        {
-                                            <span class="badge bg-success">
-                                                Đã duyệt
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-warning text-dark">
-                                                Chờ duyệt
-                                            </span>
-                                        }
-
-                                    </td>
-
-                                    <td class="text-center">
-
-                                        <a asp-action="Download"
-                                           asp-route-path="@item.FilePath"
-                                           target="_blank"
-                                           class="btn btn-sm btn-outline-primary"
-                                           title="Tải file">
-
-                                            <i class="fa fa-download"></i>
-
-                                        </a>
-
-                                    </td>
-
-                                </tr>
-
-                                i++;
-                            }
-                        }
-                        else
-                        {
-
-                            <tr>
-
-                                <td colspan="6"
-                                    class="text-center text-muted py-4">
-
-                                    <i class="fa fa-inbox me-1"></i>
-                                    Chưa có báo cáo nào được nộp.
-
-                                </td>
-
-                            </tr>
-
-                        }
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
+        <!-- Card trang thai nop -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="fa fa-clipboard-check text-primary me-2"></i>
+                    Trạng thái nộp
+                </h6>
             </div>
-
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    @if (hasSubmitted)
+                    {
+                        <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <i class="fa fa-check"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 fw-semibold text-success">Đã nộp báo cáo</p>
+                            <small class="text-muted">@existingReport!.SubmittedDate.ToString("dd/MM/yyyy")</small>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <i class="fa fa-exclamation"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 fw-semibold text-warning">Chưa nộp báo cáo</p>
+                            <small class="text-muted">Hạn nộp: @reportDeadline</small>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
 
-        <!-- Right info panel -->
-        <div class="col-lg-4">
-
-            <div class="card border-0 shadow-sm">
-
-                <div class="card-header bg-white py-3">
-
-                    <h6 class="fw-bold mb-0">
-                        <i class="fa fa-info-circle text-primary me-2"></i>
-                        Thông tin báo cáo
-                    </h6>
-
-                </div>
-
-                <div class="card-body">
-
-                    <p class="mb-2">
-                        <strong>Hạn nộp:</strong>
-                        <span class="text-danger">
-                            @reportDeadline
-                        </span>
-                    </p>
-
-                    <p class="mb-2">
-                        <strong>Số tuần đã ghi logbook:</strong>
-                        @logbookCount / @totalWeeks
-                    </p>
-
-                    <div class="progress mb-3" style="height:8px">
-
-                        <div class="progress-bar bg-success"
-                             style="width:@progressPercent%">
-
-                        </div>
-
-                    </div>
-
-                    <small class="text-muted">
-                        Hoàn thành: @progressPercent%
-                    </small>
-
-                </div>
-
+        <!-- Card thong tin dot -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="fa fa-info-circle text-info me-2"></i>
+                    Thông tin
+                </h6>
             </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label small text-muted fw-semibold mb-1">Hạn nộp</label>
+                    <p class="mb-0 fw-semibold text-danger">
+                        <i class="fa fa-calendar-times me-1"></i>@reportDeadline
+                    </p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small text-muted fw-semibold mb-1">Nhật ký thực tập</label>
+                    <p class="mb-1">@logbookCount / @totalWeeks tuần</p>
+                    <div class="progress" style="height:6px">
+                        <div class="progress-bar bg-success" style="width:@(progressPercent)%"></div>
+                    </div>
+                    <small class="text-muted">Hoàn thành: @progressPercent%</small>
+                </div>
 
+                <hr>
+
+                <div class="small text-muted">
+                    <p class="mb-1"><i class="fa fa-check-circle text-success me-1"></i> Hoàn thành nhật ký trước khi nộp</p>
+                    <p class="mb-1"><i class="fa fa-file-pdf text-danger me-1"></i> File PDF, DOCX, XLSX</p>
+                    <p class="mb-0"><i class="fa fa-database text-info me-1"></i> Tối đa 10MB</p>
+                </div>
+            </div>
         </div>
 
     </div>
 
 </div>
+
 } @* end else isApproved *@
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Huy bao cao
+    const deleteBtn = document.getElementById('btnDeleteReport');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async function () {
+            const result = await Swal.fire({
+                title: '<i class="fa fa-exclamation-triangle text-danger me-2"></i>Hủy báo cáo?',
+                html: 'Bạn có chắc chắn muốn hủy báo cáo đã nộp?<br><small class="text-muted">File báo cáo sẽ bị xóa và bạn sẽ cần nộp lại.</small>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fa fa-trash me-1"></i>Hủy báo cáo',
+                cancelButtonText: 'Không, giữ lại'
+            });
+            if (result.isConfirmed) {
+                document.getElementById('deleteReportForm').submit();
+            }
+        });
+    }
+});
+</script>
+}

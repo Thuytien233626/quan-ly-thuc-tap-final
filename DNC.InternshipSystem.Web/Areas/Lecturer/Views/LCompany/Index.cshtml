@@ -2,80 +2,55 @@
 @{
     Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
     ViewData["Title"] = "Doanh nghiệp thực tập";
+
+    // Flatten: tao danh sach SV flat
+    var allStudents = new List<dynamic>();
+    var companyList = new List<dynamic>();
+
+    if (Model != null)
+    {
+        foreach (var company in Model)
+        {
+            companyList.Add(company);
+            foreach (var item in company.Students)
+            {
+                var student = item.Student;
+                if (student?.User != null)
+                {
+                    allStudents.Add(new
+                    {
+                        StudentCode = (string)(student.StudentCode ?? ""),
+                        FullName = (string)(student.User.FullName ?? ""),
+                        ClassId = (string)(student.ClassId ?? ""),
+                        Gender = ((int)student.Gender == 0) ? "Nam" : "Nữ",
+                        DateOfBirth = student.DateOfBirth != null ? ((DateTime)student.DateOfBirth).ToString("dd/MM/yyyy") : "",
+                        Position = (string)(item.Position ?? ""),
+                        CompanyName = (string)(company.Name ?? ""),
+                        Province = (string)(company.Province ?? "")
+                    });
+                }
+            }
+        }
+    }
+
+    int totalStudents = allStudents.Count;
+    int totalCompanies = companyList.Count;
 }
 
+<!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-1">Doanh nghiệp thực tập</h4>
-        <p class="text-muted mb-0 small">Danh sách các doanh nghiệp nơi sinh viên của bạn đang thực tập.</p>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/Lecturer/LecturerHome">Dashboard</a></li>
+                <li class="breadcrumb-item active">Doanh nghiệp</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-@if (Model != null && Model.Any())
-{
-    <div class="row g-4">
-        @foreach (var company in Model)
-        {
-            <div class="col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                    <i class="fa fa-building fs-5"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-bold mb-1 text-dark">@company.Name</h6>
-                                    @if (!string.IsNullOrEmpty((string)company.Province))
-                                    {
-                                        <span class="badge bg-light text-muted border small">
-                                            <i class="fa fa-map-marker-alt me-1"></i> @company.Province
-                                        </span>
-                                    }
-                                </div>
-                            </div>
-                            <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">
-                                @company.StudentCount <i class="fa fa-user-graduate ms-1"></i>
-                            </span>
-                        </div>
-
-                        @if (!string.IsNullOrEmpty((string)company.Address))
-                        {
-                            <div class="mb-2 small text-muted">
-                                <i class="fa fa-location-dot me-2 text-danger"></i> @company.Address
-                            </div>
-                        }
-
-                        @if (!string.IsNullOrEmpty((string)company.Phone))
-                        {
-                            <div class="mb-3 small text-muted">
-                                <i class="fa fa-phone me-2 text-success"></i> @company.Phone
-                            </div>
-                        }
-
-                        <hr class="my-3">
-
-                        <div class="d-flex flex-wrap gap-2">
-                            @foreach (var student in company.Students)
-                            {
-                                if (student?.User != null)
-                                {
-                                    <div class="d-flex align-items-center gap-2 border rounded-pill px-3 py-1" style="font-size: 0.8rem;">
-                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width: 24px; height: 24px; font-size: 0.65rem;">
-                                            <i class="fa fa-user"></i>
-                                        </div>
-                                        <span class="fw-semibold">@student.User.FullName</span>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-}
-else
+@if (totalStudents == 0)
 {
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center py-5">
@@ -84,4 +59,316 @@ else
             <p class="text-muted small">Sinh viên chưa được phân công hoặc chưa đăng ký thực tập.</p>
         </div>
     </div>
+}
+else
+{
+
+<!-- Thong ke -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width:42px;height:42px">
+                    <i class="fa fa-building"></i>
+                </div>
+                <div>
+                    <div class="fs-5 fw-bold">@totalCompanies</div>
+                    <small class="text-muted">Doanh nghiệp</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width:42px;height:42px">
+                    <i class="fa fa-user-graduate"></i>
+                </div>
+                <div>
+                    <div class="fs-5 fw-bold">@totalStudents</div>
+                    <small class="text-muted">Sinh viên</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs: Bang tong hop / Theo DN -->
+<ul class="nav nav-tabs mb-0" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tabTable" type="button">
+            <i class="fa fa-table me-1"></i>Bảng tổng hợp
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tabCompany" type="button">
+            <i class="fa fa-building me-1"></i>Theo doanh nghiệp
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- TAB 1: Bang tong hop -->
+    <div class="tab-pane fade show active" id="tabTable">
+        <div class="card border-0 shadow-sm rounded-top-0">
+            <!-- Thanh tim kiem + so luong -->
+            <div class="card-header bg-white py-3">
+                <div class="row align-items-center g-2">
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="fa fa-search text-muted"></i></span>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Tìm theo MSSV, tên SV, doanh nghiệp...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="filterCompany">
+                            <option value="">Tất cả doanh nghiệp</option>
+                            @foreach (var c in companyList)
+                            {
+                                <option value="@c.Name">@c.Name (@c.StudentCount SV)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <small class="text-muted" id="resultCount">Hiển thị @totalStudents / @totalStudents</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bang -->
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="studentTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:40px">#</th>
+                                <th style="width:100px">MSSV</th>
+                                <th>Họ tên</th>
+                                <th style="width:70px">Giới tính</th>
+                                <th style="width:100px">Ngày sinh</th>
+                                <th style="width:100px">Lớp</th>
+                                <th>Doanh nghiệp</th>
+                                <th>Vị trí TT</th>
+                                <th style="width:90px">Tỉnh/TP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            @{ int idx = 1; }
+                            @foreach (var s in allStudents)
+                            {
+                                <tr data-company="@s.CompanyName" data-search="@s.StudentCode @s.FullName @s.CompanyName @s.ClassId @s.Position">
+                                    <td class="text-muted">@(idx++)</td>
+                                    <td><code class="text-primary">@s.StudentCode</code></td>
+                                    <td class="fw-semibold">@s.FullName</td>
+                                    <td><small>@s.Gender</small></td>
+                                    <td><small>@s.DateOfBirth</small></td>
+                                    <td><span class="badge bg-light text-dark border">@s.ClassId</span></td>
+                                    <td>@s.CompanyName</td>
+                                    <td><small class="text-muted">@s.Position</small></td>
+                                    <td><small class="text-muted">@s.Province</small></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Phan trang -->
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <select class="form-select form-select-sm d-inline-block" id="pageSize" style="width:auto">
+                        <option value="10">10 / trang</option>
+                        <option value="20" selected>20 / trang</option>
+                        <option value="50">50 / trang</option>
+                        <option value="100">100 / trang</option>
+                    </select>
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: Theo DN (Accordion) -->
+    <div class="tab-pane fade" id="tabCompany">
+        <div class="card border-0 shadow-sm rounded-top-0">
+            <div class="card-body p-3">
+                <div class="accordion" id="companyAccordion">
+                    @{ int cIdx = 0; }
+                    @foreach (var company in companyList)
+                    {
+                        cIdx++;
+                        var collapseId = $"collapse{cIdx}";
+                        <div class="accordion-item border rounded mb-2">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                                    <div class="d-flex align-items-center gap-3 w-100">
+                                        <div class="rounded bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:0.8rem">
+                                            <i class="fa fa-building"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <span class="fw-bold small">@company.Name</span>
+                                            @if (!string.IsNullOrEmpty((string)company.Province))
+                                            {
+                                                <small class="text-muted ms-2">@company.Province</small>
+                                            }
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill me-3">@company.StudentCount SV</span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="@collapseId" class="accordion-collapse collapse" data-bs-parent="#companyAccordion">
+                                <div class="accordion-body p-0">
+                                    @if (!string.IsNullOrEmpty((string)company.Address))
+                                    {
+                                        <div class="px-3 pt-2 small text-muted">
+                                            <i class="fa fa-location-dot text-danger me-1"></i> @company.Address
+                                            @if (!string.IsNullOrEmpty((string)company.Phone))
+                                            {
+                                                <span class="ms-3"><i class="fa fa-phone text-success me-1"></i> @company.Phone</span>
+                                            }
+                                        </div>
+                                    }
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width:40px">#</th>
+                                                    <th style="width:100px">MSSV</th>
+                                                    <th>Họ tên</th>
+                                                    <th style="width:70px">GT</th>
+                                                    <th style="width:100px">Ngày sinh</th>
+                                                    <th>Lớp</th>
+                                                    <th>Vị trí TT</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{ int sIdx = 0; }
+                                                @foreach (var item in company.Students)
+                                                {
+                                                    var student = item.Student;
+                                                    if (student?.User != null)
+                                                    {
+                                                        sIdx++;
+                                                        <tr>
+                                                            <td class="text-muted">@sIdx</td>
+                                                            <td><code class="text-primary">@student.StudentCode</code></td>
+                                                            <td class="fw-semibold">@student.User.FullName</td>
+                                                            <td><small>@(((int)student.Gender == 0) ? "Nam" : "Nữ")</small></td>
+                                                            <td><small>@(student.DateOfBirth?.ToString("dd/MM/yyyy") ?? "")</small></td>
+                                                            <td><span class="badge bg-light text-dark border">@(student.ClassId ?? "")</span></td>
+                                                            <td><small class="text-muted">@item.Position</small></td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+}
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('tableBody');
+    if (!tbody) return;
+
+    const allRows = Array.from(tbody.querySelectorAll('tr'));
+    const searchInput = document.getElementById('searchInput');
+    const filterCompany = document.getElementById('filterCompany');
+    const pageSizeSelect = document.getElementById('pageSize');
+    const pagination = document.getElementById('pagination');
+    const resultCount = document.getElementById('resultCount');
+    const total = allRows.length;
+
+    let filtered = [...allRows];
+    let currentPage = 1;
+
+    function getPageSize() { return parseInt(pageSizeSelect.value); }
+
+    function applyFilter() {
+        const query = searchInput.value.toLowerCase().trim();
+        const company = filterCompany.value;
+
+        filtered = allRows.filter(row => {
+            const searchText = (row.dataset.search || '').toLowerCase();
+            const rowCompany = row.dataset.company || '';
+            const matchSearch = !query || searchText.includes(query);
+            const matchCompany = !company || rowCompany === company;
+            return matchSearch && matchCompany;
+        });
+
+        currentPage = 1;
+        render();
+    }
+
+    function render() {
+        const pageSize = getPageSize();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+
+        // An/hien rows
+        allRows.forEach(r => r.style.display = 'none');
+        filtered.forEach((r, i) => {
+            r.style.display = (i >= start && i < end) ? '' : 'none';
+            // Cap nhat so thu tu
+            r.cells[0].textContent = i + 1;
+        });
+
+        resultCount.textContent = `Hiển thị ${Math.min(end, filtered.length)} / ${filtered.length}` +
+            (filtered.length < total ? ` (lọc từ ${total})` : '');
+
+        // Pagination
+        let html = '';
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`;
+
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + 4);
+        if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+        for (let p = startPage; p <= endPage; p++) {
+            html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${p}">${p}</a></li>`;
+        }
+
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`;
+
+        pagination.innerHTML = html;
+
+        pagination.querySelectorAll('a[data-page]').forEach(a => {
+            a.addEventListener('click', function(e) {
+                e.preventDefault();
+                const p = parseInt(this.dataset.page);
+                if (p >= 1 && p <= totalPages) {
+                    currentPage = p;
+                    render();
+                }
+            });
+        });
+    }
+
+    searchInput.addEventListener('input', applyFilter);
+    filterCompany.addEventListener('change', applyFilter);
+    pageSizeSelect.addEventListener('change', () => { currentPage = 1; render(); });
+
+    render();
+});
+</script>
 }

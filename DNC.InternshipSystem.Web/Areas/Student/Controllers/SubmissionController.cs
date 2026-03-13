@@ -76,7 +76,7 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
         // ===============================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SubmitReport(string ReportType, string Title, string Note, IFormFile File)
+        public async Task<IActionResult> SubmitReport(string Title, string Note, IFormFile File)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -92,6 +92,16 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
             if (registration == null || registration.Status != RegistrationStatus.Approved)
             {
                 TempData["Error"] = "Bạn chưa đăng ký thực tập hoặc đơn chưa được duyệt.";
+                return RedirectToAction("Index");
+            }
+
+            // Kiem tra da nop bao cao chua
+            var existingSubmission = await _context.Submissions
+                .AnyAsync(s => s.RegistrationId == registration.Id && s.Type == "Báo cáo thực tập");
+
+            if (existingSubmission)
+            {
+                TempData["Error"] = "Bạn đã nộp báo cáo thực tập rồi. Nếu cần cập nhật, vui lòng liên hệ giảng viên.";
                 return RedirectToAction("Index");
             }
 
@@ -138,8 +148,8 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
             var submission = new Submission
             {
                 RegistrationId = registration.Id,
-                Title = Title,
-                Type = ReportType,
+                Title = Title ?? "Báo cáo thực tập",
+                Type = "Báo cáo thực tập",
                 FilePath = "/uploads/reports/" + fileName,
                 Note = Note ?? "",
                 SubmittedDate = DateTime.UtcNow,
@@ -176,6 +186,115 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
 
             var contentType = "application/octet-stream";
             return PhysicalFile(fullPath, contentType, Path.GetFileName(fullPath));
+        }
+
+        // ===============================
+        // UPDATE REPORT (nop lai)
+        // ===============================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateReport(int id, string Title, string Note, IFormFile? File)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var submission = await _context.Submissions
+                .Include(s => s.Registration)
+                .FirstOrDefaultAsync(s => s.Id == id && s.Registration!.StudentId == user.Id);
+
+            if (submission == null)
+            {
+                TempData["Error"] = "Không tìm thấy báo cáo.";
+                return RedirectToAction("Index");
+            }
+
+            if (submission.Status != "Pending")
+            {
+                TempData["Error"] = "Báo cáo đã được duyệt, không thể chỉnh sửa.";
+                return RedirectToAction("Index");
+            }
+
+            submission.Title = Title ?? submission.Title;
+            submission.Note = Note ?? "";
+
+            // Neu co file moi → thay the
+            if (File != null && File.Length > 0)
+            {
+                if (File.Length > 10 * 1024 * 1024)
+                {
+                    TempData["Error"] = "File vượt quá 10MB.";
+                    return RedirectToAction("Index");
+                }
+
+                var allowedExtensions = new[] { ".pdf", ".docx", ".xlsx" };
+                var extension = Path.GetExtension(File.FileName).ToLower();
+                if (!allowedExtensions.Contains(extension))
+                {
+                    TempData["Error"] = "Chỉ cho phép file PDF, DOCX, XLSX.";
+                    return RedirectToAction("Index");
+                }
+
+                // Xoa file cu
+                var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", submission.FilePath.TrimStart('/'));
+                if (System.IO.File.Exists(oldPath))
+                    System.IO.File.Delete(oldPath);
+
+                // Luu file moi
+                var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/reports");
+                if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
+
+                var fileName = Guid.NewGuid().ToString() + extension;
+                var filePath = Path.Combine(uploadFolder, fileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await File.CopyToAsync(stream);
+                }
+                submission.FilePath = "/uploads/reports/" + fileName;
+            }
+
+            submission.SubmittedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Cập nhật báo cáo thành công!";
+            return RedirectToAction("Index");
+        }
+
+        // ===============================
+        // DELETE REPORT (huy bao cao)
+        // ===============================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteReport(int id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var submission = await _context.Submissions
+                .Include(s => s.Registration)
+                .FirstOrDefaultAsync(s => s.Id == id && s.Registration!.StudentId == user.Id);
+
+            if (submission == null)
+            {
+                TempData["Error"] = "Không tìm thấy báo cáo.";
+                return RedirectToAction("Index");
+            }
+
+            if (submission.Status != "Pending")
+            {
+                TempData["Error"] = "Báo cáo đã được duyệt, không thể hủy.";
+                return RedirectToAction("Index");
+            }
+
+            // Xoa file
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", submission.FilePath.TrimStart('/'));
+            if (System.IO.File.Exists(fullPath))
+                System.IO.File.Delete(fullPath);
+
+            _context.Submissions.Remove(submission);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Đã hủy báo cáo thành công!";
+            return RedirectToAction("Index");
         }
     }
 }

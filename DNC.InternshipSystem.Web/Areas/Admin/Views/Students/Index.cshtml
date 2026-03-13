@@ -663,6 +663,126 @@ document.addEventListener('DOMContentLoaded', function() {
         
         location.reload();
     });
+    // ========== XEM CHI TIET SINH VIEN (Event Delegation) ==========
+    document.getElementById('studentListContainer').addEventListener('click', async function(e) {
+        const viewBtn = e.target.closest('.btn-view-student');
+        if (viewBtn) {
+            e.preventDefault();
+            const id = viewBtn.dataset.id;
+            Swal.fire({ title: 'Đang tải...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            const res = await fetch(`/Admin/Students/GetStudentDetailsAjax?id=${id}`);
+            const d = await res.json();
+
+            if (!d.success) { Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Không tìm thấy sinh viên!' }); return; }
+
+            const genderText = d.gender === 1 ? '<span class="text-danger"><i class="fa fa-venus"></i> Nữ</span>' : '<span class="text-primary"><i class="fa fa-mars"></i> Nam</span>';
+            const dobFormatted = d.dateOfBirth ? new Date(d.dateOfBirth).toLocaleDateString('vi-VN') : 'Chưa cập nhật';
+
+            Swal.fire({
+                title: '<i class="fa fa-user-graduate text-primary me-2"></i>Chi tiết sinh viên',
+                html: `
+                    <div class="text-start">
+                        <div class="row mb-2"><div class="col-4 text-muted">MSSV:</div><div class="col-8 fw-bold">${d.studentCode}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">Họ tên:</div><div class="col-8 fw-bold">${d.fullName}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">Email:</div><div class="col-8">${d.email}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">SĐT:</div><div class="col-8">${d.phone || 'Chưa cập nhật'}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">Giới tính:</div><div class="col-8">${genderText}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">Ngày sinh:</div><div class="col-8">${dobFormatted}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">Lớp:</div><div class="col-8">${d.className}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">Ngành:</div><div class="col-8">${d.majorName}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">Khóa:</div><div class="col-8">${d.batchName}</div></div>
+                        <div class="row mb-2"><div class="col-4 text-muted">Địa chỉ:</div><div class="col-8">${d.address || 'Chưa cập nhật'}</div></div>
+                    </div>
+                `,
+                width: '550px',
+                showConfirmButton: false,
+                showCloseButton: true
+            });
+            return;
+        }
+
+        // ========== SUA SINH VIEN (Event Delegation) ==========
+        const editBtn = e.target.closest('.btn-edit-student');
+        if (editBtn) {
+            e.preventDefault();
+            const id = editBtn.dataset.id;
+            Swal.fire({ title: 'Đang tải...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            const res = await fetch(`/Admin/Students/GetStudentDetailsAjax?id=${id}`);
+            const d = await res.json();
+
+            if (!d.success) { Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Không tìm thấy sinh viên!' }); return; }
+
+            const { value: formValues } = await Swal.fire({
+                title: '<i class="fa fa-edit text-warning me-2"></i>Chỉnh sửa sinh viên',
+                html: `
+                    <div class="text-start">
+                        <div class="mb-2"><label class="form-label small fw-semibold">MSSV</label>
+                            <input class="form-control form-control-sm bg-light" value="${d.studentCode}" disabled></div>
+                        <div class="mb-2"><label class="form-label small fw-semibold">Họ tên <span class="text-danger">*</span></label>
+                            <input id="swal-fullName" class="form-control form-control-sm" value="${d.fullName}"></div>
+                        <div class="mb-2"><label class="form-label small fw-semibold">Email</label>
+                            <input id="swal-email" class="form-control form-control-sm" value="${d.email}"></div>
+                        <div class="row mb-2">
+                            <div class="col-6"><label class="form-label small fw-semibold">SĐT</label>
+                                <input id="swal-phone" class="form-control form-control-sm" value="${d.phone}"></div>
+                            <div class="col-6"><label class="form-label small fw-semibold">Giới tính</label>
+                                <select id="swal-gender" class="form-select form-select-sm">
+                                    <option value="0" ${d.gender === 0 ? 'selected' : ''}>Nam</option>
+                                    <option value="1" ${d.gender === 1 ? 'selected' : ''}>Nữ</option>
+                                </select></div>
+                        </div>
+                        <div class="mb-2"><label class="form-label small fw-semibold">Ngày sinh</label>
+                            <input id="swal-dob" type="date" class="form-control form-control-sm" value="${d.dateOfBirth}"></div>
+                        <div class="mb-2"><label class="form-label small fw-semibold">Địa chỉ</label>
+                            <input id="swal-address" class="form-control form-control-sm" value="${d.address}"></div>
+                    </div>
+                `,
+                width: '500px',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-save me-1"></i>Lưu',
+                cancelButtonText: 'Hủy',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const fullName = document.getElementById('swal-fullName').value.trim();
+                    if (!fullName) { Swal.showValidationMessage('Họ tên không được trống!'); return false; }
+                    return {
+                        fullName,
+                        email: document.getElementById('swal-email').value.trim(),
+                        phone: document.getElementById('swal-phone').value.trim(),
+                        gender: document.getElementById('swal-gender').value,
+                        dateOfBirth: document.getElementById('swal-dob').value,
+                        address: document.getElementById('swal-address').value.trim()
+                    };
+                }
+            });
+
+            if (formValues) {
+                Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const fd = new FormData();
+                fd.append('id', id);
+                fd.append('fullName', formValues.fullName);
+                fd.append('email', formValues.email);
+                fd.append('phone', formValues.phone);
+                fd.append('gender', formValues.gender);
+                fd.append('dateOfBirth', formValues.dateOfBirth);
+                fd.append('address', formValues.address);
+
+                const saveRes = await postWithToken('/Admin/Students/UpdateStudentAjax', fd);
+                const saveData = await saveRes.json();
+
+                if (saveData.success) {
+                    Toast.fire({ icon: 'success', title: 'Đã cập nhật thành công!' });
+                    // Reload student list
+                    const activeClass = document.querySelector('.class-item.active');
+                    if (activeClass) activeClass.click();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Lỗi!', text: saveData.message });
+                }
+            }
+        }
+    });
 });
 </script>
 }

@@ -61,7 +61,11 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
                     g.Key.Phone,
                     g.Key.Province,
                     StudentCount = g.Count(),
-                    Students = g.Select(r => r.Student).ToList()
+                    Students = g.Select(r => new
+                    {
+                        r.Student,
+                        Position = r.Position
+                    }).ToList()
                 })
                 .OrderByDescending(x => x.StudentCount)
                 .ToList();
