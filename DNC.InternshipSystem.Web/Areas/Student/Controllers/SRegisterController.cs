@@ -29,6 +29,22 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
         // GET: /Student/SRegister — Danh sach doanh nghiep doi tac
         public async Task<IActionResult> Index(int page = 1, string? search = null, string? province = null)
         {
+            var userId = GetCurrentUserId();
+
+            // Kiem tra SV da co don dang ky chua
+            var existing = await _registrationService.GetMyRegistration(userId);
+            if (existing != null && existing.Status != Core.Enums.RegistrationStatus.Rejected)
+            {
+                // Da co don Pending/Approved/Completed → chuyen thang sang xem don
+                return RedirectToAction(nameof(MyRegistration));
+            }
+
+            // Truyen thong tin don bi tu choi (neu co) de hien banner
+            if (existing != null && existing.Status == Core.Enums.RegistrationStatus.Rejected)
+            {
+                ViewBag.RejectedRegistration = existing;
+            }
+
             const int pageSize = 6;
 
             // Goi Service lay danh sach doanh nghiep co phan trang

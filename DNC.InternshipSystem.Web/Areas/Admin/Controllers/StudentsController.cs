@@ -1014,6 +1014,77 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
+        // ========================================
+        // XEM / SUA SINH VIEN
+        // ========================================
+
+        [HttpGet]
+        public async Task<IActionResult> GetStudentDetailsAjax(Guid id)
+        {
+            var student = await _context.Students
+                .Include(s => s.User)
+                .Include(s => s.Class).ThenInclude(c => c!.Major).ThenInclude(m => m!.Batch)
+                .FirstOrDefaultAsync(s => s.UserId == id);
+
+            if (student == null)
+                return Json(new { success = false });
+
+            return Json(new
+            {
+                success = true,
+                id = student.UserId,
+                studentCode = student.StudentCode,
+                fullName = student.User?.FullName ?? "",
+                email = student.User?.Email ?? "",
+                phone = student.Phone ?? "",
+                address = student.Address ?? "",
+                gender = (int)student.Gender,
+                dateOfBirth = student.DateOfBirth?.ToString("yyyy-MM-dd") ?? "",
+                classId = student.ClassId ?? "",
+                className = student.Class?.Name ?? "",
+                majorName = student.Class?.Major?.Name ?? "",
+                batchName = student.Class?.Major?.Batch?.BatchCode ?? "",
+                profileImage = student.ProfileImage ?? "",
+                isActive = student.User?.IsActive ?? false
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateStudentAjax(Guid id, string fullName,
+            string? email, string? phone, string? address, int gender, string? dateOfBirth)
+        {
+            try
+            {
+                var student = await _context.Students
+                    .Include(s => s.User)
+                    .FirstOrDefaultAsync(s => s.UserId == id);
+
+                if (student == null)
+                    return Json(new { success = false, message = "Không tìm thấy sinh viên!" });
+
+                student.Gender = (Gender)gender;
+                student.Phone = phone;
+                student.Address = address;
+
+                if (!string.IsNullOrEmpty(dateOfBirth) && DateTime.TryParse(dateOfBirth, out var dob))
+                    student.DateOfBirth = dob;
+
+                if (student.User != null)
+                {
+                    student.User.FullName = fullName;
+                    if (!string.IsNullOrEmpty(email))
+                        student.User.Email = email;
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
     }
 
     public class ImportResult
@@ -1026,3 +1097,4 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
     }
 
 }
+

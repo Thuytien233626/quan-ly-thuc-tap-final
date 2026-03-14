@@ -176,7 +176,9 @@ document.getElementById('searchInput')?.addEventListener('input', function() {
                             var className = r.Student?.Class?.Name ?? "";
                             var companyName = r.Company?.Name ?? r.ExternalCompanyName ?? "N/A";
                             var isExternal = r.Company == null;
-                            var lecturerName = r.Lecturer?.User?.FullName ?? "";
+                            var lecturerName = r.Lecturer?.User?.FullName 
+                                ?? r.Student?.Class?.Lecturer?.User?.FullName 
+                                ?? "";
                             
                             <tr>
                                 <td class="text-muted">@idx</td>
@@ -238,9 +240,12 @@ document.getElementById('searchInput')?.addEventListener('input', function() {
     </div>
 </div>
 
+@Html.AntiForgeryToken()
+
 @section Scripts {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
     // Xem chi tiet
     document.querySelectorAll('.btn-details').forEach(btn => {
         btn.addEventListener('click', async function() {
@@ -348,6 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 const fd = new FormData();
                 fd.append('id', id);
+                if (csrfToken) fd.append('__RequestVerificationToken', csrfToken);
                 const res = await fetch('/Admin/Registrations/ApproveAjax', { method: 'POST', body: fd });
                 const data = await res.json();
                 if (data.success) {
@@ -384,6 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fd = new FormData();
                 fd.append('id', id);
                 fd.append('reason', reason);
+                if (csrfToken) fd.append('__RequestVerificationToken', csrfToken);
                 const res = await fetch('/Admin/Registrations/RejectAjax', { method: 'POST', body: fd });
                 const data = await res.json();
                 if (data.success) {
@@ -428,6 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fd = new FormData();
                 fd.append('id', id);
                 fd.append('lecturerId', lecturerId);
+                if (csrfToken) fd.append('__RequestVerificationToken', csrfToken);
                 const res = await fetch('/Admin/Registrations/AssignLecturerAjax', { method: 'POST', body: fd });
                 const data = await res.json();
                 if (data.success) {

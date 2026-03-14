@@ -1,0 +1,40 @@
+@* 
+    Partial view dung chung: Tu dong hien Toast khi co TempData Success/Error/SuccessMessage
+*@
+@if (TempData["Success"] != null || TempData["Error"] != null || TempData["SuccessMessage"] != null)
+{
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3500,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+
+        @if (TempData["Success"] != null)
+        {
+            <text>
+            Toast.fire({ icon: 'success', title: '@Html.Raw(TempData["Success"]?.ToString()?.Replace("'", "\\'"))' });
+            </text>
+        }
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+            Toast.fire({ icon: 'success', title: '@Html.Raw(TempData["SuccessMessage"]?.ToString()?.Replace("'", "\\'"))' });
+            </text>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <text>
+            Toast.fire({ icon: 'error', title: '@Html.Raw(TempData["Error"]?.ToString()?.Replace("'", "\\'"))' });
+            </text>
+        }
+    });
+    </script>
+}

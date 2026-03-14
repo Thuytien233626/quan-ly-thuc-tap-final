@@ -56,12 +56,12 @@
                     <td>@(item.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</td>
                     <td><small class="text-muted">@item.User?.Email</small></td>
                     <td class="text-center">
-                        <a href="#" class="btn btn-sm btn-outline-primary">
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-view-student" data-id="@item.UserId" title="Xem chi tiết">
                             <i class="fa fa-eye"></i>
-                        </a>
-                        <a href="#" class="btn btn-sm btn-outline-warning">
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-warning btn-edit-student" data-id="@item.UserId" title="Chỉnh sửa">
                             <i class="fa fa-edit"></i>
-                        </a>
+                        </button>
                     </td>
                 </tr>
             }

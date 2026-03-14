@@ -73,12 +73,19 @@ namespace DNC.InternshipSystem.Web.Services
             if (company == null)
                 return ServiceResult.Fail("Không tìm thấy doanh nghiệp.");
 
+            // Tu dong lay GV tu lop cua SV
+            var student = await _context.Students
+                .Include(s => s.Class)
+                .FirstOrDefaultAsync(s => s.UserId == userId);
+            Guid? lecturerId = student?.Class?.LecturerId;
+
             var registration = new Registration
             {
                 StudentId = userId,
                 TermId = activeTerm!.Id,
                 CompanyId = companyId,
                 Position = position,
+                LecturerId = lecturerId,
                 Status = RegistrationStatus.Pending,
                 CreatedDate = DateTime.UtcNow
             };
@@ -103,6 +110,12 @@ namespace DNC.InternshipSystem.Web.Services
             var company = await _companyService.FindOrCreateExternal(
                 companyName, address, taxCode, contactPerson, email, phone);
 
+            // Tu dong lay GV tu lop cua SV
+            var student = await _context.Students
+                .Include(s => s.Class)
+                .FirstOrDefaultAsync(s => s.UserId == userId);
+            Guid? lecturerId = student?.Class?.LecturerId;
+
             var registration = new Registration
             {
                 StudentId = userId,
@@ -111,6 +124,7 @@ namespace DNC.InternshipSystem.Web.Services
                 ExternalCompanyName = companyName,
                 ExternalCompanyAddress = address,
                 Position = position,
+                LecturerId = lecturerId,
                 Status = RegistrationStatus.Pending,
                 CreatedDate = DateTime.UtcNow
             };
@@ -145,6 +159,9 @@ namespace DNC.InternshipSystem.Web.Services
             return await _context.Registrations
                 .Include(r => r.Company)
                 .Include(r => r.Term)
+                .Include(r => r.Lecturer).ThenInclude(l => l!.User)
+                .Include(r => r.Student).ThenInclude(s => s!.User)
+                .Include(r => r.Student).ThenInclude(s => s!.Class).ThenInclude(c => c!.Lecturer).ThenInclude(l => l!.User)
                 .Where(r => r.StudentId == userId)
                 .OrderByDescending(r => r.CreatedDate)
                 .FirstOrDefaultAsync();
