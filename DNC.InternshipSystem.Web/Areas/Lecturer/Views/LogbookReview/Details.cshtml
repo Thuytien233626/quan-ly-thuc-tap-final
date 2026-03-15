@@ -37,7 +37,11 @@
                             </small>
                         </div>
                         <div>
-                            @if (!string.IsNullOrEmpty(log.LecturerComment))
+                            @if (log.ResubmitRequested)
+                            {
+                                <span class="badge bg-warning text-dark"><i class="fa fa-exclamation-triangle me-1"></i> SV xin nộp lại</span>
+                            }
+                            else if (!string.IsNullOrEmpty(log.LecturerComment))
                             {
                                 <span class="badge bg-success-subtle text-success"><i class="fa fa-check me-1"></i> Đã duyệt</span>
                             }
@@ -47,6 +51,26 @@
                             }
                         </div>
                     </div>
+
+                    @if (log.ResubmitRequested)
+                    {
+                    <div class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 d-flex align-items-start gap-3">
+                        <i class="fa fa-exclamation-circle text-warning mt-1"></i>
+                        <div class="flex-grow-1">
+                            <strong>Sinh viên xin nộp lại nhật ký này</strong>
+                            <p class="mb-2 small text-dark">Lý do: <em>@log.ResubmitReason</em></p>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-success" onclick="approveResubmit('@log.Id', @log.WeekNumber)">
+                                    <i class="fa fa-check me-1"></i> Chấp nhận
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="rejectResubmit('@log.Id', @log.WeekNumber)">
+                                    <i class="fa fa-times me-1"></i> Từ chối
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    }
+
                     <div class="card-body">
                         <h6 class="fw-bold text-dark mb-2">Nội dung công việc:</h6>
                         <div class="bg-light p-3 rounded mb-3" style="white-space: pre-wrap;">@log.Content</div>
@@ -70,9 +94,14 @@
                                 <div class="bg-primary bg-opacity-10 p-3 rounded border border-primary-subtle text-dark">
                                     @log.LecturerComment
                                 </div>
-                                <button class="btn btn-sm btn-link text-muted mt-1 px-0" onclick="enableEdit('@log.Id')">
-                                    <i class="fa fa-edit me-1"></i> Chỉnh sửa
-                                </button>
+                                <div class="mt-2 d-flex gap-2">
+                                    <button class="btn btn-sm btn-link text-muted px-0" onclick="enableEdit('@log.Id')">
+                                        <i class="fa fa-edit me-1"></i> Chỉnh sửa
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="requestResubmit('@log.Id', @log.WeekNumber)">
+                                        <i class="fa fa-undo me-1"></i> Yêu cầu nộp lại
+                                    </button>
+                                </div>
                             }
                             
                             <div id="comment-form-@log.Id" class="@(!string.IsNullOrEmpty(log.LecturerComment) ? "d-none" : "")">
@@ -161,7 +190,17 @@
 </div>
 
 @section Scripts {
+@Html.AntiForgeryToken()
 <script>
+    // Setup CSRF token cho tat ca AJAX request
+    var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    $.ajaxSetup({
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader('RequestVerificationToken', token);
+        },
+        headers: { 'RequestVerificationToken': token }
+    });
+
     function enableEdit(logId) {
         document.getElementById(`comment-form-${logId}`).classList.remove('d-none');
     }
@@ -173,7 +212,11 @@
             return;
         }
 
-        $.post('@Url.Action("AddComment", "LogbookReview")', { logbookId: logId, comment: content }, function(res) {
+        $.post('@Url.Action("AddComment", "LogbookReview")', {
+            logbookId: logId,
+            comment: content,
+            __RequestVerificationToken: token
+        }, function(res) {
             if (res.success) {
                 Swal.fire({
                     icon: 'success',
@@ -181,12 +224,13 @@
                     text: res.message,
                     timer: 1500,
                     showConfirmButton: false
-                }).then(() => location.reload()); // Reload de cap nhat UI
+                }).then(() => location.reload());
             } else {
-                Swal.fire('Lỗi', 'Không thể lưu nhận xét', 'error');
+                Swal.fire('Lỗi', res.message || 'Không thể lưu nhận xét', 'error');
             }
-        }).fail(function() {
-            Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
+        }).fail(function(xhr) {
+            console.error('Save comment error:', xhr.status, xhr.responseText);
+            Swal.fire('Lỗi', 'Lỗi kết nối server (HTTP ' + xhr.status + ')', 'error');
         });
     }
 
@@ -202,8 +246,8 @@
         $.ajax({
             url: '@Url.Action("AnalyzeWithAI", "LogbookReview")',
             type: 'POST',
-            data: { logbookId: logId },
-            timeout: 60000, // 60 second timeout
+            data: { logbookId: logId, __RequestVerificationToken: token },
+            timeout: 60000,
             success: function(res) {
                 if (res.success) {
                     Swal.fire({
@@ -240,5 +284,103 @@
             }
         });
     }
+
+    function requestResubmit(logId, weekNumber) {
+        Swal.fire({
+            title: 'Yêu cầu nộp lại',
+            html: '<p>Yêu cầu sinh viên nộp lại nhật ký <strong>Tuần ' + weekNumber + '</strong>.</p>' +
+                  '<p class="text-muted small mb-2">Nhận xét hiện tại sẽ bị xóa, sinh viên có thể chỉnh sửa và nộp lại.</p>',
+            input: 'textarea',
+            inputLabel: 'Lý do yêu cầu nộp lại',
+            inputPlaceholder: 'VD: Nội dung quá sơ sài, cần bổ sung chi tiết...',
+            inputAttributes: { 'aria-label': 'Lý do' },
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-undo me-1"></i> Xác nhận',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#f59e0b',
+            inputValidator: (value) => {
+                if (!value) return 'Vui lòng nhập lý do yêu cầu nộp lại.';
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('@Url.Action("RequestResubmit", "LogbookReview")', {
+                    logbookId: logId,
+                    reason: result.value,
+                    __RequestVerificationToken: token
+                }, function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message, 'error');
+                    }
+                }).fail(function(xhr) {
+                    Swal.fire('Lỗi', 'Lỗi kết nối server (HTTP ' + xhr.status + ')', 'error');
+                });
+            }
+        });
+    }
+
+    function approveResubmit(logId, weekNumber) {
+        Swal.fire({
+            title: 'Chấp nhận nộp lại?',
+            html: 'Cho phép sinh viên nộp lại nhật ký <strong>Tuần ' + weekNumber + '</strong>?<br><small class="text-muted">Nhận xét hiện tại sẽ bị xóa.</small>',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check me-1"></i> Chấp nhận',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#198754'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('@Url.Action("ApproveResubmit", "LogbookReview")', {
+                    logbookId: logId,
+                    __RequestVerificationToken: token
+                }, function(res) {
+                    if (res.success) {
+                        Swal.fire({ icon: 'success', title: 'Đã chấp nhận', text: res.message, timer: 1500, showConfirmButton: false })
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message, 'error');
+                    }
+                }).fail(function(xhr) {
+                    Swal.fire('Lỗi', 'Lỗi server (HTTP ' + xhr.status + ')', 'error');
+                });
+            }
+        });
+    }
+
+    function rejectResubmit(logId, weekNumber) {
+        Swal.fire({
+            title: 'Từ chối nộp lại?',
+            html: 'Từ chối yêu cầu nộp lại nhật ký <strong>Tuần ' + weekNumber + '</strong>?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-times me-1"></i> Từ chối',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#dc3545'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('@Url.Action("RejectResubmit", "LogbookReview")', {
+                    logbookId: logId,
+                    __RequestVerificationToken: token
+                }, function(res) {
+                    if (res.success) {
+                        Swal.fire({ icon: 'info', title: 'Đã từ chối', text: res.message, timer: 1500, showConfirmButton: false })
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message, 'error');
+                    }
+                }).fail(function(xhr) {
+                    Swal.fire('Lỗi', 'Lỗi server (HTTP ' + xhr.status + ')', 'error');
+                });
+            }
+        });
+    }
 </script>
 }
+

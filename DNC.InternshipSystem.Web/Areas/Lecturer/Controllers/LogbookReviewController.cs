@@ -43,6 +43,7 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             var registration = await _context.Registrations
                 .Include(r => r.Student).ThenInclude(s => s!.User)
                 .Include(r => r.Student).ThenInclude(s => s!.Class)
+                .Include(r => r.Company)
                 .Include(r => r.Term)
                 .FirstOrDefaultAsync(r => r.Id == id &&
                     (r.LecturerId == lecturer!.UserId || lecClassIds.Contains(r.Student!.ClassId)));
@@ -61,23 +62,25 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             return View(logbooks);
         }
 
-        // GET: /Lecturer/LogbookReview — Danh sach logbook chua nhan xet
+        // GET: /Lecturer/LogbookReview
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account", new { area = "" });
             var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
 
-            // Lay logbook chua co nhan xet cua GV
-            var pendingLogbooks = await _context.Logbooks
+            // Lay tat ca logbook cua SV do GV phu trach
+            var allLogbooks = await _context.Logbooks
                 .Include(l => l.Registration).ThenInclude(r => r!.Student).ThenInclude(s => s!.User)
                 .Include(l => l.Registration).ThenInclude(r => r!.Student).ThenInclude(s => s!.Class)
-                .Where(l => l.Registration!.LecturerId == lecturer!.UserId && string.IsNullOrEmpty(l.LecturerComment))
+                .Include(l => l.Registration).ThenInclude(r => r!.Company)
+                .Where(l => l.Registration!.LecturerId == lecturer!.UserId)
                 .OrderByDescending(l => l.SubmittedDate)
                 .ToListAsync();
 
-            // Nhom theo SV de hien thi gon
-            var grouped = pendingLogbooks
+            // Nhom chua duyet
+            var pending = allLogbooks
+                .Where(l => string.IsNullOrEmpty(l.LecturerComment))
                 .GroupBy(l => l.Registration)
                 .Select(g => new
                 {
@@ -87,7 +90,21 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
                 })
                 .ToList();
 
-            return View(grouped);
+            // Nhom da duyet
+            var reviewed = allLogbooks
+                .Where(l => !string.IsNullOrEmpty(l.LecturerComment))
+                .GroupBy(l => l.Registration)
+                .Select(g => new
+                {
+                    Registration = g.Key,
+                    ReviewedCount = g.Count(),
+                    TotalCount = allLogbooks.Count(l => l.RegistrationId == g.Key!.Id),
+                    LatestReview = g.Max(l => l.SubmittedDate)
+                })
+                .ToList();
+
+            ViewBag.ReviewedList = reviewed;
+            return View(pending);
         }
 
         // POST: Them nhan xet vao logbook (AJAX)
@@ -118,6 +135,49 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
 
             var result = await _logbookService.AnalyzeWithAI(logbookId, lecturer.UserId);
             return Json(new { success = result.Success, message = result.Message, feedback = result.Data });
+        }
+
+        // POST: Yeu cau SV nop lai (AJAX)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequestResubmit(Guid logbookId, string reason)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (lecturer == null) return NotFound();
+
+            var result = await _logbookService.RequestResubmit(logbookId, lecturer.UserId, reason ?? "");
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
+        // POST: Chap nhan yeu cau nop lai cua SV (AJAX)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveResubmit(Guid logbookId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (lecturer == null) return NotFound();
+
+            var result = await _logbookService.ApproveResubmitRequest(logbookId, lecturer.UserId);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
+        // POST: Tu choi yeu cau nop lai cua SV (AJAX)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectResubmit(Guid logbookId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (lecturer == null) return NotFound();
+
+            var result = await _logbookService.RejectResubmitRequest(logbookId, lecturer.UserId);
+            return Json(new { success = result.Success, message = result.Message });
         }
     }
 }

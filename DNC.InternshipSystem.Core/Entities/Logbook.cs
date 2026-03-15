@@ -23,6 +23,10 @@ namespace DNC.InternshipSystem.Core.Entities
         public string? LecturerComment { get; set; }
         public DateTime SubmittedDate { get; set; } = DateTime.UtcNow;
 
+        // Yeu cau nop lai tu SV
+        public bool ResubmitRequested { get; set; } = false;
+        public string? ResubmitReason { get; set; }
+
         // Quan he navigation
         public Registration? Registration { get; set; }
     }

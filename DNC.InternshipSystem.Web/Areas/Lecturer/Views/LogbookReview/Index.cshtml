@@ -2,83 +2,213 @@
 @{
     Layout = "~/Areas/Lecturer/Views/Shared/_LayoutLecturer.cshtml";
     ViewData["Title"] = "Duyệt nhật ký";
+    var reviewedList = ViewBag.ReviewedList as IEnumerable<dynamic>;
+    int pendingCount = Model?.Count() ?? 0;
+    int reviewedCount = reviewedList?.Count() ?? 0;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-1">Duyệt nhật ký thực tập</h4>
-        <p class="text-muted mb-0 small">Danh sách các sinh viên có nhật ký cần xem xét.</p>
+        <p class="text-muted mb-0 small">Quản lý nhật ký thực tập của sinh viên được phân công.</p>
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4">Sinh viên</th>
-                        <th>Lớp</th>
-                        <th class="text-center">Số lượng chờ duyệt</th>
-                        <th class="text-center">Gửi gần nhất</th>
-                        <th class="text-center">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        @foreach (var item in Model)
-                        {
-                            var student = item.Registration.Student;
-                            var user = student?.User;
-                            var className = student?.Class?.Name;
-                            
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="card-title-custom">Chờ duyệt</div>
+                    <div class="card-value-custom text-warning">@pendingCount</div>
+                </div>
+                <span class="stats-icon-box bg-warning-subtle text-warning">
+                    <i class="fa fa-clock"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="card-title-custom">Đã duyệt</div>
+                    <div class="card-value-custom text-success">@reviewedCount</div>
+                </div>
+                <span class="stats-icon-box bg-success-subtle text-success">
+                    <i class="fa fa-check-circle"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-0" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link @(pendingCount > 0 ? "active" : "")" id="pending-tab" data-bs-toggle="tab" href="#pendingTab" role="tab">
+            <i class="fa fa-clock me-1 text-warning"></i> Chờ duyệt
+            @if (pendingCount > 0)
+            {
+                <span class="badge bg-warning text-dark ms-1">@pendingCount</span>
+            }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(pendingCount == 0 ? "active" : "")" id="reviewed-tab" data-bs-toggle="tab" href="#reviewedTab" role="tab">
+            <i class="fa fa-check-circle me-1 text-success"></i> Đã duyệt
+            @if (reviewedCount > 0)
+            {
+                <span class="badge bg-success ms-1">@reviewedCount</span>
+            }
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Tab CHO DUYET -->
+    <div class="tab-pane fade @(pendingCount > 0 ? "show active" : "")" id="pendingTab" role="tabpanel">
+        <div class="card border-0 shadow-sm border-top-0 rounded-top-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
-                                             style="width: 40px; height: 40px;">
-                                            <span class="fw-bold">
-                                                @(user?.FullName?.Substring(0, 1) ?? "S")
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold text-dark">@user?.FullName</div>
-                                            <small class="text-muted">@student?.StudentCode</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-light text-dark border">@className</span></td>
-                                <td class="text-center">
-                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                                        @item.PendingCount nhật ký
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <small class="text-muted">
-                                        <i class="fa fa-clock me-1"></i> @item.LatestSubmission.ToString("dd/MM/yyyy HH:mm")
-                                    </small>
-                                </td>
-                                <td class="text-center">
-                                    <a asp-action="Details" asp-route-id="@item.Registration.Id" class="btn btn-primary btn-sm">
-                                        <i class="fa fa-pencil-alt me-1"></i> Duyệt ngay
-                                    </a>
-                                </td>
+                                <th class="ps-4">Sinh viên</th>
+                                <th>Lớp</th>
+                                <th class="text-center">Số lượng chờ duyệt</th>
+                                <th class="text-center">Gửi gần nhất</th>
+                                <th class="text-center">Thao tác</th>
                             </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="fa fa-check-circle fa-3x text-success mb-3"></i>
-                                <h5 class="text-success fw-bold">Tuyệt vời!</h5>
-                                <p class="mb-0">Bạn đã duyệt hết tất cả nhật ký.</p>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                @foreach (var item in Model)
+                                {
+                                    var student = item.Registration.Student;
+                                    var user = student?.User;
+                                    var className = student?.Class?.Name;
+
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
+                                                     style="width: 40px; height: 40px;">
+                                                    <span class="fw-bold">@(user?.FullName?.Substring(0, 1) ?? "S")</span>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold text-dark">@user?.FullName</div>
+                                                    <small class="text-muted">@student?.StudentCode</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge bg-light text-dark border">@className</span></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                                @item.PendingCount nhật ký
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <small class="text-muted">
+                                                <i class="fa fa-clock me-1"></i> @item.LatestSubmission.ToString("dd/MM/yyyy HH:mm")
+                                            </small>
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-action="Details" asp-route-id="@item.Registration.Id" class="btn btn-primary btn-sm">
+                                                <i class="fa fa-pencil-alt me-1"></i> Duyệt ngay
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fa fa-check-circle fa-3x text-success mb-3 d-block"></i>
+                                        <h5 class="text-success fw-bold">Tuyệt vời!</h5>
+                                        <p class="mb-0">Không có nhật ký nào chờ duyệt.</p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab DA DUYET -->
+    <div class="tab-pane fade @(pendingCount == 0 ? "show active" : "")" id="reviewedTab" role="tabpanel">
+        <div class="card border-0 shadow-sm border-top-0 rounded-top-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Sinh viên</th>
+                                <th>Lớp</th>
+                                <th class="text-center">Đã duyệt / Tổng</th>
+                                <th class="text-center">Lần duyệt gần nhất</th>
+                                <th class="text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (reviewedList != null && reviewedList.Any())
+                            {
+                                @foreach (var item in reviewedList)
+                                {
+                                    var student = item.Registration.Student;
+                                    var user = student?.User;
+                                    var className = student?.Class?.Name;
+
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-secondary border"
+                                                     style="width: 40px; height: 40px;">
+                                                    <span class="fw-bold">@(user?.FullName?.Substring(0, 1) ?? "S")</span>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold text-dark">@user?.FullName</div>
+                                                    <small class="text-muted">@student?.StudentCode</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge bg-light text-dark border">@className</span></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success px-3 py-2 rounded-pill">
+                                                @item.ReviewedCount / @item.TotalCount tuần
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <small class="text-muted">
+                                                <i class="fa fa-check me-1"></i> @item.LatestReview.ToString("dd/MM/yyyy HH:mm")
+                                            </small>
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-action="Details" asp-route-id="@item.Registration.Id" class="btn btn-outline-info btn-sm">
+                                                <i class="fa fa-eye me-1"></i> Xem lại
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fa fa-inbox fa-3x mb-3 d-block opacity-50"></i>
+                                        <p class="mb-0">Chưa có nhật ký nào được duyệt.</p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
