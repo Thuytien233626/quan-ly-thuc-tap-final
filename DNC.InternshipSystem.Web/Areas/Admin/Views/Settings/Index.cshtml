@@ -1,36 +1,278 @@
 @{
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
     ViewData["Title"] = "Cài đặt hệ thống";
+    var adminUser = ViewBag.AdminUser as DNC.InternshipSystem.Core.Entities.AppUser;
+    var dbStats = ViewBag.DbStats;
+    var backupFiles = ViewBag.BackupFiles as List<dynamic> ?? new List<dynamic>();
 }
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-header bg-white border-0 p-4">
-        <h5 class="fw-bold mb-0"><i class="fas fa-cogs text-primary me-2"></i> Cấu hình hệ thống</h5>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fas fa-cogs text-primary me-2"></i>Cài đặt hệ thống</h4>
+        <p class="text-muted mb-0 small">Quản lý tài khoản và dữ liệu hệ thống.</p>
     </div>
-    <div class="card-body p-4">
-        <div class="row g-4">
-            <div class="col-md-6">
-                <div class="p-3 border rounded-3 bg-light">
-                    <h6 class="fw-bold mb-3">Thông tin chung</h6>
-                    <div class="mb-3">
-                        <label class="form-label small text-muted">Tên đơn vị</label>
-                        <input type="text" class="form-control" value="Khoa Công nghệ Thông tin - DNC" disabled>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#tabAccount" role="tab">
+            <i class="fa fa-user-shield me-1"></i> Tài khoản
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#tabBackup" role="tab">
+            <i class="fa fa-database me-1"></i> Sao lưu & Khôi phục
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- ==================== TAB 1: TAI KHOAN ==================== -->
+    <div class="tab-pane fade show active" id="tabAccount" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-top-0 border-top-0">
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <!-- Thong tin tai khoan -->
+                    <div class="col-md-5">
+                        <div class="p-4 border rounded-3 bg-light text-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center mb-3 border border-primary border-opacity-25"
+                                 style="width: 80px; height: 80px; font-size: 2rem;">
+                                <i class="fa fa-user-shield"></i>
+                            </div>
+                            <h5 class="fw-bold mb-1">@adminUser?.FullName</h5>
+                            <p class="text-muted mb-3 small">Quản trị viên hệ thống</p>
+
+                            <div class="text-start">
+                                <div class="d-flex justify-content-between py-2 border-bottom small">
+                                    <span class="text-muted fw-semibold">Tên đăng nhập</span>
+                                    <span class="fw-bold">@adminUser?.UserName</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 border-bottom small">
+                                    <span class="text-muted fw-semibold">Email</span>
+                                    <span class="fw-bold">@adminUser?.Email</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 border-bottom small">
+                                    <span class="text-muted fw-semibold">Vai trò</span>
+                                    <span class="badge bg-danger">Admin</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 small">
+                                    <span class="text-muted fw-semibold">Xác minh email</span>
+                                    @if (adminUser?.EmailConfirmed == true)
+                                    {
+                                        <span class="badge bg-success"><i class="fa fa-check me-1"></i>Đã xác minh</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">Chưa xác minh</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Doi mat khau -->
+                    <div class="col-md-7">
+                        <div class="p-4 border rounded-3 bg-light h-100">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fa fa-key text-warning me-2"></i>Đổi mật khẩu
+                            </h6>
+
+                            <form method="post" asp-action="ChangePassword" asp-controller="Settings" asp-area="Admin">
+                                @Html.AntiForgeryToken()
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Mật khẩu hiện tại</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-lock"></i></span>
+                                        <input type="password" name="currentPassword" class="form-control" required
+                                               placeholder="Nhập mật khẩu hiện tại">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Mật khẩu mới</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-key"></i></span>
+                                        <input type="password" name="newPassword" class="form-control" required
+                                               placeholder="Ít nhất 6 ký tự" minlength="6">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Xác nhận mật khẩu mới</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa fa-check-double"></i></span>
+                                        <input type="password" name="confirmPassword" class="form-control" required
+                                               placeholder="Nhập lại mật khẩu mới">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-warning w-100 fw-bold">
+                                    <i class="fa fa-key me-2"></i>Đổi mật khẩu
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-               <div class="p-3 border rounded-3 bg-light">
-                    <h6 class="fw-bold mb-3">Thông báo hệ thống</h6>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" checked disabled>
-                        <label class="form-check-label">Gửi email khi có đăng ký mới</label>
-                    </div>
-               </div>
-            </div>
-        </div>
-        <div class="text-center mt-5 py-5 opacity-50">
-            <i class="fas fa-tools fa-3x mb-3 text-muted"></i>
-            <p>Tính năng đang được hoàn thiện...</p>
         </div>
     </div>
+
+    <!-- ==================== TAB 2: SAO LUU & KHOI PHUC ==================== -->
+    <div class="tab-pane fade" id="tabBackup" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-top-0 border-top-0">
+            <div class="card-body p-4">
+
+                <!-- Thong ke DB -->
+                <h6 class="fw-bold mb-3"><i class="fa fa-chart-bar text-primary me-2"></i>Thống kê dữ liệu</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col">
+                        <div class="text-center p-3 border rounded-3 bg-light">
+                            <div class="fw-bold fs-4 text-primary">@dbStats?.StudentCount</div>
+                            <small class="text-muted">Sinh viên</small>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="text-center p-3 border rounded-3 bg-light">
+                            <div class="fw-bold fs-4 text-success">@dbStats?.LecturerCount</div>
+                            <small class="text-muted">Giảng viên</small>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="text-center p-3 border rounded-3 bg-light">
+                            <div class="fw-bold fs-4 text-info">@dbStats?.CompanyCount</div>
+                            <small class="text-muted">Doanh nghiệp</small>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="text-center p-3 border rounded-3 bg-light">
+                            <div class="fw-bold fs-4 text-warning">@dbStats?.RegistrationCount</div>
+                            <small class="text-muted">Đơn ĐK</small>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="text-center p-3 border rounded-3 bg-light">
+                            <div class="fw-bold fs-4 text-secondary">@dbStats?.LogbookCount</div>
+                            <small class="text-muted">Nhật ký</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row g-4">
+                    <!-- SAO LUU -->
+                    <div class="col-md-6">
+                        <div class="p-4 border rounded-3 bg-light h-100 d-flex flex-column">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fa fa-download text-success me-2"></i>Sao lưu cơ sở dữ liệu
+                            </h6>
+                            <p class="small text-muted mb-3">
+                                Tạo bản sao lưu toàn bộ database (file .bak). Nên sao lưu định kỳ trước khi thay đổi dữ liệu quan trọng.
+                            </p>
+                            <form method="post" asp-action="BackupDatabase" asp-controller="Settings" asp-area="Admin" class="mt-auto">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-success w-100 fw-bold"
+                                        onclick="return confirm('Bạn có chắc muốn tạo bản sao lưu database?')">
+                                    <i class="fa fa-download me-2"></i>Tạo bản sao lưu ngay
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- KHOI PHUC -->
+                    <div class="col-md-6">
+                        <div class="p-4 border rounded-3 bg-light h-100 d-flex flex-column">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fa fa-upload text-danger me-2"></i>Khôi phục từ file backup
+                            </h6>
+                            <p class="small text-muted mb-3">
+                                Khôi phục database từ file .bak đã sao lưu trước đó.
+                                <span class="text-danger fw-bold">⚠ Dữ liệu hiện tại sẽ bị ghi đè!</span>
+                            </p>
+                            <form method="post" asp-action="RestoreDatabase" asp-controller="Settings" asp-area="Admin" enctype="multipart/form-data" class="mt-auto">
+                                @Html.AntiForgeryToken()
+                                <div class="mb-3">
+                                    <input type="file" name="backupFile" class="form-control" accept=".bak" required>
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100 fw-bold"
+                                        onclick="return confirm('⚠️ CẢNH BÁO: Khôi phục sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại!')">
+                                    <i class="fa fa-upload me-2"></i>Khôi phục database
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sach backup -->
+                @if (backupFiles.Any())
+                {
+                <hr>
+                <h6 class="fw-bold mb-3"><i class="fa fa-history text-info me-2"></i>Các bản sao lưu đã tạo</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Tên file</th>
+                                <th class="text-center">Kích thước</th>
+                                <th class="text-center">Ngày tạo</th>
+                                <th class="text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var file in backupFiles)
+                            {
+                            <tr>
+                                <td class="ps-3">
+                                    <i class="fa fa-file-archive text-muted me-2"></i>
+                                    <span class="fw-semibold small">@file.Name</span>
+                                </td>
+                                <td class="text-center small">@file.Size</td>
+                                <td class="text-center small text-muted">@file.Date</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="DownloadBackup" asp-route-fileName="@file.Name"
+                                           class="btn btn-outline-success" title="Tải xuống">
+                                            <i class="fa fa-download"></i>
+                                        </a>
+                                        <form method="post" asp-action="DeleteBackup" asp-controller="Settings" asp-area="Admin" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="fileName" value="@file.Name">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                    onclick="return confirm('Xóa file backup này?')" title="Xóa">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                }
+
+            </div>
+        </div>
+    </div>
+
 </div>
+
+@section Scripts {
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var hash = window.location.hash;
+        if (hash) {
+            var tab = document.querySelector('[href="' + hash + '"]');
+            if (tab) new bootstrap.Tab(tab).show();
+        }
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (el) {
+            el.addEventListener('shown.bs.tab', function (e) {
+                history.replaceState(null, null, e.target.getAttribute('href'));
+            });
+        });
+    });
+</script>
+}
