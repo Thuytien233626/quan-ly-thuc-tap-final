@@ -1,0 +1,162 @@
+@{
+    Layout = "~/Areas/Lecturer/Views/Shared/_layoutLecturer.cshtml";
+    ViewData["Title"] = "Duyệt báo cáo thực tập";
+    var pending = ViewBag.PendingSubmissions as List<DNC.InternshipSystem.Core.Entities.Submission> ?? new();
+    var reviewed = ViewBag.ReviewedSubmissions as List<DNC.InternshipSystem.Core.Entities.Submission> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fa fa-file-alt text-primary me-2"></i>Duyệt báo cáo thực tập</h4>
+        <p class="text-muted mb-0 small">Xem và duyệt báo cáo thực tập của sinh viên được phân công.</p>
+    </div>
+    <div>
+        <span class="badge bg-warning text-dark fs-6">@pending.Count chờ duyệt</span>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link @(pending.Any() ? "active" : "")" data-bs-toggle="tab" href="#tabPending" role="tab">
+            <i class="fa fa-clock me-1"></i> Chờ duyệt
+            @if (pending.Any())
+            {
+                <span class="badge bg-danger ms-1">@pending.Count</span>
+            }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(!pending.Any() ? "active" : "")" data-bs-toggle="tab" href="#tabReviewed" role="tab">
+            <i class="fa fa-check-circle me-1"></i> Đã duyệt
+            <span class="badge bg-success ms-1">@reviewed.Count</span>
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- Tab Cho duyet -->
+    <div class="tab-pane fade @(pending.Any() ? "show active" : "")" id="tabPending" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-top-0 border-top-0">
+            <div class="card-body p-0">
+                @if (!pending.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="fa fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Không có báo cáo nào chờ duyệt.</p>
+                    </div>
+                }
+                else
+                {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Sinh viên</th>
+                                <th>Tiêu đề</th>
+                                <th class="text-center">Ngày nộp</th>
+                                <th class="text-center">File</th>
+                                <th class="text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sub in pending)
+                            {
+                                var student = sub.Registration?.Student;
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold small">@student?.User?.FullName</div>
+                                        <small class="text-muted">@student?.StudentCode — @student?.Class?.Name</small>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold small">@sub.Title</span>
+                                        @if (!string.IsNullOrEmpty(sub.Note))
+                                        {
+                                            <br><small class="text-muted fst-italic">@sub.Note</small>
+                                        }
+                                    </td>
+                                    <td class="text-center small text-muted">@sub.SubmittedDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="text-center">
+                                        <a asp-action="Download" asp-route-id="@sub.Id" class="btn btn-sm btn-outline-primary" title="Tải file">
+                                            <i class="fa fa-download"></i>
+                                        </a>
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-action="Details" asp-route-id="@sub.Id" class="btn btn-sm btn-primary">
+                                            <i class="fa fa-eye me-1"></i>Xem & Duyệt
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Da duyet -->
+    <div class="tab-pane fade @(!pending.Any() ? "show active" : "")" id="tabReviewed" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-top-0 border-top-0">
+            <div class="card-body p-0">
+                @if (!reviewed.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="fa fa-folder-open fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Chưa có báo cáo nào được duyệt.</p>
+                    </div>
+                }
+                else
+                {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Sinh viên</th>
+                                <th>Tiêu đề</th>
+                                <th class="text-center">Ngày duyệt</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sub in reviewed)
+                            {
+                                var student = sub.Registration?.Student;
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold small">@student?.User?.FullName</div>
+                                        <small class="text-muted">@student?.StudentCode — @student?.Class?.Name</small>
+                                    </td>
+                                    <td class="small fw-semibold">@sub.Title</td>
+                                    <td class="text-center small text-muted">
+                                        @(sub.ReviewedDate?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")
+                                    </td>
+                                    <td class="text-center">
+                                        @if (sub.Status == "Approved")
+                                        {
+                                            <span class="badge bg-success"><i class="fa fa-check me-1"></i>Đã duyệt</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger"><i class="fa fa-times me-1"></i>Từ chối</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-action="Details" asp-route-id="@sub.Id" class="btn btn-sm btn-outline-info">
+                                            <i class="fa fa-eye me-1"></i>Xem lại
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

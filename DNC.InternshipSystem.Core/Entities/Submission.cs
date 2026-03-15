@@ -14,6 +14,10 @@ namespace DNC.InternshipSystem.Core.Entities
         public DateTime SubmittedDate { get; set; } = DateTime.UtcNow;
         public string Status { get; set; } = "Pending";
 
+        // GV duyet bao cao
+        public string? LecturerComment { get; set; }
+        public DateTime? ReviewedDate { get; set; }
+
         // Quan he navigation
         public Registration? Registration { get; set; }
     }

@@ -1,0 +1,191 @@
+@model DNC.InternshipSystem.Core.Entities.Submission
+@{
+    Layout = "~/Areas/Lecturer/Views/Shared/_layoutLecturer.cshtml";
+    ViewData["Title"] = "Chi tiết báo cáo";
+    var student = Model.Registration?.Student;
+    var company = Model.Registration?.Company;
+    var term = Model.Registration?.Term;
+    var isPending = Model.Status == "Pending";
+    var ext = System.IO.Path.GetExtension(Model.FilePath).ToLower();
+}
+
+<div class="mb-4">
+    <a asp-action="Index" class="text-decoration-none text-muted">
+        <i class="fa fa-arrow-left me-1"></i> Quay lại danh sách
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Thong tin bao cao -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">
+                    <i class="fa fa-file-alt text-primary me-2"></i>@Model.Title
+                </h5>
+                <div>
+                    @if (Model.Status == "Pending")
+                    {
+                        <span class="badge bg-warning text-dark"><i class="fa fa-clock me-1"></i>Chờ duyệt</span>
+                    }
+                    else if (Model.Status == "Approved")
+                    {
+                        <span class="badge bg-success"><i class="fa fa-check me-1"></i>Đã duyệt</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger"><i class="fa fa-times me-1"></i>Từ chối</span>
+                    }
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <!-- File preview -->
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-2"><i class="fa fa-paperclip text-muted me-1"></i>File báo cáo</h6>
+                    <div class="bg-light border rounded-3 p-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fa @(ext == ".pdf" ? "fa-file-pdf text-danger" : ext == ".docx" ? "fa-file-word text-primary" : "fa-file-excel text-success") fa-2x me-3"></i>
+                            <span class="fw-semibold">@System.IO.Path.GetFileName(Model.FilePath)</span>
+                        </div>
+                        <a asp-action="Download" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm">
+                            <i class="fa fa-download me-1"></i>Tải xuống
+                        </a>
+                    </div>
+                </div>
+
+                @if (ext == ".pdf")
+                {
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-2"><i class="fa fa-eye text-muted me-1"></i>Xem trước</h6>
+                    <div class="border rounded-3 overflow-hidden" style="height: 500px;">
+                        <iframe src="@Model.FilePath" width="100%" height="100%" style="border:none;"></iframe>
+                    </div>
+                </div>
+                }
+
+                <!-- Ghi chu SV -->
+                @if (!string.IsNullOrEmpty(Model.Note))
+                {
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-2"><i class="fa fa-sticky-note text-warning me-1"></i>Ghi chú của sinh viên</h6>
+                    <div class="bg-light p-3 rounded-3" style="white-space: pre-wrap;">@Model.Note</div>
+                </div>
+                }
+
+                <!-- Nhan xet GV (neu da duyet) -->
+                @if (!string.IsNullOrEmpty(Model.LecturerComment))
+                {
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-2"><i class="fa fa-comment-dots text-info me-1"></i>Nhận xét của giảng viên</h6>
+                    <div class="bg-info bg-opacity-10 p-3 rounded-3 border border-info border-opacity-25" style="white-space: pre-wrap;">@Model.LecturerComment</div>
+                    <small class="text-muted">Duyệt lúc: @(Model.ReviewedDate?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</small>
+                </div>
+                }
+
+                <!-- Form duyet -->
+                @if (isPending)
+                {
+                <hr>
+                <h6 class="fw-bold mb-3"><i class="fa fa-pen text-primary me-1"></i>Duyệt báo cáo</h6>
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Nhận xét</label>
+                    <textarea id="reviewComment" class="form-control" rows="3" placeholder="Nhận xét về báo cáo (không bắt buộc)..."></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success flex-fill fw-bold" onclick="reviewSubmission(@Model.Id, 'Approved')">
+                        <i class="fa fa-check me-2"></i>Duyệt báo cáo
+                    </button>
+                    <button class="btn btn-outline-danger flex-fill fw-bold" onclick="reviewSubmission(@Model.Id, 'Rejected')">
+                        <i class="fa fa-times me-2"></i>Từ chối
+                    </button>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Thanh ben: Thong tin SV -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="fa fa-user-graduate text-primary me-1"></i>Thông tin sinh viên</h6>
+
+                <div class="d-flex justify-content-between py-2 border-bottom small">
+                    <span class="text-muted">Họ tên</span>
+                    <span class="fw-bold">@student?.User?.FullName</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom small">
+                    <span class="text-muted">MSSV</span>
+                    <span class="fw-bold">@student?.StudentCode</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom small">
+                    <span class="text-muted">Lớp</span>
+                    <span class="fw-bold">@(student?.Class?.Name ?? "N/A")</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom small">
+                    <span class="text-muted">Đơn vị TT</span>
+                    <span class="fw-bold text-end" style="max-width:60%;">@(company?.Name ?? "N/A")</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom small">
+                    <span class="text-muted">Đợt thực tập</span>
+                    <span class="fw-bold">@(term?.TermName ?? "N/A")</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 small">
+                    <span class="text-muted">Ngày nộp</span>
+                    <span class="fw-bold">@Model.SubmittedDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+    function reviewSubmission(submissionId, status) {
+        var comment = document.getElementById('reviewComment')?.value || '';
+        var title = status === 'Approved' ? 'Duyệt báo cáo?' : 'Từ chối báo cáo?';
+        var icon = status === 'Approved' ? 'success' : 'warning';
+        var text = status === 'Approved'
+            ? 'Xác nhận duyệt báo cáo này?'
+            : 'Bạn có chắc muốn từ chối báo cáo này?';
+
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            showCancelButton: true,
+            confirmButtonText: status === 'Approved' ? '<i class="fa fa-check me-1"></i> Duyệt' : '<i class="fa fa-times me-1"></i> Từ chối',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: status === 'Approved' ? '#198754' : '#dc3545'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('@Url.Action("ReviewSubmission", "SubmissionReview")', {
+                    submissionId: submissionId,
+                    status: status,
+                    comment: comment,
+                    __RequestVerificationToken: token
+                }, function(res) {
+                    if (res.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công!',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message, 'error');
+                    }
+                }).fail(function(xhr) {
+                    Swal.fire('Lỗi', 'Lỗi server (HTTP ' + xhr.status + ')', 'error');
+                });
+            }
+        });
+    }
+</script>
+}
