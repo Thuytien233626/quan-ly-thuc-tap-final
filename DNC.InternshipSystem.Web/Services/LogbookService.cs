@@ -39,15 +39,12 @@ namespace DNC.InternshipSystem.Web.Services
         public async Task<ServiceResult> CreateLogbook(Guid userId,
             int weekNumber, DateTime startDate, DateTime endDate, string content)
         {
-            // Kiem tra noi dung khong duoc rong
             if (string.IsNullOrWhiteSpace(content))
                 return ServiceResult.Fail("Nội dung nhật ký không được để trống.");
 
-            // Kiem tra so tuan hop le
             if (weekNumber < 1 || weekNumber > 20)
                 return ServiceResult.Fail("Số tuần phải từ 1 đến 20.");
 
-            // Tim don dang ky cua sinh vien
             var registration = await _context.Registrations
                 .Where(r => r.StudentId == userId)
                 .OrderByDescending(r => r.CreatedDate)
@@ -56,14 +53,12 @@ namespace DNC.InternshipSystem.Web.Services
             if (registration == null)
                 return ServiceResult.Fail("Bạn chưa có đơn đăng ký thực tập.");
 
-            // Kiem tra tuan da ton tai chua
             var existed = await _context.Logbooks
                 .AnyAsync(l => l.RegistrationId == registration.Id && l.WeekNumber == weekNumber);
 
             if (existed)
                 return ServiceResult.Fail("Tuần này đã có nhật ký.");
 
-            // Tao logbook moi
             var logbook = new Logbook
             {
                 RegistrationId = registration.Id,
@@ -77,17 +72,24 @@ namespace DNC.InternshipSystem.Web.Services
             _context.Logbooks.Add(logbook);
             await _context.SaveChangesAsync();
 
-            // Goi AI phan tich (khong anh huong ket qua luu logbook)
+            // CẬP NHẬT: Map toàn bộ dữ liệu AI trả về vào Logbook
             try
             {
                 var aiResult = await _aiService.AnalyzeLogbook(content);
-                logbook.AISummary = aiResult;
+                
+                logbook.AISummary = aiResult.AISummary;
+                logbook.AiScore = aiResult.AiScore;
+                logbook.AIWarning = aiResult.AIWarning;
+                logbook.AIWarningDetails = aiResult.AIWarningDetails;
+                logbook.AiSuggestions = aiResult.AiSuggestions;
+                
                 await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Loi khi phan tich logbook voi AI, bo qua");
                 logbook.AISummary = "AI Mentor: Phân tích không khả dụng lúc này.";
+                logbook.AiScore = 0;
                 await _context.SaveChangesAsync();
             }
 
@@ -109,7 +111,6 @@ namespace DNC.InternshipSystem.Web.Services
             if (logbook == null)
                 return ServiceResult.Fail("Không tìm thấy nhật ký.");
 
-            // Kiem tra quyen: GV phai la nguoi phu trach
             var registration = await _context.Registrations.FindAsync(logbook.RegistrationId);
             if (registration?.LecturerId != lecturerId)
                 return ServiceResult.Fail("Bạn không có quyền nhận xét nhật ký này.");
@@ -130,20 +131,24 @@ namespace DNC.InternshipSystem.Web.Services
             if (logbook == null)
                 return ServiceResult<string>.Fail("Logbook không tồn tại.");
 
-            // Kiem tra quyen truy cap
             if (logbook.Registration?.LecturerId != lecturerId)
                 return ServiceResult<string>.Fail("Bạn không có quyền truy cập logbook này.");
 
             _logger.LogInformation("Bat dau phan tich logbook {LbId} voi AI", logbookId);
 
-            // Goi AI phan tich
-            var aiFeedback = await _aiService.AnalyzeLogbook(logbook.Content);
+            // CẬP NHẬT: Map toàn bộ dữ liệu AI trả về vào Logbook
+            var aiResult = await _aiService.AnalyzeLogbook(logbook.Content);
 
-            // Luu ket qua AI
-            logbook.AISummary = aiFeedback;
+            logbook.AISummary = aiResult.AISummary;
+            logbook.AiScore = aiResult.AiScore;
+            logbook.AIWarning = aiResult.AIWarning;
+            logbook.AIWarningDetails = aiResult.AIWarningDetails;
+            logbook.AiSuggestions = aiResult.AiSuggestions;
+            
             await _context.SaveChangesAsync();
 
-            return ServiceResult<string>.Ok(aiFeedback, "Đã phân tích logbook với AI Mentor.");
+            // Trả về Summary để Controller có thể báo cáo nhanh nếu cần
+            return ServiceResult<string>.Ok(aiResult.AISummary ?? string.Empty, "Đã phân tích logbook với AI Mentor.");
         }
     }
 }

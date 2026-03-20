@@ -1,5 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
+using DNC.InternshipSystem.Core.Entities;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace DNC.InternshipSystem.Web.Services
 {
@@ -10,7 +18,7 @@ namespace DNC.InternshipSystem.Web.Services
         private readonly ILogger<AIMentorService> _logger;
         private static readonly Dictionary<string, DateTime> _requestCache = new();
         private static readonly object _cacheLock = new();
-        private const int MIN_REQUEST_INTERVAL_MS = 3000; // 3 giây giữa các request
+        private const int MIN_REQUEST_INTERVAL_MS = 3000; 
         private const int MAX_RETRIES = 2;
         private const int INITIAL_RETRY_DELAY_MS = 2000;
 
@@ -19,14 +27,9 @@ namespace DNC.InternshipSystem.Web.Services
             _http = http;
             _config = config;
             _logger = logger;
-
-            // Set timeout for API calls
             _http.Timeout = TimeSpan.FromSeconds(30);
         }
 
-        /// <summary>
-        /// Rate limiting - ensure minimum interval between API requests
-        /// </summary>
         private async Task<bool> WaitForRateLimit()
         {
             lock (_cacheLock)
@@ -39,34 +42,33 @@ namespace DNC.InternshipSystem.Web.Services
                     {
                         var waitTime = MIN_REQUEST_INTERVAL_MS - (int)timeSinceLastRequest.TotalMilliseconds;
                         _logger.LogInformation($"Rate limiting: waiting {waitTime}ms before next request");
-                        return false; // Need to wait
+                        return false; 
                     }
                 }
                 
                 _requestCache["last_ai_request"] = DateTime.UtcNow;
-                return true; // Can proceed
+                return true; 
             }
         }
 
-        public async Task<string> AnalyzeLogbook(string content)
+        // Trả về trực tiếp đối tượng Logbook
+        public async Task<Logbook> AnalyzeLogbook(string content)
         {
             try
             {
-                // Wait for rate limit
                 while (!await WaitForRateLimit())
                 {
                     await Task.Delay(500);
                 }
 
-                var apiKey = _config["OpenAI:ApiKey"];
+                var apiKey = _config["Gemini:ApiKey"];
 
                 if (string.IsNullOrEmpty(apiKey))
                 {
-                    _logger.LogWarning("OpenAI API key not configured, using fallback analysis");
+                    _logger.LogWarning("Gemini API key not configured, using fallback analysis");
                     return AnalyzeLogbookLocally(content);
                 }
 
-                // Retry logic with exponential backoff
                 int retryCount = 0;
                 int delayMs = INITIAL_RETRY_DELAY_MS;
 
@@ -74,7 +76,7 @@ namespace DNC.InternshipSystem.Web.Services
                 {
                     try
                     {
-                        return await CallOpenAIAPI(content, apiKey);
+                        return await CallGeminiAPI(content, apiKey);
                     }
                     catch (HttpRequestException ex) when (ex.Message.Contains("429") || ex.Message.Contains("TooManyRequests"))
                     {
@@ -87,7 +89,7 @@ namespace DNC.InternshipSystem.Web.Services
 
                         _logger.LogWarning($"Rate limited (429). Retry {retryCount}/{MAX_RETRIES} after {delayMs}ms");
                         await Task.Delay(delayMs);
-                        delayMs *= 2; // Exponential backoff
+                        delayMs *= 2; 
                     }
                     catch (Exception ex) when (ex.Message.Contains("quota") || ex.Message.Contains("limit"))
                     {
@@ -105,184 +107,128 @@ namespace DNC.InternshipSystem.Web.Services
             }
         }
 
-        /// <summary>
-        /// Local analysis fallback when OpenAI is unavailable
-        /// </summary>
-        private string AnalyzeLogbookLocally(string content)
+        private async Task<Logbook> CallGeminiAPI(string content, string apiKey)
         {
-            if (string.IsNullOrWhiteSpace(content))
+            var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={apiKey}";
+
+            var requestBody = new
             {
-                return """
-AI Mentor (Phân tích nội bộ):
-
-**Tóm tắt nội dung:** Logbook trống hoặc không có nội dung.
-
-**Chất lượng công việc:** 0/100
-
-**Cảnh báo:** ⚠️ CẢNH BÁO - Sinh viên chưa nộp nội dung logbook.
-
-**Gợi ý cải thiện:**
-- Nhắc sinh viên nộp lại logbook với nội dung chi tiết
-- Ghi rõ công việc đã thực hiện trong tuần
-""";
-            }
-
-            var lines = content.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
-            var wordCount = content.Split(new[] { ' ', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
-            var charCount = content.Length;
-
-            // Assess quality based on content
-            int score = 50; // Base score
-            var warnings = new List<string>();
-            var suggestions = new List<string>();
-
-            // Check length
-            if (charCount < 100)
-            {
-                score -= 30;
-                warnings.Add("Nội dung quá ngắn");
-                suggestions.Add("Cần bổ sung thêm chi tiết về công việc đã thực hiện");
-            }
-            else if (charCount < 300)
-            {
-                score -= 15;
-                warnings.Add("Nội dung còn hơi ngắn");
-                suggestions.Add("Nên mô tả chi tiết hơn về từng nhiệm vụ");
-            }
-            else if (charCount > 2000)
-            {
-                score -= 5;
-                suggestions.Add("Có thể tóm tắt lại cho ngắn gọn hơn");
-            }
-
-            // Check for detail
-            if (content.Contains("code") || content.Contains("debug") || content.Contains("fix"))
-            {
-                score += 15;
-            }
-            if (content.Contains("test") || content.Contains("deploy"))
-            {
-                score += 10;
-            }
-            if (content.Contains("error") || content.Contains("issue") || content.Contains("problem"))
-            {
-                score += 5;
-            }
-
-            // Grammar/structure check
-            if (lines.Count >= 5)
-            {
-                score += 10;
-                suggestions.Add("Cấu trúc logbook tốt");
-            }
-
-            score = Math.Min(100, Math.Max(0, score));
-
-            var warningText = warnings.Any() ? string.Join("\n- ", warnings) : "Không có cảnh báo";
-            var suggestionText = suggestions.Any() ? string.Join("\n- ", suggestions) : "Logbook khá tốt, hãy tiếp tục cố gắng";
-
-            return $"""
-AI Mentor (Phân tích nội bộ - Chế độ Fallback):
-
-**Tóm tắt nội dung:** 
-{(lines.Count > 0 ? lines[0] : content.Substring(0, Math.Min(100, content.Length)))}
-(Tổng {wordCount} từ, {charCount} ký tự)
-
-**Chất lượng công việc:** {score}/100
-
-**Cảnh báo:**
-- {warningText}
-
-**Gợi ý cải thiện:**
-- {suggestionText}
-
-*Ghi chú: Đang sử dụng phân tích nội địa. Để có phân tích chi tiết hơn từ AI ChatGPT, vui lòng thử lại sau.*
-""";
-        }
-
-        private async Task<string> CallOpenAIAPI(string content, string apiKey)
-        {
-            var request = new
-            {
-                model = "gpt-4o-mini",
-                messages = new[]
+                system_instruction = new
+                {
+                    parts = new[] {
+                        new { text = "Bạn là AI Mentor. Hãy phân tích logbook và trả về DUY NHẤT JSON với CÁC TÊN KEY CHÍNH XÁC SAU: \"AISummary\" (chuỗi, tóm tắt 2 câu), \"AiScore\" (số nguyên 0-100), \"AIWarning\" (boolean, true nếu làm sơ sài), \"AIWarningDetails\" (chuỗi, lý do cảnh báo, rỗng nếu không có), \"AiSuggestions\" (chuỗi, 2 gạch đầu dòng gợi ý)." }
+                    }
+                },
+                contents = new[]
                 {
                     new {
                         role = "user",
-                        content = $"""
-Bạn là mentor thực tập IT chuyên nghiệp.
-
-Hãy phân tích nhật ký logbook sau và trả lời ngắn gọn (dưới 250 từ):
-
-1. **Tóm tắt nội dung** (1-2 câu)
-2. **Chất lượng công việc** (0-100 điểm)
-3. **Cảnh báo** (nếu có vấn đề)
-4. **Gợi ý cải thiện** (1-2 điểm)
-
-LOGBOOK:
-{content}
-
-PHẢN HỒI:
-"""
+                        parts = new[] { new { text = $"Nội dung logbook:\n{content}" } }
                     }
                 },
-                max_tokens = 300,
-                temperature = 0.3
+                generationConfig = new
+                {
+                    temperature = 0.2, 
+                    response_mime_type = "application/json" 
+                }
             };
 
-            var json = JsonSerializer.Serialize(request);
+            var jsonRequest = JsonSerializer.Serialize(requestBody);
+            var message = new HttpRequestMessage(HttpMethod.Post, endpoint)
+            {
+                Content = new StringContent(jsonRequest, Encoding.UTF8, "application/json")
+            };
 
-            var message = new HttpRequestMessage(
-                HttpMethod.Post,
-                "https://api.openai.com/v1/chat/completions"
-            );
-
-            message.Headers.Add("Authorization", $"Bearer {apiKey}");
-
-            message.Content = new StringContent(
-                json,
-                Encoding.UTF8,
-                "application/json"
-            );
-
-            _logger.LogInformation("Calling OpenAI API for logbook analysis");
-
+            _logger.LogInformation("Đang gọi Gemini 1.5 Pro API...");
             var response = await _http.SendAsync(message);
 
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-            {
                 throw new HttpRequestException("429-TooManyRequests");
-            }
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError($"OpenAI API error: {response.StatusCode} - {errorContent}");
-                
-                var error = response.StatusCode switch
-                {
-                    System.Net.HttpStatusCode.Unauthorized => "Unauthorized-InvalidKey",
-                    System.Net.HttpStatusCode.BadRequest => "BadRequest",
-                    System.Net.HttpStatusCode.TooManyRequests => "429-TooManyRequests",
-                    _ => $"Error-{response.StatusCode}"
-                };
-                
-                throw new HttpRequestException(error);
+                _logger.LogError($"Gemini API error: {response.StatusCode} - {errorContent}");
+                throw new HttpRequestException($"Error-{response.StatusCode}");
             }
 
-            var responseJson = await response.Content.ReadAsStringAsync();
+            var responseString = await response.Content.ReadAsStringAsync();
 
-            // Parse response to extract content
-            using var doc = JsonDocument.Parse(responseJson);
-            var aiContent = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString();
+            using var doc = JsonDocument.Parse(responseString);
+            var aiText = doc.RootElement
+    .GetProperty("candidates")[0]
+    .GetProperty("content")
+    .GetProperty("parts")[0]
+    .GetProperty("text")
+    .GetString();
 
-            _logger.LogInformation("Successfully analyzed logbook with OpenAI");
+if (string.IsNullOrEmpty(aiText))
+{
+    return AnalyzeLogbookLocally(content);
+}
 
-            return aiContent ?? "AI Mentor: Không thể phân tích nội dung.";
+// THÊM 2 DÒNG NÀY ĐỂ XÓA MARKDOWN (NẾU CÓ)
+aiText = aiText.Replace("```json", "").Replace("```", "").Trim();
+
+// Deserialize trực tiếp vào class Logbook
+var result = JsonSerializer.Deserialize<Logbook>(aiText, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+return result ?? AnalyzeLogbookLocally(content);
+        }
+
+        private Logbook AnalyzeLogbookLocally(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return new Logbook
+                {
+                    AISummary = "Logbook trống hoặc không có nội dung.",
+                    AiScore = 0,
+                    AIWarning = true,
+                    AIWarningDetails = "Sinh viên chưa nộp nội dung logbook.",
+                    AiSuggestions = "- Nhắc sinh viên nộp lại logbook với nội dung chi tiết.\n- Ghi rõ công việc đã thực hiện trong tuần."
+                };
+            }
+
+            var lines = content.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+            var charCount = content.Length;
+
+            int score = 50; 
+            var warnings = new List<string>();
+            var suggestions = new List<string>();
+
+            if (charCount < 100)
+            {
+                score -= 30;
+                warnings.Add("Nội dung quá ngắn.");
+                suggestions.Add("Cần bổ sung thêm chi tiết về công việc đã thực hiện.");
+            }
+            else if (charCount < 300)
+            {
+                score -= 15;
+                warnings.Add("Nội dung còn hơi ngắn.");
+                suggestions.Add("Nên mô tả chi tiết hơn về từng nhiệm vụ.");
+            }
+
+            if (content.Contains("code") || content.Contains("debug") || content.Contains("fix")) score += 15;
+            if (content.Contains("test") || content.Contains("deploy")) score += 10;
+            if (content.Contains("error") || content.Contains("issue") || content.Contains("problem")) score += 5;
+            if (lines.Count >= 5)
+            {
+                score += 10;
+                suggestions.Add("Cấu trúc logbook tốt.");
+            }
+
+            score = Math.Min(100, Math.Max(0, score));
+            bool hasWarn = warnings.Any();
+
+            return new Logbook
+            {
+                AISummary = lines.Count > 0 ? lines[0] : content.Substring(0, Math.Min(100, content.Length)),
+                AiScore = score,
+                AIWarning = hasWarn,
+                AIWarningDetails = hasWarn ? string.Join("\n", warnings) : string.Empty,
+                AiSuggestions = suggestions.Any() ? string.Join("\n- ", suggestions) : "Logbook khá tốt, hãy tiếp tục cố gắng."
+            };
         }
     }
 }
