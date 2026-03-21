@@ -72,3 +72,5 @@ yarn-error.log*
 .agent/config.yaml
 
 docs/
+
+appsettings.Development.json

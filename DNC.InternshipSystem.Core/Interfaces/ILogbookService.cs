@@ -37,35 +37,5 @@ namespace DNC.InternshipSystem.Core.Interfaces
         /// Lay don dang ky duoc duyet moi nhat cua sinh vien
         /// </summary>
         Task<Registration?> GetActiveRegistration(Guid userId);
-
-        /// <summary>
-        /// Cap nhat nhat ky da nop (chi khi GV chua nhan xet)
-        /// </summary>
-        Task<ServiceResult> UpdateLogbook(Guid logbookId, Guid userId, string content, string? evidenceUrl);
-
-        /// <summary>
-        /// Xoa nhat ky da nop (chi khi GV chua nhan xet)
-        /// </summary>
-        Task<ServiceResult> DeleteLogbook(Guid logbookId, Guid userId);
-
-        /// <summary>
-        /// GV yeu cau SV nop lai nhat ky (mo khoa de SV sua)
-        /// </summary>
-        Task<ServiceResult> RequestResubmit(Guid logbookId, Guid lecturerId, string reason);
-
-        /// <summary>
-        /// SV xin nop lai nhat ky (gui yeu cau toi GV)
-        /// </summary>
-        Task<ServiceResult> StudentRequestResubmit(Guid logbookId, Guid userId, string reason);
-
-        /// <summary>
-        /// GV chap nhan yeu cau nop lai cua SV
-        /// </summary>
-        Task<ServiceResult> ApproveResubmitRequest(Guid logbookId, Guid lecturerId);
-
-        /// <summary>
-        /// GV tu choi yeu cau nop lai cua SV
-        /// </summary>
-        Task<ServiceResult> RejectResubmitRequest(Guid logbookId, Guid lecturerId);
     }
 }
