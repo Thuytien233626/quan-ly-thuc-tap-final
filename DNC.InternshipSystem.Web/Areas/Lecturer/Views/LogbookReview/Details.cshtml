@@ -7,7 +7,6 @@
     var student = registration?.Student;
 }
 
-<!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-1">Chi tiết nhật ký thực tập</h4>
@@ -21,7 +20,6 @@
     </a>
 </div>
 
-<!-- Logbook List -->
 <div class="row g-4">
     <div class="col-lg-8">
         @if (Model != null && Model.Any())
@@ -37,11 +35,7 @@
                             </small>
                         </div>
                         <div>
-                            @if (log.ResubmitRequested)
-                            {
-                                <span class="badge bg-warning text-dark"><i class="fa fa-exclamation-triangle me-1"></i> SV xin nộp lại</span>
-                            }
-                            else if (!string.IsNullOrEmpty(log.LecturerComment))
+                            @if (!string.IsNullOrEmpty(log.LecturerComment))
                             {
                                 <span class="badge bg-success-subtle text-success"><i class="fa fa-check me-1"></i> Đã duyệt</span>
                             }
@@ -51,26 +45,6 @@
                             }
                         </div>
                     </div>
-
-                    @if (log.ResubmitRequested)
-                    {
-                    <div class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 d-flex align-items-start gap-3">
-                        <i class="fa fa-exclamation-circle text-warning mt-1"></i>
-                        <div class="flex-grow-1">
-                            <strong>Sinh viên xin nộp lại nhật ký này</strong>
-                            <p class="mb-2 small text-dark">Lý do: <em>@log.ResubmitReason</em></p>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-success" onclick="approveResubmit('@log.Id', @log.WeekNumber)">
-                                    <i class="fa fa-check me-1"></i> Chấp nhận
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="rejectResubmit('@log.Id', @log.WeekNumber)">
-                                    <i class="fa fa-times me-1"></i> Từ chối
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    }
-
                     <div class="card-body">
                         <h6 class="fw-bold text-dark mb-2">Nội dung công việc:</h6>
                         <div class="bg-light p-3 rounded mb-3" style="white-space: pre-wrap;">@log.Content</div>
@@ -94,14 +68,9 @@
                                 <div class="bg-primary bg-opacity-10 p-3 rounded border border-primary-subtle text-dark">
                                     @log.LecturerComment
                                 </div>
-                                <div class="mt-2 d-flex gap-2">
-                                    <button class="btn btn-sm btn-link text-muted px-0" onclick="enableEdit('@log.Id')">
-                                        <i class="fa fa-edit me-1"></i> Chỉnh sửa
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-warning" onclick="requestResubmit('@log.Id', @log.WeekNumber)">
-                                        <i class="fa fa-undo me-1"></i> Yêu cầu nộp lại
-                                    </button>
-                                </div>
+                                <button class="btn btn-sm btn-link text-muted mt-1 px-0" onclick="enableEdit('@log.Id')">
+                                    <i class="fa fa-edit me-1"></i> Chỉnh sửa
+                                </button>
                             }
                             
                             <div id="comment-form-@log.Id" class="@(!string.IsNullOrEmpty(log.LecturerComment) ? "d-none" : "")">
@@ -117,19 +86,45 @@
 
                         <hr class="my-3" />
 
-                        <!-- AI Mentor Section -->
                         <div class="ai-mentor-section" id="ai-section-@log.Id">
                             <h6 class="fw-bold text-dark mb-2">
                                 <i class="fa fa-brain text-info me-2"></i> AI Mentor Phân Tích
                             </h6>
                             @if (!string.IsNullOrEmpty(log.AISummary))
                             {
-                                <div class="bg-info bg-opacity-10 p-3 rounded border border-info-subtle text-dark mb-3">
-                                    <div style="white-space: pre-wrap; font-size: 0.95rem;">@log.AISummary</div>
+                                <div class="card border-info mb-3">
+                                    <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-info"><i class="fa fa-robot me-1"></i> Kết quả phân tích</span>
+                                        <span class="badge @(log.AiScore >= 80 ? "bg-success" : log.AiScore >= 50 ? "bg-warning" : "bg-danger") fs-6">
+                                            Điểm: @(log.AiScore ?? 0) / 100
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        @if (log.AIWarning)
+                                        {
+                                            <div class="alert alert-danger py-2 mb-3">
+                                                <strong><i class="fa fa-exclamation-triangle me-1"></i> Cảnh báo:</strong> @log.AIWarningDetails
+                                            </div>
+                                        }
+                                        
+                                        <p class="mb-2"><strong>Tóm tắt:</strong> @log.AISummary</p>
+                                        
+                                        @if (!string.IsNullOrEmpty(log.AiSuggestions))
+                                        {
+                                            <div class="bg-light p-2 rounded mt-3">
+                                                <strong>Gợi ý cải thiện:</strong><br/>
+                                                <div style="white-space: pre-line;">@log.AiSuggestions</div>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
-                                <button class="btn btn-sm btn-outline-info" onclick="analyzeWithAI('@log.Id')">
+                                <button class="btn btn-sm btn-outline-info mt-2" onclick="analyzeWithAI('@log.Id')" id="btn-analyze-@log.Id">
                                     <i class="fa fa-sync me-1"></i> Phân tích lại
                                 </button>
+                                <div id="loading-@log.Id" class="mt-2 d-none">
+                                    <div class="spinner-border spinner-border-sm text-info me-2" role="status"></div>
+                                    <small class="text-muted">Đang phân tích lại...</small>
+                                </div>
                             }
                             else
                             {
@@ -140,14 +135,8 @@
                                     <i class="fa fa-wand-magic-sparkles me-1"></i> Phân tích với AI Mentor
                                 </button>
                                 <div id="loading-@log.Id" class="mt-2 d-none">
-                                    <div class="spinner-border spinner-border-sm text-info me-2" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                    <small class="text-muted">
-                                        Đang phân tích... (có thể mất vài giây)
-                                        <br>
-                                        <span id="retry-info-@log.Id" class="d-none">Đang thử lại...</span>
-                                    </small>
+                                    <div class="spinner-border spinner-border-sm text-info me-2" role="status"></div>
+                                    <small class="text-muted">Đang phân tích... (có thể mất vài giây)</small>
                                 </div>
                             }
                         </div>
@@ -158,14 +147,12 @@
         else
         {
             <div class="text-center py-5">
-                <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-state-2130362-1800926.png" 
-                     alt="Empty" style="width: 150px; opacity: 0.5;" class="mb-3">
+                <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-state-2130362-1800926.png" alt="Empty" style="width: 150px; opacity: 0.5;" class="mb-3">
                 <p class="text-muted">Sinh viên chưa nộp nhật ký nào.</p>
             </div>
         }
     </div>
 
-    <!-- Sidebar Info -->
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-white py-3">
@@ -190,197 +177,72 @@
 </div>
 
 @section Scripts {
-@Html.AntiForgeryToken()
-<script>
-    // Setup CSRF token cho tat ca AJAX request
-    var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-    $.ajaxSetup({
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader('RequestVerificationToken', token);
-        },
-        headers: { 'RequestVerificationToken': token }
-    });
+    <form id="antiforgery-form">
+        @Html.AntiForgeryToken()
+    </form>
 
-    function enableEdit(logId) {
-        document.getElementById(`comment-form-${logId}`).classList.remove('d-none');
-    }
-
-    function saveComment(logId) {
-        const content = document.getElementById(`comment-input-${logId}`).value;
-        if (!content.trim()) {
-            Swal.fire('Lỗi', 'Vui lòng nhập nội dung nhận xét', 'error');
-            return;
+    <script>
+        function getAntiForgeryToken() {
+            return document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]').value;
         }
 
-        $.post('@Url.Action("AddComment", "LogbookReview")', {
-            logbookId: logId,
-            comment: content,
-            __RequestVerificationToken: token
-        }, function(res) {
-            if (res.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Thành công',
-                    text: res.message,
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => location.reload());
-            } else {
-                Swal.fire('Lỗi', res.message || 'Không thể lưu nhận xét', 'error');
+        function enableEdit(logId) {
+            document.getElementById(`comment-form-${logId}`).classList.remove('d-none');
+        }
+
+        function saveComment(logId) {
+            const content = document.getElementById(`comment-input-${logId}`).value;
+            if (!content.trim()) {
+                Swal.fire('Lỗi', 'Vui lòng nhập nội dung nhận xét', 'error');
+                return;
             }
-        }).fail(function(xhr) {
-            console.error('Save comment error:', xhr.status, xhr.responseText);
-            Swal.fire('Lỗi', 'Lỗi kết nối server (HTTP ' + xhr.status + ')', 'error');
-        });
-    }
 
-    function analyzeWithAI(logId) {
-        const btn = document.getElementById(`btn-analyze-${logId}`);
-        const loading = document.getElementById(`loading-${logId}`);
-        const retryInfo = document.getElementById(`retry-info-${logId}`);
-        
-        if (btn) btn.disabled = true;
-        if (loading) loading.classList.remove('d-none');
-        if (retryInfo) retryInfo.classList.add('d-none');
-
-        $.ajax({
-            url: '@Url.Action("AnalyzeWithAI", "LogbookReview")',
-            type: 'POST',
-            data: { logbookId: logId, __RequestVerificationToken: token },
-            timeout: 60000,
-            success: function(res) {
+            $.post('@Url.Action("AddComment", "LogbookReview")', { 
+                logbookId: logId, 
+                comment: content,
+                __RequestVerificationToken: getAntiForgeryToken()
+            }, function(res) {
                 if (res.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Phân tích thành công',
-                        text: res.message,
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => location.reload());
+                    Swal.fire({ icon: 'success', title: 'Thành công', text: res.message, timer: 1500, showConfirmButton: false })
+                        .then(() => location.reload());
                 } else {
-                    Swal.fire('Lỗi', res.message || 'Không thể phân tích logbook', 'error');
-                    if (btn) btn.disabled = false;
+                    Swal.fire('Lỗi', 'Không thể lưu nhận xét', 'error');
+                }
+            }).fail(function() { Swal.fire('Lỗi', 'Lỗi kết nối server', 'error'); });
+        }
+
+        function analyzeWithAI(logId) {
+            const btn = document.getElementById(`btn-analyze-${logId}`);
+            const loading = document.getElementById(`loading-${logId}`);
+            
+            if (btn) btn.style.display = 'none';
+            if (loading) loading.classList.remove('d-none');
+
+            $.ajax({
+                url: '@Url.Action("AnalyzeWithAI", "LogbookReview")',
+                type: 'POST',
+                data: { logbookId: logId, __RequestVerificationToken: getAntiForgeryToken() },
+                timeout: 60000, 
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({ icon: 'success', title: 'Phân tích thành công', text: res.message, timer: 2000, showConfirmButton: false })
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể phân tích logbook', 'error');
+                        if (btn) btn.style.display = 'inline-block';
+                        if (loading) loading.classList.add('d-none');
+                    }
+                },
+                error: function(xhr) {
+                    let errorMsg = 'Lỗi kết nối server';
+                    if (xhr.status === 400) errorMsg = 'Lỗi bảo mật Request (Anti-Forgery Token).';
+                    else if (xhr.status === 408) errorMsg = 'Quá thời gian chờ, vui lòng thử lại.';
+                    
+                    Swal.fire('Lỗi', errorMsg, 'error');
+                    if (btn) btn.style.display = 'inline-block';
                     if (loading) loading.classList.add('d-none');
                 }
-            },
-            error: function(xhr) {
-                let errorMsg = 'Lỗi kết nối server';
-                let icon = 'error';
-                
-                if (xhr.status === 0) {
-                    errorMsg = 'Kết nối bị mất. Vui lòng kiểm tra internet.';
-                } else if (xhr.status === 408 || xhr.statusText === 'timeout') {
-                    errorMsg = 'Thời gian chờ quá lâu. Vui lòng thử lại.';
-                    icon = 'warning';
-                } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMsg = xhr.responseJSON.message;
-                } else if (xhr.status >= 500) {
-                    errorMsg = 'Lỗi server. Vui lòng thử lại sau.';
-                }
-                
-                Swal.fire('Lỗi', errorMsg, icon);
-                if (btn) btn.disabled = false;
-                if (loading) loading.classList.add('d-none');
-            }
-        });
-    }
-
-    function requestResubmit(logId, weekNumber) {
-        Swal.fire({
-            title: 'Yêu cầu nộp lại',
-            html: '<p>Yêu cầu sinh viên nộp lại nhật ký <strong>Tuần ' + weekNumber + '</strong>.</p>' +
-                  '<p class="text-muted small mb-2">Nhận xét hiện tại sẽ bị xóa, sinh viên có thể chỉnh sửa và nộp lại.</p>',
-            input: 'textarea',
-            inputLabel: 'Lý do yêu cầu nộp lại',
-            inputPlaceholder: 'VD: Nội dung quá sơ sài, cần bổ sung chi tiết...',
-            inputAttributes: { 'aria-label': 'Lý do' },
-            showCancelButton: true,
-            confirmButtonText: '<i class="fa fa-undo me-1"></i> Xác nhận',
-            cancelButtonText: 'Hủy',
-            confirmButtonColor: '#f59e0b',
-            inputValidator: (value) => {
-                if (!value) return 'Vui lòng nhập lý do yêu cầu nộp lại.';
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('@Url.Action("RequestResubmit", "LogbookReview")', {
-                    logbookId: logId,
-                    reason: result.value,
-                    __RequestVerificationToken: token
-                }, function(res) {
-                    if (res.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Thành công',
-                            text: res.message,
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => location.reload());
-                    } else {
-                        Swal.fire('Lỗi', res.message, 'error');
-                    }
-                }).fail(function(xhr) {
-                    Swal.fire('Lỗi', 'Lỗi kết nối server (HTTP ' + xhr.status + ')', 'error');
-                });
-            }
-        });
-    }
-
-    function approveResubmit(logId, weekNumber) {
-        Swal.fire({
-            title: 'Chấp nhận nộp lại?',
-            html: 'Cho phép sinh viên nộp lại nhật ký <strong>Tuần ' + weekNumber + '</strong>?<br><small class="text-muted">Nhận xét hiện tại sẽ bị xóa.</small>',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: '<i class="fa fa-check me-1"></i> Chấp nhận',
-            cancelButtonText: 'Hủy',
-            confirmButtonColor: '#198754'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('@Url.Action("ApproveResubmit", "LogbookReview")', {
-                    logbookId: logId,
-                    __RequestVerificationToken: token
-                }, function(res) {
-                    if (res.success) {
-                        Swal.fire({ icon: 'success', title: 'Đã chấp nhận', text: res.message, timer: 1500, showConfirmButton: false })
-                            .then(() => location.reload());
-                    } else {
-                        Swal.fire('Lỗi', res.message, 'error');
-                    }
-                }).fail(function(xhr) {
-                    Swal.fire('Lỗi', 'Lỗi server (HTTP ' + xhr.status + ')', 'error');
-                });
-            }
-        });
-    }
-
-    function rejectResubmit(logId, weekNumber) {
-        Swal.fire({
-            title: 'Từ chối nộp lại?',
-            html: 'Từ chối yêu cầu nộp lại nhật ký <strong>Tuần ' + weekNumber + '</strong>?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: '<i class="fa fa-times me-1"></i> Từ chối',
-            cancelButtonText: 'Hủy',
-            confirmButtonColor: '#dc3545'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('@Url.Action("RejectResubmit", "LogbookReview")', {
-                    logbookId: logId,
-                    __RequestVerificationToken: token
-                }, function(res) {
-                    if (res.success) {
-                        Swal.fire({ icon: 'info', title: 'Đã từ chối', text: res.message, timer: 1500, showConfirmButton: false })
-                            .then(() => location.reload());
-                    } else {
-                        Swal.fire('Lỗi', res.message, 'error');
-                    }
-                }).fail(function(xhr) {
-                    Swal.fire('Lỗi', 'Lỗi server (HTTP ' + xhr.status + ')', 'error');
-                });
-            }
-        });
-    }
-</script>
+            });
+        }
+    </script>
 }
-
