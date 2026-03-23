@@ -36,6 +36,55 @@ namespace DNC.InternshipSystem.Web.Services
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<ServiceResult> UpdateLogbook(Guid userId, Guid logbookId, string content, string? evidenceUrl)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return ServiceResult.Fail("Nội dung nhật ký không được để trống.");
+
+            var logbook = await _context.Logbooks
+                .Include(l => l.Registration)
+                .FirstOrDefaultAsync(l => l.Id == logbookId && l.Registration!.StudentId == userId);
+
+            if (logbook == null)
+                return ServiceResult.Fail("Không tìm thấy nhật ký.");
+
+            // Chi cho sua khi chua co nhan xet GV hoac duoc yeu cau nop lai
+            if (!string.IsNullOrEmpty(logbook.LecturerComment) && !logbook.ResubmitRequested)
+                return ServiceResult.Fail("Nhật ký đã được duyệt, không thể chỉnh sửa.");
+
+            logbook.Content = content;
+            logbook.SubmittedDate = DateTime.UtcNow;
+
+            if (!string.IsNullOrEmpty(evidenceUrl))
+                logbook.EvidenceImageUrl = evidenceUrl;
+
+            // Reset resubmit flag
+            if (logbook.ResubmitRequested)
+            {
+                logbook.ResubmitRequested = false;
+                logbook.ResubmitReason = null;
+                logbook.LecturerComment = null;
+            }
+
+            // Re-run AI
+            try
+            {
+                var aiResult = await _aiService.AnalyzeLogbook(content);
+                logbook.AISummary = aiResult.AISummary;
+                logbook.AiSuggestions = aiResult.AiSuggestions;
+                logbook.AiScore = aiResult.AiScore;
+                logbook.AIWarning = aiResult.AIWarning;
+                logbook.AIWarningDetails = aiResult.AIWarningDetails;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AI analysis failed for logbook update {LogbookId}", logbookId);
+            }
+
+            await _context.SaveChangesAsync();
+            return ServiceResult.Ok("Cập nhật nhật ký thành công!");
+        }
+
         public async Task<ServiceResult> CreateLogbook(Guid userId,
             int weekNumber, DateTime startDate, DateTime endDate, string content)
         {

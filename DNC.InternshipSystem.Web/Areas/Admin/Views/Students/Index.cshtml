@@ -592,14 +592,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ========== NHAP EXCEL - SweetAlert2 nhieu buoc ==========
     document.getElementById('btnOpenImport').addEventListener('click', async function() {
-        // Buoc 1: Chon file
-        const { value: file } = await Swal.fire({
+        // Load danh sach lop de chon
+        let classOptions = '<option value="">-- Tự nhận từ Excel --</option>';
+        try {
+            const clsRes = await fetch('/Admin/Students/GetAllClassesJson');
+            const classes = await clsRes.json();
+            classes.forEach(c => {
+                classOptions += `<option value="${c.id}">${c.id} - ${c.name}</option>`;
+            });
+        } catch(e) {}
+
+        // Buoc 1: Chon file + chon lop dich
+        const { value: formData } = await Swal.fire({
             title: '<i class="fa fa-file-excel text-success me-2"></i>Import Sinh viên',
             html: `
-                <div class="text-center py-3">
-                    <i class="fa fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
-                    <p class="text-muted">Chọn file Excel (.xlsx, .xls)</p>
-                    <input type="file" id="swal-file" class="form-control" accept=".xlsx,.xls">
+                <div class="text-start py-2">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">File Excel (.xlsx, .xls) <span class="text-danger">*</span></label>
+                        <input type="file" id="swal-file" class="form-control" accept=".xlsx,.xls">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Gán vào lớp</label>
+                        <select id="swal-class" class="form-select">
+                            ${classOptions}
+                        </select>
+                        <small class="text-muted">Nếu Excel có cột "Lớp" thì ưu tiên dùng cột đó. Nếu không có hoặc rỗng → gán vào lớp đã chọn ở đây.</small>
+                    </div>
                 </div>
             `,
             showCancelButton: true,
@@ -610,17 +628,21 @@ document.addEventListener('DOMContentLoaded', function() {
             preConfirm: () => {
                 const file = document.getElementById('swal-file').files[0];
                 if (!file) { Swal.showValidationMessage('Vui lòng chọn file!'); return false; }
-                return file;
+                return { file: file, targetClassId: document.getElementById('swal-class').value };
             }
         });
         
-        if (!file) return;
+        if (!formData) return;
+        
+        const file = formData.file;
+        const targetClassId = formData.targetClassId;
         
         // Buoc 2: Xem truoc
         Swal.fire({ title: 'Đang phân tích file...', html: '<div class="spinner-border text-primary"></div>', showConfirmButton: false, allowOutsideClick: false });
         
         const fd = new FormData();
         fd.append('excelFile', file);
+        if (targetClassId) fd.append('targetClassId', targetClassId);
         
         const previewRes = await postWithToken('/Admin/Students/ImportPreviewAjax', fd);
         const previewHtml = await previewRes.text();
@@ -649,6 +671,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const confirmFd = new FormData();
         confirmFd.append('tempFilePath', tempFilePath);
+        if (targetClassId) confirmFd.append('targetClassId', targetClassId);
         
         const resultRes = await postWithToken('/Admin/Students/ConfirmImportAjax', confirmFd);
         const resultHtml = await resultRes.text();

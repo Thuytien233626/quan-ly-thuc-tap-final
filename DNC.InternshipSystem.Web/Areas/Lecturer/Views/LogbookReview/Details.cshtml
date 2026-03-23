@@ -78,7 +78,10 @@
                             <div id="comment-form-@log.Id" class="@(!string.IsNullOrEmpty(log.LecturerComment) ? "d-none" : "")">
                                 <textarea class="form-control mb-2" id="comment-input-@log.Id" rows="2" 
                                           placeholder="Nhập nhận xét của bạn...">@(log.LecturerComment)</textarea>
-                                <div class="text-end">
+                                <div class="d-flex justify-content-between">
+                                    <button class="btn btn-outline-warning btn-sm" onclick="requestResubmit('@log.Id')">
+                                        <i class="fa fa-undo me-1"></i> Trả lại sửa
+                                    </button>
                                     <button class="btn btn-primary btn-sm" onclick="saveComment('@log.Id')">
                                         <i class="fa fa-save me-1"></i> Lưu nhận xét
                                     </button>
@@ -263,6 +266,45 @@
                     if (btn) btn.disabled = false;
                     if (loading) loading.classList.add('d-none');
                 }
+            });
+        }
+
+        async function requestResubmit(logId) {
+            const { value: reason } = await Swal.fire({
+                title: '<i class="fa fa-undo text-warning me-2"></i>Trả nhật ký về cho sinh viên',
+                html: '<p class="text-muted">Nhập lý do yêu cầu sinh viên sửa lại:</p>',
+                input: 'textarea',
+                inputPlaceholder: 'VD: Nội dung quá ngắn, cần bổ sung chi tiết công việc...',
+                inputAttributes: { rows: 3 },
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-undo me-1"></i>Trả lại',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#ffc107',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) return 'Vui lòng nhập lý do!';
+                }
+            });
+
+            if (!reason) return;
+
+            $.post('@Url.Action("RequestResubmit", "LogbookReview")', {
+                logbookId: logId,
+                reason: reason,
+                __RequestVerificationToken: getAntiForgeryToken()
+            }, function(res) {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Đã trả lại',
+                        text: res.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Không thể trả lại', 'error');
+                }
+            }).fail(function() {
+                Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
             });
         }
     </script>

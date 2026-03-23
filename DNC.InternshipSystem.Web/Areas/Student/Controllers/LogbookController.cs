@@ -102,5 +102,55 @@ namespace DNC.InternshipSystem.Web.Areas.Student.Controllers
 
             return RedirectToAction("Index");
         }
+
+        // POST: /Student/Logbook/UpdateLogbook — Cap nhat nhat ky
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateLogbook(Guid LogbookId, string Content, IFormFile? EvidenceFile)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return RedirectToAction("Login", "Account", new { area = "" });
+
+            string? evidenceUrl = null;
+
+            if (EvidenceFile != null && EvidenceFile.Length > 0)
+            {
+                var allowedExt = new[] { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx", ".xlsx" };
+                var ext = Path.GetExtension(EvidenceFile.FileName).ToLower();
+
+                if (!allowedExt.Contains(ext))
+                {
+                    TempData["Error"] = "Định dạng file không hợp lệ.";
+                    return RedirectToAction("Index");
+                }
+
+                if (EvidenceFile.Length > 10 * 1024 * 1024)
+                {
+                    TempData["Error"] = "File vượt quá 10MB.";
+                    return RedirectToAction("Index");
+                }
+
+                var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/logbooks");
+                if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
+
+                var fileName = $"{Guid.NewGuid()}{ext}";
+                var filePath = Path.Combine(uploadFolder, fileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await EvidenceFile.CopyToAsync(stream);
+                }
+                evidenceUrl = $"/uploads/logbooks/{fileName}";
+            }
+
+            var result = await _logbookService.UpdateLogbook(user.Id, LogbookId, Content, evidenceUrl);
+
+            if (result.Success)
+                TempData["Success"] = result.Message;
+            else
+                TempData["Error"] = result.Message;
+
+            return RedirectToAction("Index");
+        }
     }
 }

@@ -36,6 +36,11 @@ namespace DNC.InternshipSystem.Core.Interfaces
         /// <summary>
         /// Lay don dang ky duoc duyet moi nhat cua sinh vien
         /// </summary>
+        /// <summary>
+        /// Cap nhat nhat ky da nop (khi chua duyet hoac duoc yeu cau nop lai)
+        /// </summary>
+        Task<ServiceResult> UpdateLogbook(Guid userId, Guid logbookId, string content, string? evidenceUrl);
+
         Task<Registration?> GetActiveRegistration(Guid userId);
     }
 }

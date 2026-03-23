@@ -43,6 +43,7 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
             var registration = await _context.Registrations
                 .Include(r => r.Student).ThenInclude(s => s!.User)
                 .Include(r => r.Student).ThenInclude(s => s!.Class)
+                .Include(r => r.Company)
                 .Include(r => r.Term)
                 .FirstOrDefaultAsync(r => r.Id == id &&
                     (r.LecturerId == lecturer!.UserId || lecClassIds.Contains(r.Student!.ClassId)));
@@ -87,6 +88,27 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
                 })
                 .ToList();
 
+            // Lay logbook DA co nhan xet (da duyet)
+            var reviewedLogbooks = await _context.Logbooks
+                .Include(l => l.Registration).ThenInclude(r => r!.Student).ThenInclude(s => s!.User)
+                .Include(l => l.Registration).ThenInclude(r => r!.Student).ThenInclude(s => s!.Class)
+                .Where(l => l.Registration!.LecturerId == lecturer!.UserId && !string.IsNullOrEmpty(l.LecturerComment))
+                .OrderByDescending(l => l.SubmittedDate)
+                .ToListAsync();
+
+            var reviewedGrouped = reviewedLogbooks
+                .GroupBy(l => l.Registration)
+                .Select(g => new
+                {
+                    Registration = g.Key,
+                    ReviewedCount = g.Count(),
+                    TotalCount = _context.Logbooks.Count(l => l.RegistrationId == g.Key!.Id),
+                    LatestReview = g.Max(l => l.SubmittedDate)
+                })
+                .ToList();
+
+            ViewBag.ReviewedList = reviewedGrouped;
+
             return View(grouped);
         }
 
@@ -118,6 +140,32 @@ namespace DNC.InternshipSystem.Web.Areas.Lecturer.Controllers
 
             var result = await _logbookService.AnalyzeWithAI(logbookId, lecturer.UserId);
             return Json(new { success = result.Success, message = result.Message, feedback = result.Data });
+        }
+
+        // POST: Tra nhat ky ve cho SV sua lai (AJAX)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequestResubmit(Guid logbookId, string reason)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Json(new { success = false, message = "Bạn chưa đăng nhập." });
+
+            var lecturer = await _context.Lecturers.FirstOrDefaultAsync(l => l.UserId == user.Id);
+            if (lecturer == null) return Json(new { success = false, message = "Không tìm thấy thông tin giảng viên." });
+
+            var logbook = await _context.Logbooks
+                .Include(l => l.Registration)
+                .FirstOrDefaultAsync(l => l.Id == logbookId && l.Registration!.LecturerId == lecturer.UserId);
+
+            if (logbook == null)
+                return Json(new { success = false, message = "Không tìm thấy nhật ký hoặc bạn không có quyền." });
+
+            logbook.ResubmitRequested = true;
+            logbook.ResubmitReason = reason;
+            logbook.LecturerComment = null; // Reset de ve trang thai "chua duyet"
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "Đã trả nhật ký về cho sinh viên sửa lại." });
         }
     }
 }

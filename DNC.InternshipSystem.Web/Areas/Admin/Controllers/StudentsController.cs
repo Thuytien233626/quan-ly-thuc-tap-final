@@ -342,8 +342,23 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                         else if (dobValue != null && DateTime.TryParse(dobValue.ToString(), out DateTime parsed)) dob = parsed;
                         
                         string? validClassId = null;
-                        if (!string.IsNullOrEmpty(classCode) && await _context.Classes.AnyAsync(c => c.Id == classCode))
-                            validClassId = classCode;
+                        if (!string.IsNullOrEmpty(classCode))
+                        {
+                            // Tim chinh xac truoc
+                            validClassId = await _context.Classes
+                                .Where(c => c.Id == classCode)
+                                .Select(c => c.Id)
+                                .FirstOrDefaultAsync();
+                            
+                            // Neu khong tim thay, thu tim gan dung (case-insensitive, bo dau cach)
+                            if (validClassId == null)
+                            {
+                                var normalizedCode = classCode.Replace(" ", "").ToUpper();
+                                var allClasses = await _context.Classes.Select(c => c.Id).ToListAsync();
+                                validClassId = allClasses
+                                    .FirstOrDefault(id => id.Replace(" ", "").ToUpper() == normalizedCode);
+                            }
+                        }
                         
                         // Tao nguoi dung
                         var fullName = $"{lastName} {firstName}".Trim();
@@ -703,6 +718,20 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
             }
         }
 
+        // GET: Lay tat ca lop hoc (JSON cho dropdown)
+        public async Task<IActionResult> GetAllClassesJson()
+        {
+            var classes = await _context.Classes
+                .Where(c => c.IsActive)
+                .Include(c => c.Major)
+                    .ThenInclude(m => m!.Batch)
+                .OrderBy(c => c.Major!.Batch!.EnrollmentYear)
+                .ThenBy(c => c.Id)
+                .Select(c => new { id = c.Id, name = c.Name, batch = c.Major!.Batch!.BatchCode })
+                .ToListAsync();
+            return Json(classes);
+        }
+
         // IMPORT API
 
         [HttpPost]
@@ -806,7 +835,7 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ConfirmImportAjax(string tempFilePath)
+        public async Task<IActionResult> ConfirmImportAjax(string tempFilePath, string? targetClassId)
         {
             if (string.IsNullOrEmpty(tempFilePath) || !System.IO.File.Exists(tempFilePath))
                 return Content("<div class='alert alert-danger'>File tạm không tồn tại!</div>");
@@ -870,7 +899,29 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                         if (dobVal is DateTime dt) dob = dt;
                         else if (dobVal is double dblDate) dob = DateTime.FromOADate(dblDate);
                         else if (dobVal != null && DateTime.TryParse(dobVal.ToString(), out var p)) dob = p;
-                        string? validClass = !string.IsNullOrEmpty(classCode) && await _context.Classes.AnyAsync(c => c.Id == classCode) ? classCode : null;
+                        string? validClass = null;
+                        if (!string.IsNullOrEmpty(classCode))
+                        {
+                            validClass = await _context.Classes
+                                .Where(c => c.Id == classCode)
+                                .Select(c => c.Id)
+                                .FirstOrDefaultAsync();
+                            
+                            if (validClass == null)
+                            {
+                                var normalizedCode = classCode.Replace(" ", "").ToUpper();
+                                var allClasses = await _context.Classes.Select(c => c.Id).ToListAsync();
+                                validClass = allClasses
+                                    .FirstOrDefault(id => id.Replace(" ", "").ToUpper() == normalizedCode);
+                            }
+                        }
+                        
+                        // Fallback: neu Excel khong co lop hoac khong tim thay → dung targetClassId
+                        if (validClass == null && !string.IsNullOrEmpty(targetClassId))
+                        {
+                            if (await _context.Classes.AnyAsync(c => c.Id == targetClassId))
+                                validClass = targetClassId;
+                        }
 
                         var user = new AppUser
                         {
@@ -900,7 +951,10 @@ namespace DNC.InternshipSystem.Web.Areas.Admin.Controllers
                         await _context.SaveChangesAsync();
 
                         r.Status = "Thành công";
-                        r.Message = $"STT: {orderNumber}";
+                        if (validClass == null && !string.IsNullOrEmpty(classCode))
+                            r.Message = $"STT: {orderNumber} ⚠️ Lớp '{classCode}' không tìm thấy, chưa gán lớp";
+                        else
+                            r.Message = $"STT: {orderNumber}";
                         success++;
                     }
                     catch (Exception ex) { r.Status = "Lỗi"; r.Message = ex.Message; error++; }

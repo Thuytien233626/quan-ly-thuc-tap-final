@@ -136,7 +136,7 @@ Danh sách nhật ký theo tuần
 {
 foreach (var log in logbooks)
 {
-    bool canEdit = string.IsNullOrEmpty(log.LecturerComment);
+    bool canEdit = string.IsNullOrEmpty(log.LecturerComment) || log.ResubmitRequested;
 
 <tr>
 <td class="ps-4">
@@ -178,7 +178,11 @@ else
 <td class="text-center">
 @if (log.ResubmitRequested)
 {
-    <span class="badge bg-warning-subtle text-warning"><i class="fa fa-undo me-1"></i>Chờ duyệt nộp lại</span>
+    <span class="badge bg-danger-subtle text-danger"><i class="fa fa-undo me-1"></i>Cần sửa lại</span>
+    @if (!string.IsNullOrEmpty(log.ResubmitReason))
+    {
+        <br/><small class="text-danger">@log.ResubmitReason</small>
+    }
 }
 else if (!string.IsNullOrEmpty(log.LecturerComment))
 {
